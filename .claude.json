@@ -1,5 +1,5 @@
 {
-  "numStartups": 26,
+  "numStartups": 27,
   "installMethod": "native",
   "autoUpdates": false,
   "tipsHistory": {
@@ -9,7 +9,7 @@
     "memory-command": 16,
     "theme-command": 22,
     "colorterm-truecolor": 2,
-    "status-line": 2,
+    "status-line": 27,
     "stickers-command": 22,
     "prompt-queue": 2,
     "enter-to-steer-in-relatime": 22,
@@ -144,37 +144,37 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 3.8224235000000006,
-      "lastAPIDuration": 417433,
-      "lastAPIDurationWithoutRetries": 417411,
-      "lastToolDuration": 14225,
-      "lastDuration": 4865592,
-      "lastLinesAdded": 1,
-      "lastLinesRemoved": 5,
-      "lastTotalInputTokens": 16131,
-      "lastTotalOutputTokens": 8551,
-      "lastTotalCacheCreationInputTokens": 346786,
-      "lastTotalCacheReadInputTokens": 2880610,
+      "lastCost": 1.3186960000000003,
+      "lastAPIDuration": 183154,
+      "lastAPIDurationWithoutRetries": 183139,
+      "lastToolDuration": 3525,
+      "lastDuration": 363480,
+      "lastLinesAdded": 4,
+      "lastLinesRemoved": 4,
+      "lastTotalInputTokens": 12619,
+      "lastTotalOutputTokens": 4789,
+      "lastTotalCacheCreationInputTokens": 116182,
+      "lastTotalCacheReadInputTokens": 934421,
       "lastTotalWebSearchRequests": 0,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 14736,
-          "outputTokens": 1039,
+          "inputTokens": 11498,
+          "outputTokens": 574,
           "cacheReadInputTokens": 0,
           "cacheCreationInputTokens": 0,
           "webSearchRequests": 0,
-          "costUSD": 0.019930999999999994
+          "costUSD": 0.014367999999999999
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 1395,
-          "outputTokens": 7512,
-          "cacheReadInputTokens": 2880610,
-          "cacheCreationInputTokens": 346786,
+          "inputTokens": 1121,
+          "outputTokens": 4215,
+          "cacheReadInputTokens": 934421,
+          "cacheCreationInputTokens": 116182,
           "webSearchRequests": 0,
-          "costUSD": 3.8024925
+          "costUSD": 1.304328
         }
       },
-      "lastSessionId": "c0f9876e-3666-4557-8060-cb4dc18a1d9d",
+      "lastSessionId": "25396aac-dc52-4e51-8692-aa17736da5f5",
       "disabledMcpServers": []
     }
   },
@@ -192,7 +192,19 @@
       "timestamp": 1767112264505
     }
   },
-  "mcpServers": {},
+  "mcpServers": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest",
+        "--api-key",
+        "ctx7sk-5532464e-723b-496c-b0d1-8baaed8c88c8"
+      ],
+      "env": {}
+    }
+  },
   "feedbackSurveyState": {
     "lastShownTime": 1767058432210
   },
