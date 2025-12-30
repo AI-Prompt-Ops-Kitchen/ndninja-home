@@ -1,5 +1,5 @@
 {
-  "numStartups": 25,
+  "numStartups": 26,
   "installMethod": "native",
   "autoUpdates": false,
   "tipsHistory": {
@@ -27,11 +27,11 @@
     "web-app": 19,
     "mobile-app": 19,
     "frontend-design-plugin": 11,
-    "guest-passes": 23,
+    "guest-passes": 26,
     "custom-agents": 22,
     "permissions": 21,
-    "rename-conversation": 11,
-    "custom-commands": 11
+    "rename-conversation": 26,
+    "custom-commands": 26
   },
   "promptQueueUseCount": 16,
   "cachedStatsigGates": {
@@ -95,7 +95,7 @@
     "51992d80-9ba3-464b-82ca-0009f971357c": {
       "hasAccess": false,
       "hasAccessNotAsDefault": false,
-      "timestamp": 1767107398265
+      "timestamp": 1767112265829
     }
   },
   "lastReleaseNotesSeen": "2.0.76",
@@ -123,11 +123,11 @@
           "command": "npx",
           "args": [
             "-y",
-            "@notionhq/notion-mcp-server",
-            "--token",
-            "ntn_q72064276695v86ktH22AyMliZmcsxBcnSrozs3jkqScqX"
+            "@notionhq/notion-mcp-server"
           ],
-          "env": {}
+          "env": {
+            "NOTION_TOKEN": "ntn_q72064276695v86ktH22AyMliZmcsxBcnSrozs3jkqScqX"
+          }
         }
       },
       "enabledMcpjsonServers": [],
@@ -144,37 +144,37 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 2.7073332499999982,
-      "lastAPIDuration": 832751,
-      "lastAPIDurationWithoutRetries": 832710,
-      "lastToolDuration": 5521,
-      "lastDuration": 43380514,
-      "lastLinesAdded": 301,
-      "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 27937,
-      "lastTotalOutputTokens": 29036,
-      "lastTotalCacheCreationInputTokens": 81141,
-      "lastTotalCacheReadInputTokens": 2949650,
+      "lastCost": 3.8224235000000006,
+      "lastAPIDuration": 417433,
+      "lastAPIDurationWithoutRetries": 417411,
+      "lastToolDuration": 14225,
+      "lastDuration": 4865592,
+      "lastLinesAdded": 1,
+      "lastLinesRemoved": 5,
+      "lastTotalInputTokens": 16131,
+      "lastTotalOutputTokens": 8551,
+      "lastTotalCacheCreationInputTokens": 346786,
+      "lastTotalCacheReadInputTokens": 2880610,
       "lastTotalWebSearchRequests": 0,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 26447,
-          "outputTokens": 1721,
+          "inputTokens": 14736,
+          "outputTokens": 1039,
           "cacheReadInputTokens": 0,
           "cacheCreationInputTokens": 0,
           "webSearchRequests": 0,
-          "costUSD": 0.035052
+          "costUSD": 0.019930999999999994
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 1490,
-          "outputTokens": 27315,
-          "cacheReadInputTokens": 2949650,
-          "cacheCreationInputTokens": 81141,
+          "inputTokens": 1395,
+          "outputTokens": 7512,
+          "cacheReadInputTokens": 2880610,
+          "cacheCreationInputTokens": 346786,
           "webSearchRequests": 0,
-          "costUSD": 2.6722812499999997
+          "costUSD": 3.8024925
         }
       },
-      "lastSessionId": "65cc69e2-4fdf-42d8-91e9-f923e0477b74",
+      "lastSessionId": "c0f9876e-3666-4557-8060-cb4dc18a1d9d",
       "disabledMcpServers": []
     }
   },
@@ -189,7 +189,7 @@
         "campaign": "claude_code_guest_pass",
         "referral_link": "https://claude.ai/referral/wHprD939zQ"
       },
-      "timestamp": 1767107393663
+      "timestamp": 1767112264505
     }
   },
   "mcpServers": {},
