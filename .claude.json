@@ -125,7 +125,7 @@
             "-y",
             "@notionhq/notion-mcp-server",
             "--token",
-            "ntn_M72064276699Bfsjja5mhq7fqZtGSElIRFrDa998zatfWl"
+            "ntn_q72064276695v86ktH22AyMliZmcsxBcnSrozs3jkqScqX"
           ],
           "env": {}
         }
