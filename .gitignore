@@ -1,0 +1,43 @@
+# Shell history and config
+.bash_history
+.bash_logout
+.bashrc
+.profile
+.psql_history
+
+# SSH keys and config (sensitive)
+.ssh/
+
+# Caches and local data
+.cache/
+.local/
+.npm/
+.docker/
+
+# Claude backups
+.claude.json.backup
+.claude/
+
+# Application configs (add exceptions as needed)
+.config/
+
+# Git config
+.gitconfig
+
+# Project directories (track separately in their own repos)
+ai-tools-manager/
+dashboard/
+n8n/
+ninja_hub_api/
+project-hummingbird/
+projects/
+
+# Misc files
+*.sql
+*.py
+*.md
+*.json
+!.claude.json
+
+# Temp/junk
+cale ip -4
