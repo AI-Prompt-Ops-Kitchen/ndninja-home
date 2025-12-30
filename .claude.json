@@ -1,5 +1,5 @@
 {
-  "numStartups": 23,
+  "numStartups": 25,
   "installMethod": "native",
   "autoUpdates": false,
   "tipsHistory": {
@@ -21,8 +21,8 @@
     "continue": 23,
     "shift-tab": 23,
     "image-paste": 23,
-    "config-thinking-mode": 14,
-    "ultrathink-keyword": 14,
+    "config-thinking-mode": 24,
+    "ultrathink-keyword": 24,
     "btw-side-question": 19,
     "web-app": 19,
     "mobile-app": 19,
@@ -95,7 +95,7 @@
     "51992d80-9ba3-464b-82ca-0009f971357c": {
       "hasAccess": false,
       "hasAccessNotAsDefault": false,
-      "timestamp": 1767102444919
+      "timestamp": 1767107398265
     }
   },
   "lastReleaseNotesSeen": "2.0.76",
@@ -104,10 +104,6 @@
       "allowedTools": [],
       "mcpContextUris": [],
       "mcpServers": {
-        "sentry": {
-          "type": "http",
-          "url": "https://mcp.sentry.dev/mcp"
-        },
         "claude-memory": {
           "type": "stdio",
           "command": "/home/ndninja/projects/claude-memory-db/venv/bin/python",
@@ -148,37 +144,37 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 0.6014355,
-      "lastAPIDuration": 131067,
-      "lastAPIDurationWithoutRetries": 131058,
-      "lastToolDuration": 5312,
-      "lastDuration": 394790,
-      "lastLinesAdded": 0,
+      "lastCost": 2.7073332499999982,
+      "lastAPIDuration": 832751,
+      "lastAPIDurationWithoutRetries": 832710,
+      "lastToolDuration": 5521,
+      "lastDuration": 43380514,
+      "lastLinesAdded": 301,
       "lastLinesRemoved": 0,
-      "lastTotalInputTokens": 3811,
-      "lastTotalOutputTokens": 3048,
-      "lastTotalCacheCreationInputTokens": 40004,
-      "lastTotalCacheReadInputTokens": 547399,
+      "lastTotalInputTokens": 27937,
+      "lastTotalOutputTokens": 29036,
+      "lastTotalCacheCreationInputTokens": 81141,
+      "lastTotalCacheReadInputTokens": 2949650,
       "lastTotalWebSearchRequests": 0,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 2846,
-          "outputTokens": 308,
+          "inputTokens": 26447,
+          "outputTokens": 1721,
           "cacheReadInputTokens": 0,
           "cacheCreationInputTokens": 0,
           "webSearchRequests": 0,
-          "costUSD": 0.004386
+          "costUSD": 0.035052
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 965,
-          "outputTokens": 2740,
-          "cacheReadInputTokens": 547399,
-          "cacheCreationInputTokens": 40004,
+          "inputTokens": 1490,
+          "outputTokens": 27315,
+          "cacheReadInputTokens": 2949650,
+          "cacheCreationInputTokens": 81141,
           "webSearchRequests": 0,
-          "costUSD": 0.5970495
+          "costUSD": 2.6722812499999997
         }
       },
-      "lastSessionId": "eda22e8a-d29c-42c4-9d52-8a0cd536b2b9",
+      "lastSessionId": "65cc69e2-4fdf-42d8-91e9-f923e0477b74",
       "disabledMcpServers": []
     }
   },
@@ -193,15 +189,10 @@
         "campaign": "claude_code_guest_pass",
         "referral_link": "https://claude.ai/referral/wHprD939zQ"
       },
-      "timestamp": 1767102435601
+      "timestamp": 1767107393663
     }
   },
-  "mcpServers": {
-    "figma": {
-      "type": "http",
-      "url": "https://mcp.figma.com/mcp"
-    }
-  },
+  "mcpServers": {},
   "feedbackSurveyState": {
     "lastShownTime": 1767058432210
   },
