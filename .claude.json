@@ -1,39 +1,40 @@
 {
-  "numStartups": 27,
+  "numStartups": 42,
   "installMethod": "native",
   "autoUpdates": false,
   "tipsHistory": {
     "new-user-warmup": 8,
-    "plan-mode-for-complex-tasks": 23,
-    "terminal-setup": 21,
-    "memory-command": 16,
-    "theme-command": 22,
-    "colorterm-truecolor": 2,
+    "plan-mode-for-complex-tasks": 28,
+    "terminal-setup": 41,
+    "memory-command": 31,
+    "theme-command": 42,
+    "colorterm-truecolor": 32,
     "status-line": 27,
-    "stickers-command": 22,
+    "stickers-command": 42,
     "prompt-queue": 2,
-    "enter-to-steer-in-relatime": 22,
-    "todo-list": 22,
-    "install-github-app": 22,
-    "install-slack-app": 22,
-    "drag-and-drop-images": 22,
-    "double-esc-code-restore": 23,
-    "continue": 23,
-    "shift-tab": 23,
+    "enter-to-steer-in-relatime": 42,
+    "todo-list": 42,
+    "install-github-app": 42,
+    "install-slack-app": 42,
+    "drag-and-drop-images": 32,
+    "double-esc-code-restore": 33,
+    "continue": 33,
+    "shift-tab": 33,
     "image-paste": 23,
-    "config-thinking-mode": 24,
-    "ultrathink-keyword": 24,
-    "btw-side-question": 19,
-    "web-app": 19,
-    "mobile-app": 19,
-    "frontend-design-plugin": 11,
-    "guest-passes": 26,
-    "custom-agents": 22,
-    "permissions": 21,
-    "rename-conversation": 26,
-    "custom-commands": 26
+    "config-thinking-mode": 34,
+    "ultrathink-keyword": 34,
+    "btw-side-question": 34,
+    "web-app": 34,
+    "mobile-app": 34,
+    "frontend-design-plugin": 30,
+    "guest-passes": 38,
+    "custom-agents": 37,
+    "permissions": 41,
+    "rename-conversation": 41,
+    "custom-commands": 41,
+    "default-permission-mode-config": 40
   },
-  "promptQueueUseCount": 16,
+  "promptQueueUseCount": 20,
   "cachedStatsigGates": {
     "tengu_log_1p_events": true,
     "code_slack_app_install_banner": false,
@@ -66,7 +67,8 @@
     "tengu_react_vulnerability_warning": true,
     "tengu_ant_attribution_header_new": true,
     "tengu_accept_with_feedback": false,
-    "tengu_tool_result_persistence": false
+    "tengu_tool_result_persistence": false,
+    "doorbell_bottle": "inherit"
   },
   "userID": "44c2dbb4377a405a1229dbb125dd519007f4b8932c4ee930aaf4017c1d616edd",
   "firstStartTime": "2025-12-24T16:42:29.075Z",
@@ -95,7 +97,7 @@
     "51992d80-9ba3-464b-82ca-0009f971357c": {
       "hasAccess": false,
       "hasAccessNotAsDefault": false,
-      "timestamp": 1767112265829
+      "timestamp": 1767213192624
     }
   },
   "lastReleaseNotesSeen": "2.0.76",
@@ -144,37 +146,37 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 1.3186960000000003,
-      "lastAPIDuration": 183154,
-      "lastAPIDurationWithoutRetries": 183139,
-      "lastToolDuration": 3525,
-      "lastDuration": 363480,
-      "lastLinesAdded": 4,
-      "lastLinesRemoved": 4,
-      "lastTotalInputTokens": 12619,
-      "lastTotalOutputTokens": 4789,
-      "lastTotalCacheCreationInputTokens": 116182,
-      "lastTotalCacheReadInputTokens": 934421,
+      "lastCost": 2.448862250000001,
+      "lastAPIDuration": 442057,
+      "lastAPIDurationWithoutRetries": 442032,
+      "lastToolDuration": 1238,
+      "lastDuration": 814925,
+      "lastLinesAdded": 14,
+      "lastLinesRemoved": 11,
+      "lastTotalInputTokens": 16817,
+      "lastTotalOutputTokens": 14330,
+      "lastTotalCacheCreationInputTokens": 103307,
+      "lastTotalCacheReadInputTokens": 2882773,
       "lastTotalWebSearchRequests": 0,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 11498,
-          "outputTokens": 574,
+          "inputTokens": 15452,
+          "outputTokens": 936,
           "cacheReadInputTokens": 0,
           "cacheCreationInputTokens": 0,
           "webSearchRequests": 0,
-          "costUSD": 0.014367999999999999
+          "costUSD": 0.020132000000000008
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 1121,
-          "outputTokens": 4215,
-          "cacheReadInputTokens": 934421,
-          "cacheCreationInputTokens": 116182,
+          "inputTokens": 1365,
+          "outputTokens": 13394,
+          "cacheReadInputTokens": 2882773,
+          "cacheCreationInputTokens": 103307,
           "webSearchRequests": 0,
-          "costUSD": 1.304328
+          "costUSD": 2.428730250000001
         }
       },
-      "lastSessionId": "25396aac-dc52-4e51-8692-aa17736da5f5",
+      "lastSessionId": "6be77f59-97e0-47f1-882f-09bb7d860d7d",
       "disabledMcpServers": []
     }
   },
@@ -189,7 +191,7 @@
         "campaign": "claude_code_guest_pass",
         "referral_link": "https://claude.ai/referral/wHprD939zQ"
       },
-      "timestamp": 1767112264505
+      "timestamp": 1767213188866
     }
   },
   "mcpServers": {
@@ -211,6 +213,11 @@
   "githubRepoPaths": {
     "ai-prompt-ops-kitchen/claude-memory-db": [
       "/home/ndninja/projects/claude-memory-db"
+    ],
+    "ai-prompt-ops-kitchen/llm-council": [
+      "/home/ndninja/projects/llm-council"
     ]
-  }
+  },
+  "lastPlanModeUse": 1767159263704,
+  "hasVisitedPasses": true
 }
