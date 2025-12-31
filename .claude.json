@@ -1,5 +1,5 @@
 {
-  "numStartups": 42,
+  "numStartups": 45,
   "installMethod": "native",
   "autoUpdates": false,
   "tipsHistory": {
@@ -16,13 +16,13 @@
     "todo-list": 42,
     "install-github-app": 42,
     "install-slack-app": 42,
-    "drag-and-drop-images": 32,
-    "double-esc-code-restore": 33,
-    "continue": 33,
-    "shift-tab": 33,
-    "image-paste": 23,
-    "config-thinking-mode": 34,
-    "ultrathink-keyword": 34,
+    "drag-and-drop-images": 42,
+    "double-esc-code-restore": 43,
+    "continue": 43,
+    "shift-tab": 43,
+    "image-paste": 43,
+    "config-thinking-mode": 44,
+    "ultrathink-keyword": 44,
     "btw-side-question": 34,
     "web-app": 34,
     "mobile-app": 34,
@@ -34,7 +34,7 @@
     "custom-commands": 41,
     "default-permission-mode-config": 40
   },
-  "promptQueueUseCount": 20,
+  "promptQueueUseCount": 21,
   "cachedStatsigGates": {
     "tengu_log_1p_events": true,
     "code_slack_app_install_banner": false,
@@ -97,7 +97,7 @@
     "51992d80-9ba3-464b-82ca-0009f971357c": {
       "hasAccess": false,
       "hasAccessNotAsDefault": false,
-      "timestamp": 1767213192624
+      "timestamp": 1767223125464
     }
   },
   "lastReleaseNotesSeen": "2.0.76",
@@ -119,17 +119,6 @@
             "CLAUDE_MEMORY_USER": "claude_mcp",
             "CLAUDE_MEMORY_PASSWORD": "memory123"
           }
-        },
-        "notion": {
-          "type": "stdio",
-          "command": "npx",
-          "args": [
-            "-y",
-            "@notionhq/notion-mcp-server"
-          ],
-          "env": {
-            "NOTION_TOKEN": "ntn_q72064276695v86ktH22AyMliZmcsxBcnSrozs3jkqScqX"
-          }
         }
       },
       "enabledMcpjsonServers": [],
@@ -146,37 +135,37 @@
         "version": null,
         "packageManager": null
       },
-      "lastCost": 2.448862250000001,
-      "lastAPIDuration": 442057,
-      "lastAPIDurationWithoutRetries": 442032,
-      "lastToolDuration": 1238,
-      "lastDuration": 814925,
-      "lastLinesAdded": 14,
-      "lastLinesRemoved": 11,
-      "lastTotalInputTokens": 16817,
-      "lastTotalOutputTokens": 14330,
-      "lastTotalCacheCreationInputTokens": 103307,
-      "lastTotalCacheReadInputTokens": 2882773,
+      "lastCost": 1.730255749999999,
+      "lastAPIDuration": 237712,
+      "lastAPIDurationWithoutRetries": 237696,
+      "lastToolDuration": 12685,
+      "lastDuration": 334675,
+      "lastLinesAdded": 2,
+      "lastLinesRemoved": 2,
+      "lastTotalInputTokens": 16428,
+      "lastTotalOutputTokens": 9339,
+      "lastTotalCacheCreationInputTokens": 98325,
+      "lastTotalCacheReadInputTokens": 1744787,
       "lastTotalWebSearchRequests": 0,
       "lastModelUsage": {
         "claude-haiku-4-5-20251001": {
-          "inputTokens": 15452,
-          "outputTokens": 936,
+          "inputTokens": 13551,
+          "outputTokens": 904,
           "cacheReadInputTokens": 0,
           "cacheCreationInputTokens": 0,
           "webSearchRequests": 0,
-          "costUSD": 0.020132000000000008
+          "costUSD": 0.018071000000000004
         },
         "claude-opus-4-5-20251101": {
-          "inputTokens": 1365,
-          "outputTokens": 13394,
-          "cacheReadInputTokens": 2882773,
-          "cacheCreationInputTokens": 103307,
+          "inputTokens": 2877,
+          "outputTokens": 8435,
+          "cacheReadInputTokens": 1744787,
+          "cacheCreationInputTokens": 98325,
           "webSearchRequests": 0,
-          "costUSD": 2.428730250000001
+          "costUSD": 1.7121847499999996
         }
       },
-      "lastSessionId": "6be77f59-97e0-47f1-882f-09bb7d860d7d",
+      "lastSessionId": "e6f9d185-2002-45e3-8c57-5096f536612d",
       "disabledMcpServers": []
     }
   },
@@ -191,24 +180,12 @@
         "campaign": "claude_code_guest_pass",
         "referral_link": "https://claude.ai/referral/wHprD939zQ"
       },
-      "timestamp": 1767213188866
+      "timestamp": 1767223123591
     }
   },
-  "mcpServers": {
-    "context7": {
-      "type": "stdio",
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp@latest",
-        "--api-key",
-        "ctx7sk-5532464e-723b-496c-b0d1-8baaed8c88c8"
-      ],
-      "env": {}
-    }
-  },
+  "mcpServers": {},
   "feedbackSurveyState": {
-    "lastShownTime": 1767058432210
+    "lastShownTime": 1767218261712
   },
   "githubRepoPaths": {
     "ai-prompt-ops-kitchen/claude-memory-db": [
