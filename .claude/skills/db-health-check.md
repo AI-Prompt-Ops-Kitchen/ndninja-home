@@ -1,11 +1,11 @@
 ---
 name: db-health-check
 description: Run comprehensive health checks on workspace PostgreSQL database
-version: 1.0.2
+version: 1.0.3
 category: database
 tags: [database, analysis, health-check, workspace]
-last_reflection: 2026-01-05 07:21:01
-reflection_count: 2
+last_reflection: 2026-01-05 07:26:08
+reflection_count: 3
 ---
 # Workspace Database Health Check
 
@@ -187,6 +187,13 @@ Include specific SQL commands for fixes where applicable (e.g., "UPDATE items SE
 ---
 
 ## 🧠 Learnings (Auto-Updated)
+
+### 2026-01-05 07:26 - Preference
+**Signal:** "Used .pgpass for secure PostgreSQL connections"
+**What Changed:** Preference for .pgpass authentication over password prompts for PostgreSQL
+**Confidence:** Medium
+**Source:** 2025-12-31-year-end-accomplishments
+**Rationale:** This is a security best practice for database connections that should be included in database health checking procedures
 
 ### 2026-01-05 07:21 - Preference
 **Signal:** "Used .pgpass for secure PostgreSQL connections"
