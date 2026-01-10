@@ -257,39 +257,41 @@ class SignalDetector:
         """
         Filter out signals that have already been processed.
 
+        Uses SESSION-BASED deduplication: if ANY signal from a session has been
+        processed, skip ALL signals from that session. This prevents the infinite
+        loop bug where different text extracts from the same session would bypass
+        text-based deduplication.
+
         Args:
             signals: List of detected signals
             db_conn: Database connection object
 
         Returns:
-            Filtered list of signals (only new/unprocessed ones)
+            Filtered list of signals (only from unprocessed sessions)
         """
         if not signals:
             return []
 
         cursor = db_conn.cursor()
 
-        # Get all processed signal texts from the last 30 days
+        # Get all sessions that have been processed in the last 30 days
+        # Session-based deduplication prevents infinite loops from variable text extracts
         cursor.execute("""
-            SELECT DISTINCT signal_text, source_session
+            SELECT DISTINCT source_session
             FROM skill_reflections
             WHERE applied_at >= NOW() - INTERVAL '30 days'
+              AND source_session IS NOT NULL
         """)
 
-        processed = set()
+        processed_sessions = set()
         for row in cursor.fetchall():
-            signal_text = row[0] if row[0] else ""
-            session_id = row[1] if row[1] else ""
-            # Create fingerprint: normalized text + session
-            fingerprint = f"{signal_text.strip().lower()}:{session_id}"
-            processed.add(fingerprint)
+            if row[0]:
+                processed_sessions.add(row[0])
 
-        # Filter out signals that match already processed ones
+        # Filter out signals from already processed sessions
         filtered_signals = []
         for signal in signals:
-            fingerprint = f"{signal.signal_text.strip().lower()}:{signal.source_session}"
-
-            if fingerprint not in processed:
+            if signal.source_session not in processed_sessions:
                 filtered_signals.append(signal)
 
         return filtered_signals
