@@ -1,13 +1,13 @@
 ---
 name: reflect
 description: Analyze conversations for corrections and update skills with learnings
-version: 1.0.17
+version: 1.0.18
 category: meta
 args: ["[session_id]", "[--skill]", "[--dry-run]", "[--auto-approve]"]
 when_to_use: "User wants to improve skills based on recent corrections, or automatically run after sessions with explicit corrections/preferences. Use when user says 'learn from this', 'remember this correction', or 'update the skill'."
 tags: [reflection, meta-learning, self-improvement, skill-evolution, automation]
-reflection_count: 17
-last_reflection: 2026-01-10 13:41:58
+reflection_count: 18
+last_reflection: 2026-01-10 13:44:40
 ---
 # Reflect: Self-Improving Skills
 
@@ -216,6 +216,13 @@ reflection_count: 3
 ---
 
 ## 🧠 Learnings (Auto-Updated)
+
+### 2026-01-10 13:44 - Correction
+**Signal:** "Fixed critical infinite loop bug in reflection engine where stop hook repeatedly detected same signals. Root cause: NEW_SKILL reflections (signals for already-implemented features) were filtered out but never recorded in database, causing re-detection on every run."
+**What Changed:** Added _record_skipped_reflection() method to record filtered reflections with reviewed_by='auto-skipped' and prevent infinite loops
+**Confidence:** High
+**Source:** reflection-engine-deduplication-fix-2026-01-10
+**Rationale:** This was a critical bug fix that reveals a fundamental requirement for the reflection system - all signals must be recorded even when filtered to prevent infinite loops
 
 ### 2026-01-10 13:41 - Correction
 **Signal:** "Fixed critical infinite loop bug in reflection engine where stop hook repeatedly detected same signals. Root cause: NEW_SKILL reflections (signals for already-implemented features) were filtered out but never recorded in database, causing re-detection on every run."
