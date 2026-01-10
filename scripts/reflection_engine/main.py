@@ -108,11 +108,15 @@ class ReflectionEngine:
             print(f"   ✓ Generated {len(reflections)} reflection(s)")
 
             # Filter out NEW_SKILL placeholders (no actual skill to update)
-            new_skill_count = len([r for r in reflections if r.skill_name == 'NEW_SKILL'])
+            new_skill_reflections = [r for r in reflections if r.skill_name == 'NEW_SKILL']
             reflections = [r for r in reflections if r.skill_name != 'NEW_SKILL']
 
-            if new_skill_count > 0:
-                print(f"   ℹ Skipped {new_skill_count} reflection(s) that don't map to existing skills")
+            if new_skill_reflections:
+                print(f"   ℹ Skipped {len(new_skill_reflections)} reflection(s) that don't map to existing skills")
+                # Record skipped NEW_SKILL reflections to prevent re-detection
+                for reflection in new_skill_reflections:
+                    if not dry_run:
+                        self._record_skipped_reflection(reflection)
 
             # Filter by skill if specified
             if skill_filter:
@@ -266,6 +270,34 @@ class ReflectionEngine:
             self.db_conn.commit()
         except Exception as e:
             print(f"Warning: Could not record in database: {e}")
+
+    def _record_skipped_reflection(self, reflection: Reflection):
+        """Record a skipped reflection (e.g., NEW_SKILL) to prevent re-detection"""
+        if not self.db_conn:
+            return
+
+        try:
+            cursor = self.db_conn.cursor()
+            cursor.execute("""
+                INSERT INTO skill_reflections (
+                    skill_name, source_session, signal_type, signal_text,
+                    confidence, what_changed, file_diff, git_commit, reviewed_by
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                reflection.skill_name,
+                reflection.source_session,
+                reflection.signal_type,
+                reflection.signal_text,
+                reflection.confidence,
+                'SKIPPED: Feature already implemented or not applicable',
+                None,  # No diff for skipped reflections
+                None,  # No commit for skipped reflections
+                'auto-skipped'  # Automatically skipped (NEW_SKILL or similar)
+            ))
+            self.db_conn.commit()
+        except Exception as e:
+            # Silently fail - not critical if we can't record skipped reflections
+            pass
 
 
 def main():
