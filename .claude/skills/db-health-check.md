@@ -1,210 +1,129 @@
 ---
 name: db-health-check
-description: Run comprehensive health checks on workspace PostgreSQL database
-version: 1.0.3
+description: Quick database health check with prioritized recommendations
+version: 2.0.0
 category: database
-tags: [database, analysis, health-check, workspace]
-last_reflection: 2026-01-05 07:26:08
-reflection_count: 3
+args: ["[--detailed]", "[--table=TABLE_NAME]"]
+when_to_use: "User wants to check workspace database health, find issues, or get next action recommendations. Run weekly or before major work sessions."
+tags: [database, health-check, workspace, audhd-friendly]
+last_reflection: 2026-01-11
+reflection_count: 1
 ---
-# Workspace Database Health Check
+# Database Health Check
 
-Run a comprehensive health analysis of the workspace PostgreSQL database to identify growth opportunities, data quality issues, and maintenance needs.
+Quick health analysis of workspace database with prioritized, actionable recommendations.
 
-## Your Task
+**Consolidates:** Former `/db-audit` skill merged here for simplicity.
 
-Execute the following health checks and provide a prioritized report with actionable recommendations:
+## Usage
 
-### 1. Item Counts by Type and Status
-
-Query item distribution across types (task, project, knowledge, toolkit, doc, note) and statuses (pending, in_progress, completed, archived).
-
-```sql
-SELECT
-  type,
-  status,
-  COUNT(*) as count
-FROM items
-WHERE archived = false
-GROUP BY type, status
-ORDER BY type, count DESC;
+```bash
+/db-health-check              # Quick overview (default)
+/db-health-check --detailed   # Full analysis with item-level details
+/db-health-check --table=items  # Deep dive on specific table
 ```
 
-Also get overall totals:
-```sql
-SELECT
-  COUNT(*) as total_items,
-  COUNT(*) FILTER (WHERE archived = true) as archived_count,
-  COUNT(*) FILTER (WHERE archived = false) as active_count
-FROM items;
-```
+## Quick Check (Default)
 
-### 2. Completion Rate Analysis
-
-Calculate completion rates for tasks and projects to understand productivity patterns.
+Run these 3 essential queries to get a health snapshot:
 
 ```sql
-SELECT
-  type,
+-- 1. Overview: counts by type and status
+SELECT type, status, COUNT(*) as count
+FROM items WHERE archived = false
+GROUP BY type, status ORDER BY type, count DESC;
+
+-- 2. Completion rates
+SELECT type,
   COUNT(*) as total,
-  COUNT(*) FILTER (WHERE status = 'completed') as completed,
-  ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'completed') / COUNT(*), 1) as completion_rate_pct
-FROM items
-WHERE type IN ('task', 'project')
-  AND archived = false
+  COUNT(*) FILTER (WHERE status = 'completed') as done,
+  ROUND(100.0 * COUNT(*) FILTER (WHERE status = 'completed') / COUNT(*), 1) as pct
+FROM items WHERE type IN ('task', 'project') AND archived = false
 GROUP BY type;
-```
 
-### 3. Missing/NULL Field Analysis
-
-Identify items with missing critical metadata, especially effectiveness ratings for toolkits.
-
-```sql
--- Toolkits without effectiveness ratings
-SELECT COUNT(*) as unrated_toolkits
-FROM items
-WHERE type = 'toolkit'
-  AND category = 'Prompting'
-  AND archived = false
-  AND (metadata->>'effectiveness_rating') IS NULL;
-
--- Items without titles (data quality issue)
-SELECT COUNT(*) as items_without_titles
-FROM items
-WHERE title IS NULL OR title = '';
-
--- Items without body content
-SELECT type, COUNT(*) as empty_body_count
-FROM items
-WHERE (body IS NULL OR body = '')
-  AND archived = false
-GROUP BY type;
-```
-
-### 4. Cross-Reference (Links) Analysis
-
-Check the knowledge graph connectivity.
-
-```sql
--- Total links
-SELECT COUNT(*) as total_links FROM links;
-
--- Links by type
-SELECT
-  link_type,
-  COUNT(*) as count
-FROM links
-GROUP BY link_type
-ORDER BY count DESC;
-
--- Items without any links (isolated nodes)
-SELECT
-  type,
-  COUNT(*) as isolated_count
-FROM items
-WHERE archived = false
-  AND id NOT IN (SELECT from_id FROM links UNION SELECT to_id FROM links)
-GROUP BY type;
-```
-
-### 5. Parent-Child Relationship Analysis
-
-Check for orphaned items and project structure health.
-
-```sql
--- Items with invalid parent_id references
-SELECT COUNT(*) as orphaned_items
-FROM items i1
-WHERE parent_id IS NOT NULL
-  AND NOT EXISTS (
-    SELECT 1 FROM items i2
-    WHERE i2.id = i1.parent_id
-  );
-
--- Project task distribution
-SELECT
-  p.title as project,
-  COUNT(t.id) as task_count,
-  COUNT(*) FILTER (WHERE t.status = 'completed') as completed_tasks,
-  COUNT(*) FILTER (WHERE t.status = 'in_progress') as active_tasks,
-  COUNT(*) FILTER (WHERE t.status = 'pending') as pending_tasks
-FROM items p
-LEFT JOIN items t ON t.parent_id = p.id AND t.type = 'task'
-WHERE p.type = 'project'
-  AND p.archived = false
-GROUP BY p.id, p.title
-ORDER BY task_count DESC;
-```
-
-### 6. Skill Suggestions Analysis
-
-Check the daily review automation pipeline.
-
-```sql
-SELECT
-  suggestion_type,
-  priority,
-  status,
-  COUNT(*) as count
-FROM skill_suggestions
-GROUP BY suggestion_type, priority, status
-ORDER BY
-  CASE priority WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 END,
-  suggestion_type;
+-- 3. Data quality issues
+SELECT 'Missing body' as issue, COUNT(*) as count FROM items
+WHERE (body IS NULL OR body = '') AND type IN ('task','project') AND archived = false
+UNION ALL
+SELECT 'Missing priority', COUNT(*) FROM items
+WHERE priority IS NULL AND type IN ('task','project') AND status != 'completed' AND archived = false
+UNION ALL
+SELECT 'Orphan tasks', COUNT(*) FROM items
+WHERE type = 'task' AND parent_id IS NULL AND archived = false;
 ```
 
 ## Output Format
 
-Present findings in this structure:
+```
+🏥 Database Health - {date}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Items: X total (Y active)
+Tasks: X% complete | Projects: Y% complete
 
-### 🏥 Database Health Summary
-- Total items: X (Y active, Z archived)
-- Completion rate: X% tasks, Y% projects
-- Links: X total cross-references
-- Latest suggestions: X pending improvements
+⚠️ Issues Found:
+  • Missing body: X items
+  • Missing priority: X items
+  • Orphan tasks: X items
 
-### ⚠️ Data Quality Issues
-(List any issues found with counts)
+🎯 Next Actions:
+  1. [Highest priority fix]
+  2. [Second priority]
+  3. [Third priority]
+```
 
-### 📊 Growth Opportunities
-(Prioritize based on impact)
+## Detailed Mode (--detailed)
 
-### 🎯 Recommended Next Actions
-1. [Highest priority action based on findings]
-2. [Second priority]
-3. [Third priority]
+Add these queries for deeper analysis:
 
-Include specific SQL commands for fixes where applicable (e.g., "UPDATE items SET..." or "Run /rate-toolkits for 33 unrated items").
+```sql
+-- Stale items (no updates in 30+ days)
+SELECT type, status, COUNT(*) as count,
+  MIN(updated_at)::date as oldest
+FROM items
+WHERE updated_at < NOW() - INTERVAL '30 days'
+  AND status IN ('in_progress', 'pending')
+  AND archived = false
+GROUP BY type, status;
+
+-- Links/cross-references health
+SELECT COUNT(*) as total_links FROM links;
+
+-- Blocked items
+SELECT title, created_at::date,
+  EXTRACT(day FROM NOW() - created_at) as days_blocked
+FROM items WHERE status = 'blocked' AND archived = false;
+
+-- Suggestion pipeline
+SELECT status, COUNT(*) FROM skill_suggestions GROUP BY status;
+```
+
+## Table-Specific Mode (--table=X)
+
+Deep dive on single table: items, links, skill_suggestions, tags.
+
+## Priority Levels
+
+| Priority | Criteria | Action |
+|----------|----------|--------|
+| CRITICAL | Blocked items 30+ days, empty critical tables | Fix today |
+| HIGH | Missing descriptions on active items, orphan tasks | Fix this week |
+| MEDIUM | Stale items, missing categories | Fix this month |
+| LOW | Optimization opportunities | When time permits |
 
 ## Implementation Notes
 
-- Use the `mcp__postgres-db__execute_sql` tool for all queries
-- Run queries in parallel where possible for efficiency
-- Focus on actionable insights, not just raw data
-- Prioritize findings by impact (empty critical tables > missing optional metadata)
-- Reference specific item counts and percentages in recommendations
+- Use `mcp__postgres-db__execute_sql` for all queries
+- Run queries in parallel when possible
+- Focus on actionable items, not just data dumps
+- Include specific fix commands in recommendations
 
 ---
 
-## 🧠 Learnings (Auto-Updated)
+## 🧠 Learnings
 
-### 2026-01-05 07:26 - Preference
-**Signal:** "Used .pgpass for secure PostgreSQL connections"
-**What Changed:** Preference for .pgpass authentication over password prompts for PostgreSQL
-**Confidence:** Medium
-**Source:** 2025-12-31-year-end-accomplishments
-**Rationale:** This is a security best practice for database connections that should be included in database health checking procedures
-
-### 2026-01-05 07:21 - Preference
-**Signal:** "Used .pgpass for secure PostgreSQL connections"
-**What Changed:** Use .pgpass file for secure PostgreSQL authentication
-**Confidence:** Medium
-**Source:** 2025-12-31-year-end-accomplishments
-**Rationale:** Security best practice for PostgreSQL connections that complements the sudo approach
-
-### 2026-01-05 07:21 - Preference
-**Signal:** "Used sudo -u postgres psql for database access instead of password authentication"
-**What Changed:** Prefer sudo-based postgres access over password authentication
-**Confidence:** Medium
-**Source:** prompting-techniques-import-2026-01-03
-**Rationale:** This is a security best practice that should be reflected in database-related skills
+### 2026-01-11 - Consolidation
+**Signal:** "db-audit and db-health-check are redundant"
+**What Changed:** Merged db-audit into this skill, simplified to essential queries
+**Confidence:** High
+**Source:** ralph-loop-suggestion-processing-2026-01-11
+**Rationale:** Two overlapping skills caused confusion; one streamlined skill is better
