@@ -20,6 +20,8 @@ from skill_updater import SkillUpdater
 from git_manager import GitManager
 from notifications import NotificationManager
 from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, HOME_DIR
+from evolution.usage import UsageTracker
+from evolution.tracker import EventTracker
 
 
 class ReflectionEngine:
@@ -34,6 +36,8 @@ class ReflectionEngine:
             summary_file=HOME_DIR / '.claude' / 'reflection-summary.md'
         )
         self.db_conn = None
+        self.usage_tracker = None
+        self.event_tracker = None
 
     def connect_db(self):
         """Connect to Claude Memory database"""
@@ -45,6 +49,9 @@ class ReflectionEngine:
                 user=DB_USER,
                 password=DB_PASSWORD
             )
+            # Initialize evolution trackers with shared connection
+            self.usage_tracker = UsageTracker(self.db_conn)
+            self.event_tracker = EventTracker(self.db_conn)
             return True
         except Exception as e:
             print(f"❌ Database connection failed: {e}")
@@ -90,6 +97,9 @@ class ReflectionEngine:
             else:
                 signals = self.detector.detect_from_recent_sessions(days, self.db_conn)
                 print(f"   Analyzing last {days} day(s)")
+
+            # Track skill usage from sessions (runs even if no signals)
+            self._track_session_usage(session_id, days)
 
             if not signals:
                 print("   ✓ No correction signals detected")
@@ -234,6 +244,20 @@ class ReflectionEngine:
             self._record_reflection(reflection, diff, commit_sha)
             print("   ✓ Recorded in database")
 
+            # Record evolution event for timeline
+            if self.event_tracker:
+                self.event_tracker.record_event(
+                    skill_name=reflection.skill_name,
+                    event_type='reflection_applied',
+                    event_data={
+                        'confidence': reflection.confidence,
+                        'signal_type': reflection.signal_type,
+                        'what_changed': reflection.what_changed,
+                        'git_commit': commit_sha
+                    },
+                    session_id=reflection.source_session
+                )
+
             print("\n✅ Update applied successfully!")
             return True
 
@@ -295,9 +319,64 @@ class ReflectionEngine:
                 'auto-skipped'  # Automatically skipped (NEW_SKILL or similar)
             ))
             self.db_conn.commit()
-        except Exception as e:
+        except Exception:
             # Silently fail - not critical if we can't record skipped reflections
             pass
+
+    def _track_session_usage(self, session_id: Optional[str], days: int):
+        """
+        Track skill usage from recent sessions.
+
+        Args:
+            session_id: Specific session to analyze (or None for recent)
+            days: Number of days to look back
+        """
+        if not self.usage_tracker:
+            return
+
+        try:
+            cursor = self.db_conn.cursor()
+
+            if session_id:
+                # Track single session
+                cursor.execute("""
+                    SELECT session_id, summary, topics_discussed
+                    FROM conversation_summaries
+                    WHERE session_id = %s
+                """, (session_id,))
+            else:
+                # Track recent sessions
+                cursor.execute("""
+                    SELECT session_id, summary, topics_discussed
+                    FROM conversation_summaries
+                    WHERE created_at >= NOW() - INTERVAL '%s days'
+                      AND app_source = 'code'
+                """, (days,))
+
+            rows = cursor.fetchall()
+            skills_tracked = 0
+
+            for row in rows:
+                sess_id = row[0]
+                summary = row[1] or ''
+                topics = row[2] or []
+
+                # Combine summary and topics for usage detection
+                text = summary + ' ' + ' '.join(topics)
+
+                # Track usage (won't duplicate due to UNIQUE constraint)
+                skills = self.usage_tracker.record_session_usage(
+                    session_id=sess_id,
+                    transcript=text,
+                    record_events=True
+                )
+                skills_tracked += len(skills)
+
+            if skills_tracked > 0:
+                print(f"   📊 Tracked {skills_tracked} skill usage(s)")
+
+        except Exception as e:
+            print(f"   ⚠️ Could not track usage: {e}")
 
 
 def main():
