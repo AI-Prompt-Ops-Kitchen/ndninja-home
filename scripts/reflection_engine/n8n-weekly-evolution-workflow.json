@@ -1,5 +1,6 @@
 {
   "name": "Weekly Evolution Digest",
+  "active": false,
   "nodes": [
     {
       "parameters": {
