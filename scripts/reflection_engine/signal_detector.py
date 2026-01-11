@@ -1,11 +1,14 @@
 """
 Signal Detector - Finds correction signals in conversation summaries
+
+Enhanced with semantic deduplication to prevent false NEW_SKILL detections.
 """
 
 import re
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 from config import CORRECTION_PATTERNS, PATTERN_MIN_OCCURRENCES
+from semantic_dedup import get_deduplicator, SemanticDeduplicator
 
 
 @dataclass
@@ -22,8 +25,10 @@ class Signal:
 class SignalDetector:
     """Detects correction signals in conversation summaries"""
 
-    def __init__(self):
+    def __init__(self, enable_semantic_dedup: bool = True):
         self.patterns = [re.compile(p, re.IGNORECASE) for p in CORRECTION_PATTERNS]
+        self.enable_semantic_dedup = enable_semantic_dedup
+        self.deduplicator = get_deduplicator() if enable_semantic_dedup else None
 
     def detect_signals(self, conversation_summaries: List[Dict]) -> List[Signal]:
         """
@@ -174,6 +179,54 @@ class SignalDetector:
 
         return list(signal_groups.values())
 
+    def _filter_semantic_duplicates(self, signals: List[Signal], db_conn=None) -> List[Signal]:
+        """
+        Filter out signals that describe already-implemented features.
+
+        Uses semantic deduplication to check:
+        - Existing skills by name/description
+        - Installed plugins
+        - Recent reflections (fingerprint similarity)
+        - Codebase grep for implementations
+
+        Args:
+            signals: List of detected signals
+            db_conn: Optional database connection for reflection fingerprint check
+
+        Returns:
+            Filtered list of signals (excluding already-implemented features)
+        """
+        if not self.deduplicator or not self.enable_semantic_dedup:
+            return signals
+
+        filtered = []
+        skipped_count = 0
+
+        for signal in signals:
+            # Check if this signal describes an already-implemented feature
+            result = self.deduplicator.check_duplicate(
+                signal_text=signal.signal_text,
+                signal_type=signal.signal_type
+            )
+
+            # Also check reflection fingerprint if we have db connection
+            if not result.is_duplicate and db_conn:
+                refl_result = self.deduplicator.check_reflection_fingerprint(
+                    signal_text=signal.signal_text,
+                    db_conn=db_conn
+                )
+                if refl_result and refl_result.is_duplicate:
+                    result = refl_result
+
+            if result.is_duplicate:
+                skipped_count += 1
+                # Could log this for debugging:
+                # print(f"   ⚠️ Skipped duplicate signal: {result.reason}")
+            else:
+                filtered.append(signal)
+
+        return filtered
+
     def detect_from_single_session(self, session_id: str, db_conn) -> List[Signal]:
         """
         Detect signals from a single session by querying the database.
@@ -248,8 +301,11 @@ class SignalDetector:
 
         signals = self.detect_signals(summaries)
 
-        # Filter out already processed signals
+        # Filter out already processed signals (session-based)
         signals = self._filter_processed_signals(signals, db_conn)
+
+        # Filter out signals that describe already-implemented features (semantic)
+        signals = self._filter_semantic_duplicates(signals, db_conn)
 
         return signals
 

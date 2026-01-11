@@ -1,7 +1,7 @@
 ---
 name: verify-official
 description: Verify claims against official sources with domain-first evidence capture
-version: 1.0.1
+version: 1.0.2
 category: verification
 args: ["claim", "[--domains]", "[--save-to-craft]"]
 when_to_use: "User needs to verify a factual claim, especially for content publishing. Prevents hallucination and fabricated citations by requiring official domain validation. Critical before publishing blog posts, articles, or documentation."
@@ -10,8 +10,8 @@ examples:
   - /verify-official "Claude Opus 4.5 was released in November 2025"
   - /verify-official "Diablo 4 Paladin class releases in April 2026" --domains=blizzard.com,diablo4.blizzard.com
   - /verify-official "React 19 supports Server Components" --save-to-craft
-last_reflection: 2026-01-05 09:35:00
-reflection_count: 1
+last_reflection: 2026-01-11
+reflection_count: 0
 ---
 
 # Verify Official Sources
@@ -453,11 +453,14 @@ A successful verification should:
 
 ---
 
-## 🧠 Learnings (Auto-Updated)
+## 🧠 Learnings
 
-### 2026-01-05 09:35 - Preference
-**Signal:** "Used Contributor Covenant v2.1 for Code of Conduct"
-**What Changed:** Specific version preference for Contributor Covenant Code of Conduct
-**Confidence:** Medium
-**Source:** kage-bunshin-week3-implementation-2026-01-04
-**Rationale:** When verifying official standards for project governance, knowing the current preferred Code of Conduct version is valuable for consistency
+_No learnings yet - skill needs real-world usage and feedback._
+
+<!--
+Note: Previous learning about "Contributor Covenant v2.1" was removed as it
+was unrelated to verification workflow. This skill should learn about:
+- Effective search patterns for official sources
+- Domain patterns by company/technology
+- Common verification pitfalls
+-->
