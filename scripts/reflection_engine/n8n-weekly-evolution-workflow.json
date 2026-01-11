@@ -1,0 +1,233 @@
+{
+  "name": "Weekly Evolution Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Weekly Sunday 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /home/ndninja/scripts/reflection_engine && ./weekly-evolution.sh --json"
+      },
+      "id": "run-evolution",
+      "name": "Run Evolution Digest",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const output = $input.first().json.stdout;\ntry {\n  const result = JSON.parse(output);\n  return [{\n    json: {\n      success: result.success,\n      run_at: result.run_at,\n      digest_generated: result.digest?.generated || false,\n      digest_path: result.digest?.file_path || null,\n      attention_needed: result.attention?.needs_attention || false,\n      attention_path: result.attention?.file_path || null,\n      stats: result.summary || {},\n      attention_skills: result.attention_skills || [],\n      errors: result.errors || []\n    }\n  }];\n} catch (e) {\n  return [{ json: { success: false, error: e.message, raw: output } }];\n}"
+      },
+      "id": "parse-result",
+      "name": "Parse JSON Result",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.attention_needed }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-attention",
+      "name": "Skills Need Attention?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "date": "={{ $json.run_at }}",
+            "reflections_7d": "={{ $json.stats.reflections_applied_7d }}",
+            "skills_updated_7d": "={{ $json.stats.skills_updated_7d }}",
+            "attention_needed": "={{ $json.stats.attention_needed }}",
+            "skill_usages_7d": "={{ $json.stats.skill_usages_7d }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "date",
+              "displayName": "date",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "reflections_7d",
+              "displayName": "reflections_7d",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "skills_updated_7d",
+              "displayName": "skills_updated_7d",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "attention_needed",
+              "displayName": "attention_needed",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "skill_usages_7d",
+              "displayName": "skill_usages_7d",
+              "required": false,
+              "defaultMatch": false,
+              "canBeUsedToMatch": true,
+              "display": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-stats",
+      "name": "Log Stats (Optional)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.4,
+      "position": [1120, 200],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "content": "## Weekly Evolution Digest Workflow\n\n**Schedule:** Every Sunday at 9:00 AM\n\n**What it does:**\n1. Runs the weekly evolution digest script\n2. Parses the JSON output\n3. Checks if any skills need attention\n4. Optionally logs stats to Google Sheets\n5. Sends notification if attention is needed\n\n**To activate:**\n1. Enable the workflow\n2. Configure the notification node (Slack, Email, etc.)\n3. Optionally enable and configure Google Sheets logging\n\n**Files generated:**\n- `~/.claude/evolution-digest.md`\n- `~/.claude/evolution-attention.md` (if needed)",
+        "height": 380,
+        "width": 360
+      },
+      "id": "notes",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [60, 120]
+    },
+    {
+      "parameters": {
+        "content": "### Attention Alert\n\nSkills with health score < 60:\n\n{{ $json.attention_skills.map(s => `- **${s.skill}** (${s.score}): ${s.reason}`).join('\\n') }}\n\n---\n\n**Run:** `/evolution-feedback` to review and rate learnings\n**Report:** `/evolution-report --attention`"
+      },
+      "id": "attention-message",
+      "name": "Format Attention Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [1120, 380]
+    }
+  ],
+  "connections": {
+    "Weekly Sunday 9AM": {
+      "main": [
+        [
+          {
+            "node": "Run Evolution Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Evolution Digest": {
+      "main": [
+        [
+          {
+            "node": "Parse JSON Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse JSON Result": {
+      "main": [
+        [
+          {
+            "node": "Skills Need Attention?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skills Need Attention?": {
+      "main": [
+        [
+          {
+            "node": "Log Stats (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format Attention Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "automation"
+    },
+    {
+      "name": "evolution"
+    }
+  ],
+  "pinData": {},
+  "versionId": "1"
+}
