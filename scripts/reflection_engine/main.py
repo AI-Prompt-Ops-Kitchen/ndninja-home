@@ -22,6 +22,7 @@ from notifications import NotificationManager
 from config import DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, HOME_DIR
 from evolution.usage import UsageTracker
 from evolution.tracker import EventTracker
+from evolution.health import HealthCalculator
 
 
 class ReflectionEngine:
@@ -38,6 +39,7 @@ class ReflectionEngine:
         self.db_conn = None
         self.usage_tracker = None
         self.event_tracker = None
+        self.health_calc = None
 
     def connect_db(self):
         """Connect to Claude Memory database"""
@@ -52,6 +54,7 @@ class ReflectionEngine:
             # Initialize evolution trackers with shared connection
             self.usage_tracker = UsageTracker(self.db_conn)
             self.event_tracker = EventTracker(self.db_conn)
+            self.health_calc = HealthCalculator(self.db_conn)
             return True
         except Exception as e:
             print(f"❌ Database connection failed: {e}")
@@ -162,9 +165,19 @@ class ReflectionEngine:
             if dry_run:
                 print("\n⚠️  DRY RUN - No changes were made")
             else:
-                # Create notification summary for next session
-                self.notifications.create_summary(reflections, applied_count)
-                if applied_count > 0:
+                # Get attention skills for notification
+                attention_skills = []
+                if self.health_calc:
+                    try:
+                        attention_skills = self.health_calc.get_attention_needed()
+                    except Exception:
+                        pass  # Non-critical if health check fails
+
+                # Create notification summary with attention alerts
+                self.notifications.create_summary_with_attention(
+                    reflections, applied_count, attention_skills
+                )
+                if applied_count > 0 or attention_skills:
                     print(f"\n💾 Summary saved for next session")
 
             return {
