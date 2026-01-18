@@ -6,6 +6,7 @@ class Config:
 
     # API Keys
     ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+    PERPLEXITY_API_KEY = os.environ.get('PERPLEXITY_API_KEY', '')
 
     # Database Configurations
     WORKSPACE_DB = {
@@ -31,6 +32,12 @@ class Config:
     CLAUDE_MODEL = "claude-sonnet-4-5"
     MAX_TOKENS = 8000
     TEMPERATURE = 0.7
+
+    # Perplexity API Settings
+    PERPLEXITY_MODEL = os.environ.get('PERPLEXITY_MODEL', 'sonar-pro')
+    PERPLEXITY_TIMEOUT = int(os.environ.get('PERPLEXITY_TIMEOUT_MS', '60000')) / 1000
+    PERPLEXITY_MAX_RETRIES = int(os.environ.get('PERPLEXITY_MAX_RETRIES', '3'))
+    PERPLEXITY_ENABLED = bool(PERPLEXITY_API_KEY)
 
     # Paths
     DOCS_OUTPUT_DIR = "/home/ndninja/docs"
