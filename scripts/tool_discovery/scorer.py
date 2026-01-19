@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from typing import List, Dict
+from datetime import datetime
+from typing import List, Dict, Tuple
 
 class ToolScorer:
     """Score tools against conversation topics"""
@@ -62,7 +62,7 @@ class ToolScorer:
 
         return score
 
-    def rank_tools(self, tools: List[Dict], topics: List[str], limit: int = 5) -> List[Dict]:
+    def rank_tools(self, tools: List[Dict], topics: List[str], limit: int = 5) -> List[Tuple[Dict, int]]:
         """
         Rank tools by score and return top N
 

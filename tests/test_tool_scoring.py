@@ -1,4 +1,3 @@
-import pytest
 from scripts.tool_discovery.scorer import ToolScorer
 
 def test_exact_keyword_match():
