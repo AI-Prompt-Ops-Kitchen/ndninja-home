@@ -10,7 +10,12 @@ import json
 import os
 import re
 import time
-from database import ToolDatabase
+
+# Handle both direct execution and package import
+try:
+    from .database import ToolDatabase
+except ImportError:
+    from database import ToolDatabase
 
 
 class RealtimeDiscovery:
@@ -25,9 +30,13 @@ class RealtimeDiscovery:
 
     RATE_LIMIT_MESSAGES = 5
 
-    def __init__(self):
-        """Initialize real-time discovery with state persistence"""
-        self.state_file = f"/tmp/tool-discovery-session-{os.getpid()}.json"
+    def __init__(self, state_file: Optional[str] = None):
+        """Initialize real-time discovery with state persistence
+
+        Args:
+            state_file: Path to state file. If None, uses PID-based temp file.
+        """
+        self.state_file = state_file or f"/tmp/tool-discovery-session-{os.getpid()}.json"
         self.db = ToolDatabase()
         self.db.connect()  # Actually connect to the database
         self._load_state()

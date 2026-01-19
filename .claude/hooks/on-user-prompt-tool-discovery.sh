@@ -23,14 +23,12 @@ sys.path.insert(0, '/home/ndninja/scripts')
 try:
     from tool_discovery.realtime import RealtimeDiscovery
 
-    # Override state file to use fixed path for session persistence
-    # Using claude-session instead of PID for cross-invocation state
-    discovery = RealtimeDiscovery()
-    discovery.state_file = '/tmp/tool-discovery-claude-session.json'
-    discovery._load_state()
+    # Initialize with fixed state file for session persistence
+    discovery = RealtimeDiscovery(state_file='/tmp/tool-discovery-claude-session.json')
 
     # Use suggest_tool which handles rate limiting and state
-    suggestion = discovery.suggest_tool('''$PROMPT''')
+    # Safely get prompt from sys.argv to prevent injection attacks
+    suggestion = discovery.suggest_tool(sys.argv[1]) if len(sys.argv) > 1 else None
 
     if suggestion:
         print(suggestion)
@@ -40,6 +38,11 @@ except Exception as e:
     with open('$LOG_FILE', 'a') as f:
         f.write(f'UserPromptSubmit error: {e}\n')
         f.write(traceback.format_exc())
-" 2>>"$LOG_FILE"
+
+finally:
+    # Ensure database connection is closed to prevent connection leaks
+    if 'discovery' in locals():
+        discovery.close()
+" "$PROMPT" 2>>"$LOG_FILE"
 
 exit 0  # Never block prompt submission
