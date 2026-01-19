@@ -1,4 +1,3 @@
-import pytest
 from scripts.tool_discovery.database import ToolDatabase
 
 def test_database_connection():
@@ -10,7 +9,7 @@ def test_database_connection():
 def test_get_all_tools_empty():
     """Test getting tools when registry is empty"""
     db = ToolDatabase()
-    db.connect()
+    assert db.connect() is True
     tools = db.get_all_tools()
     assert isinstance(tools, list)
     db.close()

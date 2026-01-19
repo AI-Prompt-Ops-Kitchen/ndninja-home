@@ -1,6 +1,6 @@
 import psycopg2
 import json
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 class ToolDatabase:
     """Database interface for tool registry in claude-memory"""
@@ -37,26 +37,27 @@ class ToolDatabase:
 
         try:
             cursor = self.conn.cursor()
-            cursor.execute("""
-                SELECT title, content, notes, updated_at
-                FROM reference_info
-                WHERE category = 'tool' AND active = true
-                ORDER BY updated_at DESC
-            """)
+            try:
+                cursor.execute("""
+                    SELECT title, content, notes, updated_at
+                    FROM reference_info
+                    WHERE category = 'tool' AND active = true
+                    ORDER BY updated_at DESC
+                """)
 
-            tools = []
-            for row in cursor.fetchall():
-                title, content, notes, updated_at = row
-                tool_data = json.loads(content) if isinstance(content, str) else content
-                tools.append({
-                    'key': title,
-                    'data': tool_data,
-                    'notes': notes,
-                    'updated_at': updated_at
-                })
-
-            cursor.close()
-            return tools
+                tools = []
+                for row in cursor.fetchall():
+                    title, content, notes, updated_at = row
+                    tool_data = json.loads(content) if isinstance(content, str) else content
+                    tools.append({
+                        'key': title,
+                        'data': tool_data,
+                        'notes': notes,
+                        'updated_at': updated_at
+                    })
+                return tools
+            finally:
+                cursor.close()
         except Exception as e:
             print(f"Error getting tools: {e}")
             return []
