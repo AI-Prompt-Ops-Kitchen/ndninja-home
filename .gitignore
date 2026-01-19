@@ -41,3 +41,8 @@ projects/
 
 # Temp/junk
 cale ip -4
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
