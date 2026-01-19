@@ -23,6 +23,7 @@ def discovery():
     yield disc
     # Cleanup after test
     disc.reset()
+    disc.close()  # Close database connection to prevent resource leak
 
 
 class TestRealtimeDiscovery:
