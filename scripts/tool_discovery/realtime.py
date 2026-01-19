@@ -5,10 +5,11 @@ Scans user prompts for high-value tool keywords and suggests relevant tools
 with rate limiting to avoid overwhelming the user.
 """
 
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 import json
 import os
 import re
+import time
 from database import ToolDatabase
 
 
@@ -28,6 +29,7 @@ class RealtimeDiscovery:
         """Initialize real-time discovery with state persistence"""
         self.state_file = f"/tmp/tool-discovery-session-{os.getpid()}.json"
         self.db = ToolDatabase()
+        self.db.connect()  # Actually connect to the database
         self._load_state()
 
     def _load_state(self):
@@ -36,6 +38,11 @@ class RealtimeDiscovery:
             try:
                 with open(self.state_file, 'r') as f:
                     self.state = json.load(f)
+
+                    # Validate timestamp - reject stale state (> 24 hours old)
+                    created_at = self.state.get('created_at', 0)
+                    if time.time() - created_at > 86400:  # 24 hours in seconds
+                        self.state = self._init_state()
             except (json.JSONDecodeError, IOError):
                 self.state = self._init_state()
         else:
@@ -46,7 +53,8 @@ class RealtimeDiscovery:
         return {
             'message_count': 0,
             'last_suggestion': None,
-            'suggested_tools': []
+            'suggested_tools': [],
+            'created_at': time.time()  # Timestamp to prevent PID reuse issues
         }
 
     def _save_state(self):
@@ -63,11 +71,17 @@ class RealtimeDiscovery:
             os.remove(self.state_file)
         self._load_state()
 
+    def close(self):
+        """Close database connection"""
+        if self.db:
+            self.db.close()
+
     def check_rate_limit(self) -> bool:
         """
         Returns True if suggestion allowed, False if rate-limited.
 
         Rate limit: 1 suggestion per RATE_LIMIT_MESSAGES messages.
+        Counter resets to 0 after a successful suggestion is shown.
         """
         return self.state['message_count'] < self.RATE_LIMIT_MESSAGES
 
@@ -88,29 +102,56 @@ class RealtimeDiscovery:
         prompt_lower = prompt.lower()
 
         # Check each pattern
-        for pattern, tool_name in self.KEYWORD_PATTERNS.items():
+        for pattern, tool_key in self.KEYWORD_PATTERNS.items():
             if re.search(pattern, prompt_lower):
-                # Found a match - return minimal tool data
-                # In production, this would query the database for full tool info
-                return {
-                    'tool_name': tool_name,
-                    'command': f'/{tool_name}',
-                    'description': self._get_tool_description(tool_name),
-                    'keywords': pattern.split('|')
-                }
+                # Found a match - get tool from database
+                tool_data = self._get_tool_by_key(tool_key)
+                if tool_data:
+                    # Return formatted tool data
+                    return {
+                        'tool_name': tool_key,
+                        'command': f'/{tool_key}',
+                        'description': tool_data.get('data', {}).get('description', 'No description available'),
+                        'keywords': pattern.split('|')
+                    }
+                else:
+                    # Fallback if database lookup fails
+                    return {
+                        'tool_name': tool_key,
+                        'command': f'/{tool_key}',
+                        'description': self._get_fallback_description(tool_key),
+                        'keywords': pattern.split('|')
+                    }
 
         return None
 
-    def _get_tool_description(self, tool_name: str) -> str:
-        """Get tool description from database or return placeholder"""
-        # Map tool names to descriptions
-        # In production, this would query the database
+    def _get_tool_by_key(self, tool_key: str) -> Optional[Dict]:
+        """
+        Get tool from database by key.
+
+        Args:
+            tool_key: The tool's key/identifier (e.g., 'llm-council')
+
+        Returns:
+            Dict with tool data from database, or None if not found
+        """
+        tools = self.db.get_all_tools()
+        for tool in tools:
+            if tool.get('title') == tool_key:  # Database schema uses 'title' as key
+                return tool
+        return None
+
+    def _get_fallback_description(self, tool_key: str) -> str:
+        """
+        Fallback descriptions if database lookup fails.
+        Only used when database is unavailable.
+        """
         descriptions = {
             'llm-council': 'Multi-model consensus analysis',
             'kage-bunshin': 'Distributed AI cluster processing',
             'docker-env-debugger': 'Docker environment debugging'
         }
-        return descriptions.get(tool_name, 'No description available')
+        return descriptions.get(tool_key, 'No description available')
 
     def format_suggestion(self, tool: Dict) -> str:
         """
