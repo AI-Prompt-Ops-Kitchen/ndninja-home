@@ -5,6 +5,7 @@ from .production_checker import ProductionChecker, CheckResult
 from .keyword_detector import KeywordDetector, DetectionResult
 from .todo_updater import TodoUpdater, UpdateResult
 from .action_item_hook import ActionItemHook, HookResult
+from .n8n_monitor import N8nMonitor, FailureType, MonitorResult
 
 __all__ = [
     "AutomationHub",
@@ -16,4 +17,7 @@ __all__ = [
     "UpdateResult",
     "ActionItemHook",
     "HookResult",
+    "N8nMonitor",
+    "FailureType",
+    "MonitorResult",
 ]
