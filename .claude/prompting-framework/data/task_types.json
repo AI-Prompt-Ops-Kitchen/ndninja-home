@@ -1,0 +1,549 @@
+{
+  "task_types": [
+    {
+      "id": "complex-reasoning",
+      "name": "Complex Reasoning",
+      "description": "Tasks requiring multi-faceted analysis, logical deduction, and deep understanding",
+      "category": "Analytical",
+      "complexity_min": 7,
+      "complexity_max": 10,
+      "signals": [
+        "analyze",
+        "explain",
+        "reasoning",
+        "logic",
+        "deduce",
+        "infer",
+        "interpret",
+        "synthesize",
+        "critical thinking"
+      ],
+      "heuristic_keywords": [
+        "why",
+        "how does",
+        "logical connection",
+        "underlying principle",
+        "relationship between",
+        "consequence of",
+        "implication"
+      ],
+      "output_type": "structured_analysis",
+      "hybrid_combo": "complex-reasoning-combo",
+      "fallback_combo": "high-reliability-fallback",
+      "techniques_suited_to": [
+        "tot-basic",
+        "got-basic",
+        "cot-basic",
+        "react-basic"
+      ]
+    },
+    {
+      "id": "multi-step-problem",
+      "name": "Multi-Step Problem",
+      "description": "Tasks requiring sequential steps, planning, and systematic execution",
+      "category": "Procedural",
+      "complexity_min": 5,
+      "complexity_max": 9,
+      "signals": [
+        "steps",
+        "process",
+        "sequential",
+        "procedure",
+        "algorithm",
+        "workflow",
+        "implement",
+        "execute",
+        "stage"
+      ],
+      "heuristic_keywords": [
+        "first",
+        "then",
+        "next",
+        "after that",
+        "finally",
+        "phase",
+        "stage",
+        "in order",
+        "step-by-step"
+      ],
+      "output_type": "step_by_step",
+      "hybrid_combo": "multi-step-problem-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "pas-basic",
+        "sd-basic",
+        "sbt-basic",
+        "ltm-basic"
+      ]
+    },
+    {
+      "id": "factual-accuracy",
+      "name": "Factual Accuracy",
+      "description": "Tasks where correctness of facts and information is critical",
+      "category": "Knowledge",
+      "complexity_min": 3,
+      "complexity_max": 8,
+      "signals": [
+        "fact",
+        "accurate",
+        "true",
+        "verify",
+        "check",
+        "correct",
+        "research",
+        "evidence",
+        "reliable"
+      ],
+      "heuristic_keywords": [
+        "is it true",
+        "evidence for",
+        "according to",
+        "fact check",
+        "verify that",
+        "confirm",
+        "accurate information",
+        "sources"
+      ],
+      "output_type": "verified_information",
+      "hybrid_combo": "factual-accuracy-combo",
+      "fallback_combo": "high-reliability-fallback",
+      "techniques_suited_to": [
+        "fsl-basic",
+        "rag-basic",
+        "sc-basic",
+        "cross-check-basic"
+      ]
+    },
+    {
+      "id": "code-generation",
+      "name": "Code Generation",
+      "description": "Tasks requiring writing, debugging, or analyzing code",
+      "category": "Technical",
+      "complexity_min": 4,
+      "complexity_max": 9,
+      "signals": [
+        "code",
+        "program",
+        "function",
+        "algorithm",
+        "debug",
+        "error",
+        "syntax",
+        "implement",
+        "write"
+      ],
+      "heuristic_keywords": [
+        "write code for",
+        "fix this bug",
+        "implement",
+        "function to",
+        "what's wrong",
+        "error in",
+        "how to code",
+        "syntax error"
+      ],
+      "output_type": "code",
+      "hybrid_combo": "code-generation-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "cot-basic",
+        "fsl-basic",
+        "error-analysis-followup",
+        "json-basic"
+      ]
+    },
+    {
+      "id": "creative-writing",
+      "name": "Creative Writing",
+      "description": "Tasks requiring imaginative, engaging, or emotionally resonant content",
+      "category": "Creative",
+      "complexity_min": 3,
+      "complexity_max": 8,
+      "signals": [
+        "write",
+        "create",
+        "story",
+        "creative",
+        "imagine",
+        "poem",
+        "narrative",
+        "descriptive",
+        "emotional"
+      ],
+      "heuristic_keywords": [
+        "write a story",
+        "tell me about",
+        "imagine",
+        "describe vividly",
+        "make it engaging",
+        "creative take on",
+        "emotional",
+        "compelling"
+      ],
+      "output_type": "narrative",
+      "hybrid_combo": "creative-writing-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "emotion-basic",
+        "pa-basic",
+        "storytelling-basic",
+        "multi-perspective-refinement-followup"
+      ]
+    },
+    {
+      "id": "data-analysis",
+      "name": "Data Analysis",
+      "description": "Tasks involving analysis of data, statistics, trends, and patterns",
+      "category": "Analytical",
+      "complexity_min": 5,
+      "complexity_max": 9,
+      "signals": [
+        "analyze",
+        "data",
+        "trend",
+        "pattern",
+        "statistics",
+        "metric",
+        "insight",
+        "correlation",
+        "distribution"
+      ],
+      "heuristic_keywords": [
+        "what does the data show",
+        "analyze this data",
+        "trends in",
+        "patterns",
+        "compare these metrics",
+        "statistical",
+        "data interpretation"
+      ],
+      "output_type": "analysis",
+      "hybrid_combo": "data-analysis-combo",
+      "fallback_combo": "high-reliability-fallback",
+      "techniques_suited_to": [
+        "tot-basic",
+        "tl-basic",
+        "comparative-refinement-followup",
+        "ensemble-basic"
+      ]
+    },
+    {
+      "id": "summarization",
+      "name": "Summarization",
+      "description": "Tasks requiring condensing information while preserving key points",
+      "category": "Content",
+      "complexity_min": 2,
+      "complexity_max": 7,
+      "signals": [
+        "summarize",
+        "condense",
+        "brief",
+        "tldr",
+        "abstract",
+        "key points",
+        "overview",
+        "executive summary"
+      ],
+      "heuristic_keywords": [
+        "summarize",
+        "in a nutshell",
+        "key takeaways",
+        "main points",
+        "give me the overview",
+        "condense this",
+        "tldr"
+      ],
+      "output_type": "summary",
+      "hybrid_combo": "summarization-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "cot-basic",
+        "bp-basic",
+        "ltm-basic",
+        "progressive-elaboration-followup"
+      ]
+    },
+    {
+      "id": "classification",
+      "name": "Classification",
+      "description": "Tasks requiring categorization, labeling, or assigning items to categories",
+      "category": "Analytical",
+      "complexity_min": 2,
+      "complexity_max": 7,
+      "signals": [
+        "classify",
+        "categorize",
+        "label",
+        "category",
+        "type",
+        "class",
+        "group",
+        "sentiment",
+        "tag"
+      ],
+      "heuristic_keywords": [
+        "what category",
+        "classify this as",
+        "which class",
+        "is this a",
+        "sentiment of",
+        "what type",
+        "label as"
+      ],
+      "output_type": "classification",
+      "hybrid_combo": "classification-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "fsl-basic",
+        "icl-basic",
+        "confidence-based-refinement-followup",
+        "voting-basic"
+      ]
+    },
+    {
+      "id": "translation",
+      "name": "Translation",
+      "description": "Tasks involving language translation or cross-language communication",
+      "category": "Language",
+      "complexity_min": 3,
+      "complexity_max": 8,
+      "signals": [
+        "translate",
+        "language",
+        "english",
+        "spanish",
+        "french",
+        "chinese",
+        "interpret",
+        "conversion"
+      ],
+      "heuristic_keywords": [
+        "translate to",
+        "translate from",
+        "what does this mean in",
+        "how do you say",
+        "convert to",
+        "multilingual",
+        "localize"
+      ],
+      "output_type": "translation",
+      "hybrid_combo": "translation-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "fsl-basic",
+        "format-refinement-followup",
+        "priming-basic",
+        "dsa-basic"
+      ]
+    },
+    {
+      "id": "brainstorming",
+      "name": "Brainstorming",
+      "description": "Tasks requiring generation of ideas, solutions, or alternatives",
+      "category": "Creative",
+      "complexity_min": 3,
+      "complexity_max": 8,
+      "signals": [
+        "ideas",
+        "brainstorm",
+        "suggestions",
+        "alternatives",
+        "options",
+        "possibilities",
+        "generate",
+        "think of"
+      ],
+      "heuristic_keywords": [
+        "give me ideas for",
+        "what are some ways",
+        "brainstorm",
+        "suggest alternatives",
+        "possibilities for",
+        "how could we",
+        "what if"
+      ],
+      "output_type": "list",
+      "hybrid_combo": "brainstorming-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "emotion-basic",
+        "tot-basic",
+        "hyp-gen-basic",
+        "analogical-reasoning-followup"
+      ]
+    },
+    {
+      "id": "system-design",
+      "name": "System Design",
+      "description": "Tasks involving architecture, design, and structural planning",
+      "category": "Technical",
+      "complexity_min": 7,
+      "complexity_max": 10,
+      "signals": [
+        "design",
+        "architecture",
+        "system",
+        "structure",
+        "component",
+        "scalable",
+        "infrastructure",
+        "plan"
+      ],
+      "heuristic_keywords": [
+        "design a system for",
+        "architecture",
+        "how would you build",
+        "system design for",
+        "structure this",
+        "scalability",
+        "components needed"
+      ],
+      "output_type": "design_document",
+      "hybrid_combo": "system-design-combo",
+      "fallback_combo": "high-reliability-fallback",
+      "techniques_suited_to": [
+        "tot-basic",
+        "hierarchical-basic",
+        "modular-basic",
+        "multi-perspective-refinement-followup"
+      ]
+    },
+    {
+      "id": "debugging",
+      "name": "Debugging",
+      "description": "Tasks involving finding and fixing errors or problems",
+      "category": "Technical",
+      "complexity_min": 4,
+      "complexity_max": 9,
+      "signals": [
+        "debug",
+        "error",
+        "bug",
+        "fix",
+        "wrong",
+        "issue",
+        "problem",
+        "troubleshoot"
+      ],
+      "heuristic_keywords": [
+        "why is this failing",
+        "fix this bug",
+        "what's wrong",
+        "debug this",
+        "error in",
+        "not working",
+        "troubleshoot"
+      ],
+      "output_type": "solution",
+      "hybrid_combo": "debugging-combo",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "react-basic",
+        "error-analysis-followup",
+        "cov-basic",
+        "cot-basic"
+      ]
+    },
+    {
+      "id": "unknown",
+      "name": "Unknown/General",
+      "description": "Fallback for tasks that don't match other categories",
+      "category": "General",
+      "complexity_min": 1,
+      "complexity_max": 10,
+      "signals": [
+        "general",
+        "misc",
+        "other",
+        "help",
+        "question"
+      ],
+      "heuristic_keywords": [
+        "help me with",
+        "can you",
+        "please",
+        "what is",
+        "how",
+        "tell me"
+      ],
+      "output_type": "general",
+      "hybrid_combo": "default-fallback",
+      "fallback_combo": "default-fallback",
+      "techniques_suited_to": [
+        "cot-basic",
+        "fsl-basic",
+        "self-refine-followup",
+        "icl-basic"
+      ]
+    }
+  ],
+  "classification_rules": {
+    "keyword_matching": {
+      "weight": 0.3,
+      "method": "Match heuristic_keywords in user input"
+    },
+    "signal_matching": {
+      "weight": 0.3,
+      "method": "Match signals in user input"
+    },
+    "complexity_estimation": {
+      "weight": 0.2,
+      "method": "Estimate task complexity and match to complexity_min/max ranges"
+    },
+    "output_requirements": {
+      "weight": 0.2,
+      "method": "Infer desired output type from context"
+    }
+  },
+  "decision_tree": {
+    "root": {
+      "question": "Is this a technical implementation task?",
+      "yes": {
+        "question": "Does it involve writing code?",
+        "yes": "code-generation",
+        "no": {
+          "question": "Is it about system/architecture design?",
+          "yes": "system-design",
+          "no": "debugging"
+        }
+      },
+      "no": {
+        "question": "Does this require accurate facts/information?",
+        "yes": "factual-accuracy",
+        "no": {
+          "question": "Is this primarily creative or generative?",
+          "yes": {
+            "question": "Is it idea generation?",
+            "yes": "brainstorming",
+            "no": "creative-writing"
+          },
+          "no": {
+            "question": "Does this require systematic analysis?",
+            "yes": {
+              "question": "Is it data-focused?",
+              "yes": "data-analysis",
+              "no": {
+                "question": "Is it reasoning-focused?",
+                "yes": "complex-reasoning",
+                "no": "classification"
+              }
+            },
+            "no": {
+              "question": "Is this a translation or language task?",
+              "yes": "translation",
+              "no": {
+                "question": "Is this multi-step/procedural?",
+                "yes": "multi-step-problem",
+                "no": {
+                  "question": "Is this condensing information?",
+                  "yes": "summarization",
+                  "no": "unknown"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
