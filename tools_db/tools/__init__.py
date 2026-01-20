@@ -3,6 +3,7 @@
 from .automation_hub import AutomationHub
 from .production_checker import ProductionChecker, CheckResult
 from .keyword_detector import KeywordDetector, DetectionResult
+from .todo_updater import TodoUpdater, UpdateResult
 
 __all__ = [
     "AutomationHub",
@@ -10,4 +11,6 @@ __all__ = [
     "CheckResult",
     "KeywordDetector",
     "DetectionResult",
+    "TodoUpdater",
+    "UpdateResult",
 ]
