@@ -7,6 +7,7 @@ from .todo_updater import TodoUpdater, UpdateResult
 from .action_item_hook import ActionItemHook, HookResult
 from .n8n_monitor import N8nMonitor, FailureType, MonitorResult
 from .celery_fallback_router import CeleryFallbackRouter, ExecutionResult, RoutingResult
+from .n8n_reliability_hook import N8nReliabilityHook, RecoveryResult, HookExecutionResult
 
 __all__ = [
     "AutomationHub",
@@ -24,4 +25,7 @@ __all__ = [
     "CeleryFallbackRouter",
     "ExecutionResult",
     "RoutingResult",
+    "N8nReliabilityHook",
+    "RecoveryResult",
+    "HookExecutionResult",
 ]
