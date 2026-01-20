@@ -6,11 +6,10 @@ Version and test prompts to prevent drift and regressions.
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from datetime import datetime
-from dataclasses import dataclass, asdict
+from datetime import datetime, timezone
+from dataclasses import dataclass
 
 
 @dataclass
@@ -61,7 +60,7 @@ class PromptVersionManager:
             "prompt_id": prompt_id,
             "prompt_text": prompt_text,
             "purpose": purpose,
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat(),
             "created_by": created_by,
             "notes": notes,
             "is_active": False,
@@ -147,7 +146,7 @@ class PromptVersionManager:
             "type": test_type,
             "input": input_text,
             "expected_output": expected_output,
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(timezone.utc).isoformat()
         }
 
         tests.append(test_case)
@@ -171,6 +170,9 @@ class PromptVersionManager:
                 return {"error": "No test cases found", "total": 0}
             with open(test_file) as f:
                 test_cases = json.load(f)
+
+        # test_cases is guaranteed non-None at this point
+        assert test_cases is not None
 
         results = []
         passed = 0
@@ -196,7 +198,7 @@ class PromptVersionManager:
             "passed": passed,
             "failed": len(test_cases) - passed,
             "success_rate": (passed / len(test_cases) * 100) if test_cases else 0,
-            "tested_at": datetime.utcnow().isoformat(),
+            "tested_at": datetime.now(timezone.utc).isoformat(),
             "results": [
                 {
                     "test_id": r.test_case_id,

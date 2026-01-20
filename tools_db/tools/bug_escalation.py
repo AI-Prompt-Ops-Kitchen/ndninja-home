@@ -1,5 +1,5 @@
 from typing import Dict, Any, List, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from tools_db.models import BugEscalation as BugEscalationModel
 
@@ -173,7 +173,7 @@ class BugEscalation:
         if self.test_mode:
             if bug_id in self._memory_bugs:
                 self._memory_bugs[bug_id]["status"] = "resolved"
-                self._memory_bugs[bug_id]["resolved_at"] = datetime.utcnow()
+                self._memory_bugs[bug_id]["resolved_at"] = datetime.now(timezone.utc)
                 if "metadata" not in self._memory_bugs[bug_id]:
                     self._memory_bugs[bug_id]["metadata"] = {}
                 self._memory_bugs[bug_id]["metadata"]["resolution"] = resolution
