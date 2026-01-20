@@ -6,6 +6,7 @@ from .keyword_detector import KeywordDetector, DetectionResult
 from .todo_updater import TodoUpdater, UpdateResult
 from .action_item_hook import ActionItemHook, HookResult
 from .n8n_monitor import N8nMonitor, FailureType, MonitorResult
+from .celery_fallback_router import CeleryFallbackRouter, ExecutionResult, RoutingResult
 
 __all__ = [
     "AutomationHub",
@@ -20,4 +21,7 @@ __all__ = [
     "N8nMonitor",
     "FailureType",
     "MonitorResult",
+    "CeleryFallbackRouter",
+    "ExecutionResult",
+    "RoutingResult",
 ]
