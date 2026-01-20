@@ -1,5 +1,8 @@
 import pytest
 from tools_db.database import Database
+from tools_db.tools.automation_hub import AutomationHub
+from tools_db.models import AutomationEvent
+from datetime import datetime, timezone
 import sqlite3
 
 def test_automation_events_table_created():
@@ -57,3 +60,60 @@ def test_automation_events_indexes_created():
 
         for idx in expected_indexes:
             assert idx in indexes, f"Index {idx} not found"
+
+
+def test_automation_hub_store_event():
+    """Test storing AutomationEvent to database"""
+    db = Database("sqlite:///:memory:")
+    hub = AutomationHub(db=db)
+
+    event = AutomationEvent(
+        event_type="production_check",
+        project_id="test-project",
+        status="success",
+        evidence={"checks": 6, "passed": 6},
+        detected_from="skill"
+    )
+
+    stored_id = hub.store_event(event)
+    assert stored_id is not None
+    assert isinstance(stored_id, int)
+
+def test_automation_hub_get_project_status():
+    """Test retrieving project status"""
+    db = Database("sqlite:///:memory:")
+    hub = AutomationHub(db=db)
+
+    event = AutomationEvent(
+        event_type="production_check",
+        project_id="test-project",
+        status="success",
+        evidence={"checks": 6},
+        detected_from="skill"
+    )
+    hub.store_event(event)
+
+    status = hub.get_project_status("test-project")
+    assert status is not None
+    assert status["event_type"] == "production_check"
+    assert status["status"] == "success"
+
+def test_automation_hub_list_events_by_type():
+    """Test listing events by type"""
+    db = Database("sqlite:///:memory:")
+    hub = AutomationHub(db=db)
+
+    # Store multiple events
+    for i in range(3):
+        event = AutomationEvent(
+            event_type="action_item_completed",
+            project_id=f"project-{i}",
+            status="success",
+            evidence={"todo_id": f"item-{i}"},
+            detected_from="hook"
+        )
+        hub.store_event(event)
+
+    events = hub.get_events_by_type("action_item_completed")
+    assert len(events) == 3
+    assert all(e["event_type"] == "action_item_completed" for e in events)
