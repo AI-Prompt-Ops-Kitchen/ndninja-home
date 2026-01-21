@@ -28,44 +28,13 @@ class BaseAgent(ABC):
     def _get_default_capabilities(self) -> List[AgentCapability]:
         """Return default capabilities based on role"""
         role_capabilities = {
-            AgentRole.ARCHITECT: [
-                AgentCapability.DESIGN,
-                AgentCapability.REVIEW,
-                AgentCapability.DOCUMENT
-            ],
-            AgentRole.FRONTEND_DEV: [
-                AgentCapability.DESIGN,
-                AgentCapability.IMPLEMENT,
-                AgentCapability.TEST,
-                AgentCapability.REVIEW
-            ],
-            AgentRole.BACKEND_DEV: [
-                AgentCapability.IMPLEMENT,
-                AgentCapability.TEST,
-                AgentCapability.REVIEW,
-                AgentCapability.OPTIMIZE
-            ],
-            AgentRole.UI_UX_DESIGNER: [
-                AgentCapability.DESIGN,
-                AgentCapability.REVIEW,
-                AgentCapability.DOCUMENT
-            ],
-            AgentRole.DBA: [
-                AgentCapability.DESIGN,
-                AgentCapability.IMPLEMENT,
-                AgentCapability.OPTIMIZE,
-                AgentCapability.AUDIT
-            ],
-            AgentRole.IT_ADMIN: [
-                AgentCapability.DEPLOY,
-                AgentCapability.AUDIT,
-                AgentCapability.OPTIMIZE
-            ],
-            AgentRole.SECURITY_SPECIALIST: [
-                AgentCapability.AUDIT,
-                AgentCapability.REVIEW,
-                AgentCapability.DOCUMENT
-            ]
+            AgentRole.ARCHITECT: [AgentCapability.DESIGN, AgentCapability.REVIEW, AgentCapability.DOCUMENT],
+            AgentRole.FRONTEND_DEV: [AgentCapability.DESIGN, AgentCapability.IMPLEMENT, AgentCapability.TEST, AgentCapability.REVIEW],
+            AgentRole.BACKEND_DEV: [AgentCapability.IMPLEMENT, AgentCapability.TEST, AgentCapability.REVIEW, AgentCapability.OPTIMIZE],
+            AgentRole.UI_UX_DESIGNER: [AgentCapability.DESIGN, AgentCapability.REVIEW, AgentCapability.DOCUMENT],
+            AgentRole.DBA: [AgentCapability.DESIGN, AgentCapability.IMPLEMENT, AgentCapability.OPTIMIZE, AgentCapability.AUDIT],
+            AgentRole.IT_ADMIN: [AgentCapability.DEPLOY, AgentCapability.AUDIT, AgentCapability.OPTIMIZE],
+            AgentRole.SECURITY_SPECIALIST: [AgentCapability.AUDIT, AgentCapability.REVIEW, AgentCapability.DOCUMENT]
         }
         return role_capabilities.get(self.role, [AgentCapability.REVIEW])
 
