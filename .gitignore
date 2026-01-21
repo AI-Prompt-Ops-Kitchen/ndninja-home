@@ -35,10 +35,14 @@ projects/
 
 # Misc files
 *.sql
-*.py
 *.md
 *.json
 !.claude.json
+
+# Project Python files (track source and tests)
+!sage_mode/**/*.py
+!tests/**/*.py
+!scripts/**/*.py
 
 # Temp/junk
 cale ip -4
