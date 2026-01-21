@@ -38,6 +38,7 @@ projects/
 *.md
 *.json
 !.claude.json
+!docs/**/*.md
 
 # Project Python files (track source and tests)
 !sage_mode/**/*.py
