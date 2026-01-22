@@ -1,10 +1,15 @@
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 class UserService:
-    def hash_password(self, password: str) -> str:
-        return pwd_context.hash(password)
+    @staticmethod
+    def hash_password(password: str) -> str:
+        """Hash a password using bcrypt"""
+        # bcrypt automatically handles the 72-byte limit
+        salt = bcrypt.gensalt(rounds=12)
+        hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed.decode('utf-8')
 
-    def verify_password(self, password: str, hashed: str) -> bool:
-        return pwd_context.verify(password, hashed)
+    @staticmethod
+    def verify_password(password: str, hashed: str) -> bool:
+        """Verify a password against a bcrypt hash"""
+        return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
