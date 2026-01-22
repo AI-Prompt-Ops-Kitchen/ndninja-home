@@ -11,6 +11,7 @@ Supports:
 """
 
 from sage_mode.celery_app import celery_app
+from sage_mode.celery_config import TASK_MAX_RETRIES
 from sage_mode.database import SessionLocal
 from sage_mode.models.session_model import ExecutionSession
 from sage_mode.models.task_model import AgentTask
@@ -18,13 +19,10 @@ from sage_mode.tasks.agent_tasks import execute_agent_task
 from celery import chain, group
 from datetime import datetime, timezone
 from typing import List, Dict, Any
-import logging
-
-logger = logging.getLogger(__name__)
 
 
-@celery_app.task
-def wrap_result_in_list(result: Dict) -> List[Dict]:
+@celery_app.task(bind=True, max_retries=TASK_MAX_RETRIES)
+def wrap_result_in_list(self, result: Dict) -> List[Dict]:
     """
     Wrapper task to convert a single result into a list.
 
@@ -40,8 +38,8 @@ def wrap_result_in_list(result: Dict) -> List[Dict]:
     return [result]
 
 
-@celery_app.task
-def start_session_execution(execution_session_id: int, task_specs: List[Dict[str, Any]]) -> Dict[str, Any]:
+@celery_app.task(bind=True, max_retries=TASK_MAX_RETRIES)
+def start_session_execution(self, execution_session_id: int, task_specs: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Start execution of a session with multiple agent tasks.
 
@@ -105,8 +103,8 @@ def start_session_execution(execution_session_id: int, task_specs: List[Dict[str
         db.close()
 
 
-@celery_app.task
-def complete_session(task_results: List[Dict], execution_session_id: int) -> Dict[str, Any]:
+@celery_app.task(bind=True, max_retries=TASK_MAX_RETRIES)
+def complete_session(self, task_results: List[Dict], execution_session_id: int) -> Dict[str, Any]:
     """
     Callback task executed after all agent tasks complete.
 
@@ -143,8 +141,8 @@ def complete_session(task_results: List[Dict], execution_session_id: int) -> Dic
         db.close()
 
 
-@celery_app.task
-def execute_sequential_tasks(execution_session_id: int, task_specs: List[Dict[str, Any]]) -> Dict[str, Any]:
+@celery_app.task(bind=True, max_retries=TASK_MAX_RETRIES)
+def execute_sequential_tasks(self, execution_session_id: int, task_specs: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Execute tasks sequentially using a Celery chain.
 
@@ -192,6 +190,10 @@ def execute_sequential_tasks(execution_session_id: int, task_specs: List[Dict[st
         )
 
         result = workflow.apply_async()
+
+        # Store the chain ID in session
+        session.celery_chain_id = result.id
+        db.commit()
 
         return {
             "session_id": execution_session_id,
