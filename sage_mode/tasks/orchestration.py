@@ -15,12 +15,29 @@ from sage_mode.database import SessionLocal
 from sage_mode.models.session_model import ExecutionSession
 from sage_mode.models.task_model import AgentTask
 from sage_mode.tasks.agent_tasks import execute_agent_task
-from celery import chain, group, chord
+from celery import chain, group
 from datetime import datetime, timezone
 from typing import List, Dict, Any
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+@celery_app.task
+def wrap_result_in_list(result: Dict) -> List[Dict]:
+    """
+    Wrapper task to convert a single result into a list.
+
+    Used in sequential chains where each task passes its result to the next,
+    but complete_session expects a list of results.
+
+    Args:
+        result: Single task result dict
+
+    Returns:
+        List containing the single result
+    """
+    return [result]
 
 
 @celery_app.task
@@ -143,6 +160,13 @@ def execute_sequential_tasks(execution_session_id: int, task_specs: List[Dict[st
     """
     db = SessionLocal()
     try:
+        # Validate session exists
+        session = db.query(ExecutionSession).filter(
+            ExecutionSession.id == execution_session_id
+        ).first()
+        if not session:
+            raise ValueError(f"Session {execution_session_id} not found")
+
         # Create AgentTask records
         task_ids = []
         for spec in task_specs:
@@ -160,8 +184,10 @@ def execute_sequential_tasks(execution_session_id: int, task_specs: List[Dict[st
         db.commit()
 
         # Create chain for sequential execution
+        # Wrap final result in list since complete_session expects List[Dict]
         workflow = chain(
             *[execute_agent_task.s(task_id) for task_id in task_ids],
+            wrap_result_in_list.s(),
             complete_session.s(execution_session_id)
         )
 

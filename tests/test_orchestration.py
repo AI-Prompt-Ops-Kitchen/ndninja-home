@@ -245,10 +245,16 @@ class TestExecuteSequentialTasks:
         """Sequential execution creates tasks and returns correct structure."""
         from sage_mode.tasks.orchestration import execute_sequential_tasks
         from sage_mode.models.task_model import AgentTask
+        from sage_mode.models.session_model import ExecutionSession
+
+        # Create mock session
+        mock_session = MagicMock(spec=ExecutionSession)
+        mock_session.id = 1
 
         # Setup mock database
         mock_db = MagicMock()
         mock_session_local.return_value = mock_db
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_session
 
         # Track added tasks
         added_tasks = []
@@ -294,10 +300,16 @@ class TestExecuteSequentialTasksWithInputData:
     def test_execute_sequential_tasks_with_input_data(self, mock_session_local, mock_chain):
         """Input data is passed to AgentTask records."""
         from sage_mode.tasks.orchestration import execute_sequential_tasks
+        from sage_mode.models.session_model import ExecutionSession
+
+        # Create mock session
+        mock_session = MagicMock(spec=ExecutionSession)
+        mock_session.id = 1
 
         # Setup mock database
         mock_db = MagicMock()
         mock_session_local.return_value = mock_db
+        mock_db.query.return_value.filter.return_value.first.return_value = mock_session
 
         # Track added tasks
         added_tasks = []
@@ -395,3 +407,42 @@ class TestCompleteSessionHandlesNoSession:
         assert result["session_id"] == 999
         assert result["status"] == "completed"
         assert result["task_count"] == 1
+
+
+class TestExecuteSequentialTasksInvalidSession:
+    """Test that execute_sequential_tasks fails for non-existent session."""
+
+    @patch('sage_mode.tasks.orchestration.SessionLocal')
+    def test_execute_sequential_tasks_invalid_session(self, mock_session_local):
+        """Fails with ValueError for non-existent session."""
+        from sage_mode.tasks.orchestration import execute_sequential_tasks
+
+        # Setup mock database to return None (session not found)
+        mock_db = MagicMock()
+        mock_session_local.return_value = mock_db
+        mock_db.query.return_value.filter.return_value.first.return_value = None
+
+        task_specs = [
+            {"agent_role": "frontend_developer", "task_description": "Build UI"},
+        ]
+
+        with pytest.raises(ValueError) as exc_info:
+            execute_sequential_tasks.run(999, task_specs)
+
+        assert "Session 999 not found" in str(exc_info.value)
+
+
+class TestWrapResultInList:
+    """Test that wrap_result_in_list converts single result to list."""
+
+    def test_wrap_result_in_list(self):
+        """Single dict result is wrapped in a list."""
+        from sage_mode.tasks.orchestration import wrap_result_in_list
+
+        single_result = {"task_id": 1, "status": "completed", "result": {"data": "value"}}
+
+        result = wrap_result_in_list.run(single_result)
+
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0] == single_result
