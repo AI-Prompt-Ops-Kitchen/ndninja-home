@@ -1,17 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+"""Dashboard routes with JWT authentication.
+
+Provides aggregated statistics and overview endpoints for teams.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sage_mode.database import get_db
 from sage_mode.models.session_model import ExecutionSession, SessionDecision
-from sage_mode.models.task_model import AgentTask, TaskDecision
+from sage_mode.models.task_model import AgentTask
 from sage_mode.models.team_model import Team, TeamMembership
-from sage_mode.services.session_service import SessionService
+from sage_mode.security import require_auth, AuthenticatedUser
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
-session_service = SessionService()
 
 
 # Response models
@@ -54,17 +58,6 @@ class DashboardOverview(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-def get_current_user_id(request: Request, db: Session = Depends(get_db)) -> int:
-    """Get current user ID from session"""
-    session_id = request.cookies.get("session_id")
-    if not session_id:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    user_id = session_service.get_session(session_id)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    return user_id
-
-
 def user_has_team_access(db: Session, user_id: int, team_id: int) -> bool:
     """Check if user is owner or member of the team"""
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -86,11 +79,11 @@ def user_has_team_access(db: Session, user_id: int, team_id: int) -> bool:
 
 @router.get("", response_model=DashboardOverview)
 def dashboard_overview(
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Dashboard overview with health check and counts"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     # Get teams user has access to (owned + member of)
     owned_team_ids = db.query(Team.id).filter(Team.owner_id == user_id).all()
@@ -135,11 +128,11 @@ def dashboard_overview(
 @router.get("/teams/{team_id}/stats", response_model=TeamStats)
 def get_team_stats(
     team_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Get statistics for a specific team"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     # Check team access
     if not user_has_team_access(db, user_id, team_id):
@@ -189,12 +182,12 @@ def get_team_stats(
 @router.get("/teams/{team_id}/decisions", response_model=List[RecentDecision])
 def get_recent_decisions(
     team_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db),
     limit: int = 20
 ):
     """Get recent decisions for a team"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     # Check team access
     if not user_has_team_access(db, user_id, team_id):
@@ -242,11 +235,11 @@ def get_recent_decisions(
 @router.get("/teams/{team_id}/agents", response_model=List[AgentStatus])
 def get_agent_status(
     team_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Get agent task status summary for a team"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     # Check team access
     if not user_has_team_access(db, user_id, team_id):

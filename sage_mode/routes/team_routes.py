@@ -1,14 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+"""Team routes with JWT authentication.
+
+Provides CRUD operations for teams and team membership.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
 from sage_mode.database import get_db
 from sage_mode.models.user_model import User
 from sage_mode.models.team_model import Team, TeamMembership
-from sage_mode.services.session_service import SessionService
+from sage_mode.security import require_auth, AuthenticatedUser
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/teams", tags=["teams"])
-session_service = SessionService()
 
 
 class TeamRequest(BaseModel):
@@ -35,25 +39,14 @@ class InviteRequest(BaseModel):
     user_id: int
 
 
-def get_current_user_id(request: Request, db: Session = Depends(get_db)) -> int:
-    """Get current user ID from session"""
-    session_id = request.cookies.get("session_id")
-    if not session_id:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    user_id = session_service.get_session(session_id)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    return user_id
-
-
 @router.post("", response_model=TeamResponse)
 def create_team(
     team_data: TeamRequest,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Create a new team"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     team = Team(
         name=team_data.name,
@@ -75,11 +68,11 @@ def create_team(
 
 @router.get("", response_model=List[TeamResponse])
 def list_teams(
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """List all teams user can access (owned + member of)"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     # Get teams owned by user
     owned_teams = db.query(Team).filter(Team.owner_id == user_id).all()
@@ -114,11 +107,11 @@ def list_teams(
 @router.get("/{team_id}", response_model=TeamResponse)
 def get_team(
     team_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Get specific team details"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
@@ -146,11 +139,11 @@ def get_team(
 def update_team(
     team_id: int,
     update_data: TeamUpdateRequest,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Update team (name, description, is_shared) - only owner"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
@@ -182,11 +175,11 @@ def update_team(
 @router.delete("/{team_id}")
 def delete_team(
     team_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Delete team (only owner)"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
@@ -210,11 +203,11 @@ def delete_team(
 def invite_to_team(
     team_id: int,
     invite_data: InviteRequest,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Add user to shared team - only owner can invite"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:

@@ -1,16 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+"""Session routes with JWT authentication.
+
+Provides CRUD operations for execution sessions, decisions, and tasks.
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from sage_mode.database import get_db
 from sage_mode.models.session_model import ExecutionSession, SessionDecision
 from sage_mode.models.task_model import AgentTask
 from sage_mode.models.team_model import Team, TeamMembership
-from sage_mode.services.session_service import SessionService
+from sage_mode.security import require_auth, AuthenticatedUser
 from sqlalchemy.orm import Session
 from datetime import datetime, timezone
 from typing import Optional, List
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
-session_service = SessionService()
 
 
 class SessionRequest(BaseModel):
@@ -60,17 +64,6 @@ class AgentTaskResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-def get_current_user_id(request: Request, db: Session = Depends(get_db)) -> int:
-    """Get current user ID from session"""
-    session_id = request.cookies.get("session_id")
-    if not session_id:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-    user_id = session_service.get_session(session_id)
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Session invalid")
-    return user_id
-
-
 def user_has_team_access(db: Session, user_id: int, team_id: int) -> bool:
     """Check if user is owner or member of the team"""
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -93,11 +86,11 @@ def user_has_team_access(db: Session, user_id: int, team_id: int) -> bool:
 @router.post("", response_model=SessionResponse)
 def start_session(
     session_data: SessionRequest,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Start a new execution session"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     # Validate team access
     if not user_has_team_access(db, user_id, session_data.team_id):
@@ -127,11 +120,11 @@ def start_session(
 
 @router.get("", response_model=List[SessionResponse])
 def list_sessions(
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """List user's execution sessions"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     sessions = db.query(ExecutionSession).filter(
         ExecutionSession.user_id == user_id
@@ -155,11 +148,11 @@ def list_sessions(
 @router.get("/{session_id}", response_model=SessionResponse)
 def get_session(
     session_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Get session details"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     exec_session = db.query(ExecutionSession).filter(
         ExecutionSession.id == session_id
@@ -187,11 +180,11 @@ def get_session(
 @router.put("/{session_id}/complete", response_model=SessionResponse)
 def complete_session(
     session_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Mark session as completed and calculate duration"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     exec_session = db.query(ExecutionSession).filter(
         ExecutionSession.id == session_id
@@ -232,11 +225,11 @@ def complete_session(
 def add_decision(
     session_id: int,
     decision_data: DecisionRequest,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """Add a decision to the session"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     exec_session = db.query(ExecutionSession).filter(
         ExecutionSession.id == session_id
@@ -272,11 +265,11 @@ def add_decision(
 @router.get("/{session_id}/decisions", response_model=List[DecisionResponse])
 def list_decisions(
     session_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """List all decisions for a session"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     exec_session = db.query(ExecutionSession).filter(
         ExecutionSession.id == session_id
@@ -309,11 +302,11 @@ def list_decisions(
 @router.get("/{session_id}/tasks", response_model=List[AgentTaskResponse])
 def list_tasks(
     session_id: int,
-    request: Request,
+    current_user: AuthenticatedUser = Depends(require_auth),
     db: Session = Depends(get_db)
 ):
     """List all agent tasks for a session"""
-    user_id = get_current_user_id(request, db)
+    user_id = current_user.id
 
     exec_session = db.query(ExecutionSession).filter(
         ExecutionSession.id == session_id
