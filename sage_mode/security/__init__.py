@@ -21,7 +21,12 @@ from .dependencies import (
     require_admin,
     require_team_member,
 )
-from .middleware import SecurityHeadersMiddleware
+from .middleware import (
+    SecurityHeadersMiddleware,
+    CorrelationIdMiddleware,
+    RequestLoggingMiddleware,
+    ErrorHandlerMiddleware,
+)
 from .rate_limit import (
     limiter,
     rate_limit_exceeded_handler,
@@ -54,6 +59,9 @@ __all__ = [
     "require_team_member",
     # Middleware
     "SecurityHeadersMiddleware",
+    "CorrelationIdMiddleware",
+    "RequestLoggingMiddleware",
+    "ErrorHandlerMiddleware",
     # Rate Limiting
     "limiter",
     "rate_limit_exceeded_handler",
