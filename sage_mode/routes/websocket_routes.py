@@ -1,14 +1,12 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
-from sage_mode.database import get_db, SessionLocal
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from sage_mode.database import SessionLocal
 from sage_mode.models.session_model import ExecutionSession
-from sage_mode.services.session_service import SessionService
+from sage_mode.security import verify_access_token
 from sqlalchemy.orm import Session
 from typing import Dict, Set, Optional
 import json
-import asyncio
 
 router = APIRouter(tags=["websocket"])
-session_service = SessionService()
 
 
 class ConnectionManager:
@@ -56,10 +54,12 @@ def verify_session_access(token: str, execution_session_id: int, db: Session) ->
     if not token:
         return None
 
-    # Validate the auth token via SessionService
-    user_id = session_service.get_session(token)
-    if not user_id:
+    # Validate the JWT access token
+    payload = verify_access_token(token)
+    if not payload:
         return None
+
+    user_id = int(payload.sub)
 
     # Check if execution session exists and belongs to the user
     exec_session = db.query(ExecutionSession).filter(
