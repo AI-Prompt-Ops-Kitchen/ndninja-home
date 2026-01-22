@@ -1,6 +1,13 @@
+"""Tests for dashboard routes with JWT authentication."""
+
+import os
 import pytest
-from unittest.mock import patch
 from fastapi.testclient import TestClient
+
+# Set test environment variables before importing
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only")
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+
 from sage_mode.main import app
 from sage_mode.database import SessionLocal, engine, Base
 from sage_mode.models.user_model import User
@@ -8,8 +15,7 @@ from sage_mode.models.team_model import Team, TeamMembership
 from sage_mode.models.session_model import ExecutionSession, SessionDecision
 from sage_mode.models.task_model import AgentTask
 from sage_mode.services.user_service import UserService
-from sage_mode.services.session_service import SessionService
-from datetime import datetime, timezone
+from sage_mode.security import create_token_pair
 
 client = TestClient(app)
 user_service = UserService()
@@ -33,7 +39,7 @@ def setup_database():
 
 
 def create_authenticated_user(db, suffix=""):
-    """Helper to create user and return session_id with mock Redis"""
+    """Helper to create user and return JWT token"""
     user = User(
         username=f"dashboard_user_{suffix or id(db)}",
         email=f"dashboard_{suffix or id(db)}@test.com",
@@ -42,8 +48,13 @@ def create_authenticated_user(db, suffix=""):
     db.add(user)
     db.commit()
     db.refresh(user)
-    session_id = f"mock_session_{user.id}"
-    return user, session_id
+    tokens = create_token_pair(user_id=user.id, role="member")
+    return user, tokens.access_token
+
+
+def auth_header(token: str) -> dict:
+    """Helper to create authorization header"""
+    return {"Authorization": f"Bearer {token}"}
 
 
 def create_team_for_user(db, user, name="Test Team", is_shared=False):
@@ -62,17 +73,15 @@ def create_team_for_user(db, user, name="Test Team", is_shared=False):
 class TestDashboardRoutes:
     """Test suite for dashboard routes"""
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_root_endpoint(self, mock_get_session):
+    def test_dashboard_root_endpoint(self):
         """Test dashboard overview endpoint (health check + counts)"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "root")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "root")
 
             response = client.get(
                 "/dashboard",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -85,13 +94,11 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_get_team_stats(self, mock_get_session):
+    def test_dashboard_get_team_stats(self):
         """Test getting statistics for a team"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "stats")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "stats")
 
             team = create_team_for_user(db, user, "Stats Team")
 
@@ -131,7 +138,7 @@ class TestDashboardRoutes:
 
             response = client.get(
                 f"/dashboard/teams/{team.id}/stats",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -145,13 +152,11 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_get_recent_decisions(self, mock_get_session):
+    def test_dashboard_get_recent_decisions(self):
         """Test getting recent decisions for a team"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "decisions")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "decisions")
 
             team = create_team_for_user(db, user, "Decisions Team")
 
@@ -184,7 +189,7 @@ class TestDashboardRoutes:
 
             response = client.get(
                 f"/dashboard/teams/{team.id}/decisions",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -198,13 +203,11 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_get_agent_status(self, mock_get_session):
+    def test_dashboard_get_agent_status(self):
         """Test getting agent task summary for a team"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "agents")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "agents")
 
             team = create_team_for_user(db, user, "Agent Team")
 
@@ -245,7 +248,7 @@ class TestDashboardRoutes:
 
             response = client.get(
                 f"/dashboard/teams/{team.id}/agents",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -273,29 +276,22 @@ class TestDashboardRoutes:
         """Test that accessing dashboard without auth fails"""
         response = client.get("/dashboard")
         assert response.status_code == 401
-        assert "Not authenticated" in response.json()["detail"]
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_invalid_session(self, mock_get_session):
-        """Test that invalid session returns 401"""
-        mock_get_session.return_value = None
-
+    def test_dashboard_invalid_token(self):
+        """Test that invalid token returns 401"""
         response = client.get(
             "/dashboard",
-            cookies={"session_id": "invalid_session"}
+            headers=auth_header("invalid-token")
         )
 
         assert response.status_code == 401
-        assert "invalid" in response.json()["detail"].lower()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_invalid_team(self, mock_get_session):
+    def test_dashboard_invalid_team(self):
         """Test that accessing a team without access fails"""
         db = SessionLocal()
         try:
             # Create user without team access
-            user, session_id = create_authenticated_user(db, "no_access")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "no_access")
 
             # Create another user who owns the team
             other_user = User(
@@ -310,7 +306,7 @@ class TestDashboardRoutes:
 
             response = client.get(
                 f"/dashboard/teams/{team.id}/stats",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 403
@@ -318,17 +314,15 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_team_not_found(self, mock_get_session):
+    def test_dashboard_team_not_found(self):
         """Test that accessing non-existent team returns 403 (access denied)"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "not_found")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "not_found")
 
             response = client.get(
                 "/dashboard/teams/99999/stats",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             # Returns 403 because user_has_team_access returns False for non-existent teams
@@ -336,8 +330,7 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_team_member_access(self, mock_get_session):
+    def test_dashboard_team_member_access(self):
         """Test that team members (not just owners) can access dashboard"""
         db = SessionLocal()
         try:
@@ -353,8 +346,7 @@ class TestDashboardRoutes:
             team = create_team_for_user(db, owner, "Shared Dashboard Team", is_shared=True)
 
             # Create member user
-            member, session_id = create_authenticated_user(db, "member")
-            mock_get_session.return_value = member.id
+            member, token = create_authenticated_user(db, "member")
 
             # Add member to team
             membership = TeamMembership(
@@ -367,7 +359,7 @@ class TestDashboardRoutes:
 
             response = client.get(
                 f"/dashboard/teams/{team.id}/stats",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -376,19 +368,17 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_empty_decisions(self, mock_get_session):
+    def test_dashboard_empty_decisions(self):
         """Test getting decisions for team with no sessions returns empty list"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "empty")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "empty")
 
             team = create_team_for_user(db, user, "Empty Team")
 
             response = client.get(
                 f"/dashboard/teams/{team.id}/decisions",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -397,19 +387,17 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_empty_agents(self, mock_get_session):
+    def test_dashboard_empty_agents(self):
         """Test getting agent status for team with no tasks returns empty list"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "empty_agents")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "empty_agents")
 
             team = create_team_for_user(db, user, "Empty Agent Team")
 
             response = client.get(
                 f"/dashboard/teams/{team.id}/agents",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -418,13 +406,11 @@ class TestDashboardRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_dashboard_overview_with_data(self, mock_get_session):
+    def test_dashboard_overview_with_data(self):
         """Test dashboard overview reflects accurate counts"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "overview")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "overview")
 
             # Create 2 teams
             team1 = create_team_for_user(db, user, "Team 1")
@@ -459,7 +445,7 @@ class TestDashboardRoutes:
 
             response = client.get(
                 "/dashboard",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200

@@ -1,6 +1,14 @@
+"""Tests for execution session routes with JWT authentication."""
+
+import os
 import pytest
-from unittest.mock import patch
 from fastapi.testclient import TestClient
+from datetime import datetime, timedelta, timezone
+
+# Set test environment variables before importing
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only")
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+
 from sage_mode.main import app
 from sage_mode.database import SessionLocal, engine, Base
 from sage_mode.models.user_model import User
@@ -8,8 +16,7 @@ from sage_mode.models.team_model import Team, TeamMembership
 from sage_mode.models.session_model import ExecutionSession, SessionDecision
 from sage_mode.models.task_model import AgentTask
 from sage_mode.services.user_service import UserService
-from sage_mode.services.session_service import SessionService
-from datetime import datetime, timedelta, timezone
+from sage_mode.security import create_token_pair
 
 client = TestClient(app)
 user_service = UserService()
@@ -33,7 +40,7 @@ def setup_database():
 
 
 def create_authenticated_user(db, suffix=""):
-    """Helper to create user and return session_id with mock Redis"""
+    """Helper to create user and return JWT token"""
     user = User(
         username=f"testuser_{suffix or id(db)}",
         email=f"test_{suffix or id(db)}@test.com",
@@ -42,9 +49,13 @@ def create_authenticated_user(db, suffix=""):
     db.add(user)
     db.commit()
     db.refresh(user)
-    # Return user and a mock session_id (will be patched in tests)
-    session_id = f"mock_session_{user.id}"
-    return user, session_id
+    tokens = create_token_pair(user_id=user.id, role="member")
+    return user, tokens.access_token
+
+
+def auth_header(token: str) -> dict:
+    """Helper to create authorization header"""
+    return {"Authorization": f"Bearer {token}"}
 
 
 def create_team_for_user(db, user, name="Test Team", is_shared=False):
@@ -63,20 +74,17 @@ def create_team_for_user(db, user, name="Test Team", is_shared=False):
 class TestSessionRoutes:
     """Test suite for execution session routes"""
 
-    @patch.object(SessionService, 'get_session')
-    def test_start_session(self, mock_get_session):
+    def test_start_session(self):
         """Test starting an execution session"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "start_session")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "start_session")
             team = create_team_for_user(db, user, "Dev Team")
 
             response = client.post(
                 "/sessions",
                 json={"team_id": team.id, "feature_name": "User Authentication"},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -91,14 +99,12 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_start_session_invalid_team(self, mock_get_session):
+    def test_start_session_invalid_team(self):
         """Test that starting a session fails if user can't access team"""
         db = SessionLocal()
         try:
             # Create user without team access
-            user, session_id = create_authenticated_user(db, "no_access")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "no_access")
 
             # Create another user who owns the team
             other_user = User(
@@ -114,7 +120,7 @@ class TestSessionRoutes:
             response = client.post(
                 "/sessions",
                 json={"team_id": team.id, "feature_name": "Some Feature"},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 403
@@ -122,8 +128,7 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_start_session_as_member(self, mock_get_session):
+    def test_start_session_as_member(self):
         """Test that team members (not just owners) can start sessions"""
         db = SessionLocal()
         try:
@@ -139,8 +144,7 @@ class TestSessionRoutes:
             team = create_team_for_user(db, owner, "Shared Team", is_shared=True)
 
             # Create member user
-            member, session_id = create_authenticated_user(db, "member")
-            mock_get_session.return_value = member.id
+            member, token = create_authenticated_user(db, "member")
 
             # Add member to team
             membership = TeamMembership(
@@ -154,7 +158,7 @@ class TestSessionRoutes:
             response = client.post(
                 "/sessions",
                 json={"team_id": team.id, "feature_name": "Member Feature"},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -164,14 +168,11 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_list_sessions(self, mock_get_session):
+    def test_list_sessions(self):
         """Test listing user's execution sessions"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "list_sessions")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "list_sessions")
             team = create_team_for_user(db, user, "Dev Team")
 
             # Create some sessions
@@ -192,7 +193,7 @@ class TestSessionRoutes:
 
             response = client.get(
                 "/sessions",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -204,14 +205,11 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_get_session(self, mock_get_session):
+    def test_get_session(self):
         """Test getting session details"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "get_session")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "get_session")
             team = create_team_for_user(db, user)
 
             exec_session = ExecutionSession(
@@ -226,7 +224,7 @@ class TestSessionRoutes:
 
             response = client.get(
                 f"/sessions/{exec_session.id}",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -237,8 +235,7 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_get_session_not_owner(self, mock_get_session):
+    def test_get_session_not_owner(self):
         """Test that getting another user's session fails"""
         db = SessionLocal()
         try:
@@ -264,26 +261,22 @@ class TestSessionRoutes:
             db.refresh(exec_session)
 
             # Create another user trying to access
-            other_user, session_id = create_authenticated_user(db, "not_owner")
-            mock_get_session.return_value = other_user.id
+            other_user, token = create_authenticated_user(db, "not_owner")
 
             response = client.get(
                 f"/sessions/{exec_session.id}",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 403
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_complete_session(self, mock_get_session):
+    def test_complete_session(self):
         """Test completing a session and verifying duration is calculated"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "complete_session")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "complete_session")
             team = create_team_for_user(db, user)
 
             # Create session with a known start time
@@ -301,7 +294,7 @@ class TestSessionRoutes:
 
             response = client.put(
                 f"/sessions/{exec_session.id}/complete",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -315,14 +308,11 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_add_decision(self, mock_get_session):
+    def test_add_decision(self):
         """Test adding a decision to a session"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "add_decision")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "add_decision")
             team = create_team_for_user(db, user)
 
             exec_session = ExecutionSession(
@@ -342,7 +332,7 @@ class TestSessionRoutes:
                     "category": "architecture",
                     "confidence": "high"
                 },
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -354,14 +344,11 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_list_decisions(self, mock_get_session):
+    def test_list_decisions(self):
         """Test getting all decisions for a session"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "list_decisions")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "list_decisions")
             team = create_team_for_user(db, user)
 
             exec_session = ExecutionSession(
@@ -392,7 +379,7 @@ class TestSessionRoutes:
 
             response = client.get(
                 f"/sessions/{exec_session.id}/decisions",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -404,17 +391,15 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_get_session_not_found(self, mock_get_session):
+    def test_get_session_not_found(self):
         """Test getting a non-existent session returns 404"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "not_found")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "not_found")
 
             response = client.get(
                 "/sessions/99999",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 404
@@ -425,29 +410,21 @@ class TestSessionRoutes:
         """Test that accessing sessions without auth fails"""
         response = client.get("/sessions")
         assert response.status_code == 401
-        assert "Not authenticated" in response.json()["detail"]
 
-    @patch.object(SessionService, 'get_session')
-    def test_invalid_session(self, mock_get_session):
-        """Test that invalid session returns 401"""
-        mock_get_session.return_value = None
-
+    def test_invalid_token(self):
+        """Test that invalid token returns 401"""
         response = client.get(
             "/sessions",
-            cookies={"session_id": "invalid_session"}
+            headers=auth_header("invalid-token")
         )
 
         assert response.status_code == 401
-        assert "invalid" in response.json()["detail"].lower()
 
-    @patch.object(SessionService, 'get_session')
-    def test_list_tasks(self, mock_get_session):
+    def test_list_tasks(self):
         """Test getting all agent tasks for a session"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "list_tasks")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "list_tasks")
             team = create_team_for_user(db, user)
 
             exec_session = ExecutionSession(
@@ -479,7 +456,7 @@ class TestSessionRoutes:
 
             response = client.get(
                 f"/sessions/{exec_session.id}/tasks",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -496,14 +473,11 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_list_tasks_empty(self, mock_get_session):
+    def test_list_tasks_empty(self):
         """Test getting tasks when session has no tasks"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "list_tasks_empty")
-            mock_get_session.return_value = user.id
-
+            user, token = create_authenticated_user(db, "list_tasks_empty")
             team = create_team_for_user(db, user)
 
             exec_session = ExecutionSession(
@@ -518,7 +492,7 @@ class TestSessionRoutes:
 
             response = client.get(
                 f"/sessions/{exec_session.id}/tasks",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -527,8 +501,7 @@ class TestSessionRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_list_tasks_not_owner(self, mock_get_session):
+    def test_list_tasks_not_owner(self):
         """Test that getting another user's session tasks fails"""
         db = SessionLocal()
         try:
@@ -554,29 +527,26 @@ class TestSessionRoutes:
             db.refresh(exec_session)
 
             # Create another user trying to access
-            other_user, session_id = create_authenticated_user(db, "not_task_owner")
-            mock_get_session.return_value = other_user.id
+            other_user, token = create_authenticated_user(db, "not_task_owner")
 
             response = client.get(
                 f"/sessions/{exec_session.id}/tasks",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 403
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_list_tasks_session_not_found(self, mock_get_session):
+    def test_list_tasks_session_not_found(self):
         """Test getting tasks for non-existent session returns 404"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "tasks_not_found")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "tasks_not_found")
 
             response = client.get(
                 "/sessions/99999/tasks",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 404

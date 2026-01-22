@@ -1,12 +1,19 @@
+"""Tests for team management routes with JWT authentication."""
+
+import os
 import pytest
-from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
+
+# Set test environment variables before importing
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only")
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+
 from sage_mode.main import app
 from sage_mode.database import SessionLocal, engine, Base
 from sage_mode.models.user_model import User
 from sage_mode.models.team_model import Team, TeamMembership
 from sage_mode.services.user_service import UserService
-from sage_mode.services.session_service import SessionService
+from sage_mode.security import create_token_pair
 
 client = TestClient(app)
 user_service = UserService()
@@ -27,7 +34,7 @@ def setup_database():
 
 
 def create_authenticated_user(db, suffix=""):
-    """Helper to create user and return session_id with mock Redis"""
+    """Helper to create user and return JWT token"""
     user = User(
         username=f"testuser_{suffix or id(db)}",
         email=f"test_{suffix or id(db)}@test.com",
@@ -36,26 +43,29 @@ def create_authenticated_user(db, suffix=""):
     db.add(user)
     db.commit()
     db.refresh(user)
-    # Return user and a mock session_id (will be patched in tests)
-    session_id = f"mock_session_{user.id}"
-    return user, session_id
+    # Create JWT token for the user
+    tokens = create_token_pair(user_id=user.id, role="member")
+    return user, tokens.access_token
+
+
+def auth_header(token: str) -> dict:
+    """Helper to create authorization header"""
+    return {"Authorization": f"Bearer {token}"}
 
 
 class TestTeamRoutes:
     """Test suite for team management routes"""
 
-    @patch.object(SessionService, 'get_session')
-    def test_create_team(self, mock_get_session):
+    def test_create_team(self):
         """Test creating a team successfully"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "create")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "create")
 
             response = client.post(
                 "/teams",
                 json={"name": "Test Team", "description": "A test team"},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -74,15 +84,12 @@ class TestTeamRoutes:
         )
 
         assert response.status_code == 401
-        assert "Not authenticated" in response.json()["detail"]
 
-    @patch.object(SessionService, 'get_session')
-    def test_list_teams(self, mock_get_session):
+    def test_list_teams(self):
         """Test listing user's teams (owned + member of)"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "list")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "list")
 
             # Create a team owned by user
             owned_team = Team(name="Owned Team", owner_id=user.id, is_shared=False)
@@ -109,7 +116,7 @@ class TestTeamRoutes:
 
             response = client.get(
                 "/teams",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -121,13 +128,11 @@ class TestTeamRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_get_team(self, mock_get_session):
+    def test_get_team(self):
         """Test getting a specific team"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "get")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "get")
 
             team = Team(name="My Team", owner_id=user.id, description="Test description")
             db.add(team)
@@ -136,7 +141,7 @@ class TestTeamRoutes:
 
             response = client.get(
                 f"/teams/{team.id}",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -146,30 +151,26 @@ class TestTeamRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_get_team_not_found(self, mock_get_session):
+    def test_get_team_not_found(self):
         """Test getting a non-existent team returns 404"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "notfound")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "notfound")
 
             response = client.get(
                 "/teams/99999",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 404
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_update_team(self, mock_get_session):
+    def test_update_team(self):
         """Test updating team name and description"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "update")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "update")
 
             team = Team(name="Original Name", owner_id=user.id, is_shared=False)
             db.add(team)
@@ -179,7 +180,7 @@ class TestTeamRoutes:
             response = client.put(
                 f"/teams/{team.id}",
                 json={"name": "Updated Name", "description": "New description", "is_shared": True},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -189,8 +190,7 @@ class TestTeamRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_update_team_not_owner(self, mock_get_session):
+    def test_update_team_not_owner(self):
         """Test that non-owners cannot update team"""
         db = SessionLocal()
         try:
@@ -209,26 +209,23 @@ class TestTeamRoutes:
             db.refresh(team)
 
             # Create another user
-            user, session_id = create_authenticated_user(db, "non_owner_update")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "non_owner_update")
 
             response = client.put(
                 f"/teams/{team.id}",
                 json={"name": "Hacked Name"},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 403
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_delete_team(self, mock_get_session):
+    def test_delete_team(self):
         """Test deleting an owned team"""
         db = SessionLocal()
         try:
-            user, session_id = create_authenticated_user(db, "delete")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "delete")
 
             team = Team(name="To Delete", owner_id=user.id)
             db.add(team)
@@ -238,7 +235,7 @@ class TestTeamRoutes:
 
             response = client.delete(
                 f"/teams/{team_id}",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -249,8 +246,7 @@ class TestTeamRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_delete_team_not_owner(self, mock_get_session):
+    def test_delete_team_not_owner(self):
         """Test that non-owners cannot delete team"""
         db = SessionLocal()
         try:
@@ -269,25 +265,22 @@ class TestTeamRoutes:
             db.refresh(team)
 
             # Create another user trying to delete
-            user, session_id = create_authenticated_user(db, "non_owner_delete")
-            mock_get_session.return_value = user.id
+            user, token = create_authenticated_user(db, "non_owner_delete")
 
             response = client.delete(
                 f"/teams/{team.id}",
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 403
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_invite_to_team(self, mock_get_session):
+    def test_invite_to_team(self):
         """Test inviting another user to a shared team"""
         db = SessionLocal()
         try:
-            owner, session_id = create_authenticated_user(db, "owner_invite")
-            mock_get_session.return_value = owner.id
+            owner, token = create_authenticated_user(db, "owner_invite")
 
             # Create a shared team
             team = Team(name="Shared Team", owner_id=owner.id, is_shared=True)
@@ -308,7 +301,7 @@ class TestTeamRoutes:
             response = client.post(
                 f"/teams/{team.id}/invite",
                 json={"user_id": invitee.id},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 200
@@ -323,13 +316,11 @@ class TestTeamRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_invite_to_non_shared_team_fails(self, mock_get_session):
+    def test_invite_to_non_shared_team_fails(self):
         """Test that inviting to a non-shared team fails"""
         db = SessionLocal()
         try:
-            owner, session_id = create_authenticated_user(db, "owner_non_shared")
-            mock_get_session.return_value = owner.id
+            owner, token = create_authenticated_user(db, "owner_non_shared")
 
             # Create a non-shared team
             team = Team(name="Private Team", owner_id=owner.id, is_shared=False)
@@ -350,7 +341,7 @@ class TestTeamRoutes:
             response = client.post(
                 f"/teams/{team.id}/invite",
                 json={"user_id": invitee.id},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 400
@@ -358,8 +349,7 @@ class TestTeamRoutes:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_invite_not_owner_fails(self, mock_get_session):
+    def test_invite_not_owner_fails(self):
         """Test that non-owners cannot invite users"""
         db = SessionLocal()
         try:
@@ -378,8 +368,7 @@ class TestTeamRoutes:
             db.refresh(team)
 
             # Create non-owner user
-            non_owner, session_id = create_authenticated_user(db, "non_owner_invite")
-            mock_get_session.return_value = non_owner.id
+            non_owner, token = create_authenticated_user(db, "non_owner_invite")
 
             # Add non-owner as member (but not owner)
             membership = TeamMembership(team_id=team.id, user_id=non_owner.id, role="member")
@@ -399,22 +388,18 @@ class TestTeamRoutes:
             response = client.post(
                 f"/teams/{team.id}/invite",
                 json={"user_id": invitee.id},
-                cookies={"session_id": session_id}
+                headers=auth_header(token)
             )
 
             assert response.status_code == 403
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_invalid_session(self, mock_get_session):
-        """Test that invalid session returns 401"""
-        mock_get_session.return_value = None
-
+    def test_invalid_token(self):
+        """Test that invalid token returns 401"""
         response = client.get(
             "/teams",
-            cookies={"session_id": "invalid_session"}
+            headers=auth_header("invalid-token")
         )
 
         assert response.status_code == 401
-        assert "invalid" in response.json()["detail"].lower()

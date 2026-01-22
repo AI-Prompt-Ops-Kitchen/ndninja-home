@@ -1,15 +1,23 @@
+"""Tests for WebSocket routes with JWT authentication."""
+
+import os
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
 from fastapi.websockets import WebSocket
+
+# Set test environment variables before importing
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing-only")
+os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+
 from sage_mode.main import app
 from sage_mode.database import SessionLocal, engine, Base
 from sage_mode.models.user_model import User
 from sage_mode.models.team_model import Team
 from sage_mode.models.session_model import ExecutionSession
 from sage_mode.services.user_service import UserService
-from sage_mode.services.session_service import SessionService
-from sage_mode.routes.websocket_routes import manager, ConnectionManager
+from sage_mode.security import create_token_pair
+from sage_mode.routes.websocket_routes import manager
 
 client = TestClient(app)
 user_service = UserService()
@@ -38,7 +46,7 @@ def reset_manager():
 
 
 def create_test_user_and_session(db):
-    """Helper to create user, team, and execution session"""
+    """Helper to create user, team, execution session, and JWT token"""
     user = User(
         username="testuser_ws",
         email="ws_test@test.com",
@@ -67,23 +75,22 @@ def create_test_user_and_session(db):
     db.commit()
     db.refresh(exec_session)
 
-    return user, team, exec_session
+    tokens = create_token_pair(user_id=user.id, role="member")
+
+    return user, team, exec_session, tokens.access_token
 
 
 class TestWebSocketConnect:
     """Test WebSocket connection functionality"""
 
-    @patch.object(SessionService, 'get_session')
-    def test_websocket_connect(self, mock_get_session):
+    def test_websocket_connect(self):
         """Test connecting to session websocket with valid auth"""
         db = SessionLocal()
         try:
-            user, team, exec_session = create_test_user_and_session(db)
-            mock_get_session.return_value = user.id
-            session_id = f"mock_session_{user.id}"
+            user, team, exec_session, token = create_test_user_and_session(db)
 
             with client.websocket_connect(
-                f"/ws/sessions/{exec_session.id}?token={session_id}"
+                f"/ws/sessions/{exec_session.id}?token={token}"
             ) as websocket:
                 # Connection should be accepted
                 # Send a test message to verify connection
@@ -94,17 +101,14 @@ class TestWebSocketConnect:
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_websocket_disconnect(self, mock_get_session, reset_manager):
+    def test_websocket_disconnect(self, reset_manager):
         """Test graceful disconnect from websocket"""
         db = SessionLocal()
         try:
-            user, team, exec_session = create_test_user_and_session(db)
-            mock_get_session.return_value = user.id
-            session_id = f"mock_session_{user.id}"
+            user, team, exec_session, token = create_test_user_and_session(db)
 
             with client.websocket_connect(
-                f"/ws/sessions/{exec_session.id}?token={session_id}"
+                f"/ws/sessions/{exec_session.id}?token={token}"
             ) as websocket:
                 # Receive connection confirmation
                 websocket.receive_json()
@@ -119,19 +123,17 @@ class TestWebSocketConnect:
         finally:
             db.close()
 
-    def test_websocket_invalid_session(self):
+    def test_websocket_invalid_token(self):
         """Test that invalid auth token rejects connection"""
         db = SessionLocal()
         try:
-            user, team, exec_session = create_test_user_and_session(db)
+            user, team, exec_session, _ = create_test_user_and_session(db)
 
-            # Use patch to simulate invalid session
-            with patch.object(SessionService, 'get_session', return_value=None):
-                with pytest.raises(Exception):  # WebSocket connection should fail
-                    with client.websocket_connect(
-                        f"/ws/sessions/{exec_session.id}?token=invalid_token"
-                    ) as websocket:
-                        websocket.receive_json()  # Should not reach here
+            with pytest.raises(Exception):  # WebSocket connection should fail
+                with client.websocket_connect(
+                    f"/ws/sessions/{exec_session.id}?token=invalid_token"
+                ) as websocket:
+                    websocket.receive_json()  # Should not reach here
 
         finally:
             db.close()
@@ -140,7 +142,7 @@ class TestWebSocketConnect:
         """Test that missing token rejects connection"""
         db = SessionLocal()
         try:
-            user, team, exec_session = create_test_user_and_session(db)
+            user, team, exec_session, _ = create_test_user_and_session(db)
 
             with pytest.raises(Exception):
                 with client.websocket_connect(
@@ -254,8 +256,7 @@ class TestConnectionManager:
 class TestWebSocketSessionAccess:
     """Test session access control for WebSocket"""
 
-    @patch.object(SessionService, 'get_session')
-    def test_websocket_wrong_user_denied(self, mock_get_session):
+    def test_websocket_wrong_user_denied(self):
         """Test that user cannot connect to another user's session"""
         db = SessionLocal()
         try:
@@ -298,31 +299,27 @@ class TestWebSocketSessionAccess:
             db.commit()
             db.refresh(other_user)
 
-            # Mock returns the other user's ID (valid session, but different user)
-            mock_get_session.return_value = other_user.id
-            session_id = f"mock_session_{other_user.id}"
+            # Create token for the other user (valid token, but different user)
+            other_tokens = create_token_pair(user_id=other_user.id, role="member")
 
             with pytest.raises(Exception):  # Should fail access check
                 with client.websocket_connect(
-                    f"/ws/sessions/{exec_session.id}?token={session_id}"
+                    f"/ws/sessions/{exec_session.id}?token={other_tokens.access_token}"
                 ) as websocket:
                     websocket.receive_json()
 
         finally:
             db.close()
 
-    @patch.object(SessionService, 'get_session')
-    def test_websocket_nonexistent_session(self, mock_get_session):
+    def test_websocket_nonexistent_session(self):
         """Test connecting to non-existent execution session"""
         db = SessionLocal()
         try:
-            user, _, _ = create_test_user_and_session(db)
-            mock_get_session.return_value = user.id
-            session_id = f"mock_session_{user.id}"
+            user, _, _, token = create_test_user_and_session(db)
 
             with pytest.raises(Exception):
                 with client.websocket_connect(
-                    f"/ws/sessions/99999?token={session_id}"  # Non-existent
+                    f"/ws/sessions/99999?token={token}"  # Non-existent
                 ) as websocket:
                     websocket.receive_json()
 
