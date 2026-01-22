@@ -7,17 +7,17 @@ services:
       POSTGRES_USER: sage_user
       POSTGRES_PASSWORD: sage_password
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
   redis:
     image: redis:7
     ports:
-      - "6379:6379"
+      - "6381:6379"
   fastapi:
     build: .
     ports:
-      - "8000:8000"
+      - "8003:8000"
     environment:
       DATABASE_URL: postgresql://sage_user:sage_password@postgres:5432/sage_mode
       REDIS_URL: redis://redis:6379
