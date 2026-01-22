@@ -6,6 +6,7 @@ from sage_mode.database import SessionLocal, engine, Base
 from sage_mode.models.user_model import User
 from sage_mode.models.team_model import Team, TeamMembership
 from sage_mode.models.session_model import ExecutionSession, SessionDecision
+from sage_mode.models.task_model import AgentTask
 from sage_mode.services.user_service import UserService
 from sage_mode.services.session_service import SessionService
 from datetime import datetime, timedelta, timezone
@@ -21,6 +22,7 @@ def setup_database():
     yield
     # Cleanup
     db = SessionLocal()
+    db.query(AgentTask).delete()
     db.query(SessionDecision).delete()
     db.query(ExecutionSession).delete()
     db.query(TeamMembership).delete()
@@ -437,3 +439,146 @@ class TestSessionRoutes:
 
         assert response.status_code == 401
         assert "invalid" in response.json()["detail"].lower()
+
+    @patch.object(SessionService, 'get_session')
+    def test_list_tasks(self, mock_get_session):
+        """Test getting all agent tasks for a session"""
+        db = SessionLocal()
+        try:
+            user, session_id = create_authenticated_user(db, "list_tasks")
+            mock_get_session.return_value = user.id
+
+            team = create_team_for_user(db, user)
+
+            exec_session = ExecutionSession(
+                team_id=team.id,
+                user_id=user.id,
+                feature_name="Feature with Tasks",
+                status="active"
+            )
+            db.add(exec_session)
+            db.commit()
+            db.refresh(exec_session)
+
+            # Create some agent tasks
+            task1 = AgentTask(
+                session_id=exec_session.id,
+                agent_role="Architect",
+                task_description="Design system architecture",
+                status="completed",
+                duration_seconds=120
+            )
+            task2 = AgentTask(
+                session_id=exec_session.id,
+                agent_role="Frontend Dev",
+                task_description="Implement UI components",
+                status="running"
+            )
+            db.add_all([task1, task2])
+            db.commit()
+
+            response = client.get(
+                f"/sessions/{exec_session.id}/tasks",
+                cookies={"session_id": session_id}
+            )
+
+            assert response.status_code == 200
+            tasks = response.json()
+            assert len(tasks) == 2
+            agent_roles = [t["agent_role"] for t in tasks]
+            assert "Architect" in agent_roles
+            assert "Frontend Dev" in agent_roles
+            # Check specific task fields
+            architect_task = next(t for t in tasks if t["agent_role"] == "Architect")
+            assert architect_task["task_description"] == "Design system architecture"
+            assert architect_task["status"] == "completed"
+            assert architect_task["duration_seconds"] == 120
+        finally:
+            db.close()
+
+    @patch.object(SessionService, 'get_session')
+    def test_list_tasks_empty(self, mock_get_session):
+        """Test getting tasks when session has no tasks"""
+        db = SessionLocal()
+        try:
+            user, session_id = create_authenticated_user(db, "list_tasks_empty")
+            mock_get_session.return_value = user.id
+
+            team = create_team_for_user(db, user)
+
+            exec_session = ExecutionSession(
+                team_id=team.id,
+                user_id=user.id,
+                feature_name="Feature without Tasks",
+                status="active"
+            )
+            db.add(exec_session)
+            db.commit()
+            db.refresh(exec_session)
+
+            response = client.get(
+                f"/sessions/{exec_session.id}/tasks",
+                cookies={"session_id": session_id}
+            )
+
+            assert response.status_code == 200
+            tasks = response.json()
+            assert len(tasks) == 0
+        finally:
+            db.close()
+
+    @patch.object(SessionService, 'get_session')
+    def test_list_tasks_not_owner(self, mock_get_session):
+        """Test that getting another user's session tasks fails"""
+        db = SessionLocal()
+        try:
+            # Create session owner
+            owner = User(
+                username="task_session_owner",
+                email="task_session_owner@test.com",
+                password_hash=user_service.hash_password("password")
+            )
+            db.add(owner)
+            db.commit()
+
+            team = create_team_for_user(db, owner)
+
+            exec_session = ExecutionSession(
+                team_id=team.id,
+                user_id=owner.id,
+                feature_name="Owner's Feature with Tasks",
+                status="active"
+            )
+            db.add(exec_session)
+            db.commit()
+            db.refresh(exec_session)
+
+            # Create another user trying to access
+            other_user, session_id = create_authenticated_user(db, "not_task_owner")
+            mock_get_session.return_value = other_user.id
+
+            response = client.get(
+                f"/sessions/{exec_session.id}/tasks",
+                cookies={"session_id": session_id}
+            )
+
+            assert response.status_code == 403
+        finally:
+            db.close()
+
+    @patch.object(SessionService, 'get_session')
+    def test_list_tasks_session_not_found(self, mock_get_session):
+        """Test getting tasks for non-existent session returns 404"""
+        db = SessionLocal()
+        try:
+            user, session_id = create_authenticated_user(db, "tasks_not_found")
+            mock_get_session.return_value = user.id
+
+            response = client.get(
+                "/sessions/99999/tasks",
+                cookies={"session_id": session_id}
+            )
+
+            assert response.status_code == 404
+        finally:
+            db.close()
