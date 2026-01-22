@@ -61,3 +61,4 @@ cale ip -4
 __pycache__/
 *.pyc
 *.pyo
+.env
