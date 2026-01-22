@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useSessions, useSessionDetail } from '../hooks/useSessions'
 import { useTeams } from '../hooks/useTeams'
 import { useAuth } from '../hooks/useAuth'
+import { useWebSocket } from '../hooks/useWebSocket'
 import { SessionList, SessionDetail } from '../components/sessions'
 import { StatsCard, StatsGrid } from '../components/dashboard/StatsCard'
 
@@ -22,7 +23,34 @@ export function SessionsPage() {
     tasks,
     loading: detailLoading,
     addDecision,
+    refetch: refetchSessionDetail,
   } = useSessionDetail(selectedSessionId)
+
+  // WebSocket connection for real-time updates
+  const { status: wsStatus, lastMessage } = useWebSocket(selectedSessionId)
+
+  // Handle real-time updates from WebSocket
+  useEffect(() => {
+    if (lastMessage) {
+      const { type } = lastMessage
+
+      // Refetch session detail data on task or decision updates
+      if (
+        type === 'agent_task_completed' ||
+        type === 'agent_task_failed' ||
+        type === 'agent_task_started' ||
+        type === 'decision_added'
+      ) {
+        refetchSessionDetail()
+      }
+
+      // On session completion, also refetch the sessions list
+      if (type === 'session_completed') {
+        refetchSessionDetail()
+        refetch()
+      }
+    }
+  }, [lastMessage, refetchSessionDetail, refetch])
 
   // Filter sessions by status
   const filteredSessions = statusFilter === 'all'
@@ -132,6 +160,7 @@ export function SessionsPage() {
             decisions={decisions}
             tasks={tasks}
             loading={detailLoading}
+            connectionStatus={wsStatus}
             onBack={handleBackToList}
             onAddDecision={handleAddDecision}
             onComplete={handleCompleteCurrentSession}
