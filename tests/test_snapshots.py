@@ -7,8 +7,8 @@ This module tests the snapshot management tasks which enable:
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone
+from unittest.mock import patch, MagicMock
+from datetime import datetime
 
 
 class TestSaveAgentSnapshotSuccess:
