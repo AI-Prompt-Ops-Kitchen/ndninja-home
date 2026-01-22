@@ -13,9 +13,7 @@ from sage_mode.celery_app import celery_app
 from sage_mode.celery_config import TASK_MAX_RETRIES
 from sage_mode.database import SessionLocal
 from sage_mode.models.task_model import AgentTask, AgentSnapshot
-from datetime import datetime, timezone
 from typing import Dict, Any, Optional
-import json
 
 
 @celery_app.task(bind=True, max_retries=TASK_MAX_RETRIES)
