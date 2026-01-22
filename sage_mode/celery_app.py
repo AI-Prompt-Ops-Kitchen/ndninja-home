@@ -1,6 +1,16 @@
-import os
+"""Celery application configuration for Sage Mode.
+
+This module creates and configures the Celery app instance used for
+distributed task processing across the Sage Mode agent framework.
+"""
+
 from celery import Celery
 
-broker_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-celery_app = Celery("sage_mode", broker=broker_url, backend=broker_url)
-celery_app.conf.update(task_serializer="json", accept_content=["json"], result_serializer="json")
+# Create Celery app
+celery_app = Celery("sage_mode")
+
+# Load configuration from celery_config.py
+celery_app.config_from_object("sage_mode.celery_config")
+
+# Auto-discover tasks in sage_mode.tasks package
+celery_app.autodiscover_tasks(["sage_mode.tasks"])
