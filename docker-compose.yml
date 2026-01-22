@@ -1,30 +1,167 @@
-version: '3.8'
+# Docker Compose Configuration for Sage Mode
+# Task 21: Docker Compose Configuration
+# Provides local development environment with hot reload support
+
 services:
+  # PostgreSQL Database Service
   postgres:
     image: postgres:14
+    container_name: sage_mode_postgres
     environment:
       POSTGRES_DB: sage_mode
       POSTGRES_USER: sage_user
       POSTGRES_PASSWORD: sage_password
     ports:
-      - "5434:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sage_user -d sage_mode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sage_network
+    restart: unless-stopped
+
+  # Redis Service for Celery message broker and caching
   redis:
-    image: redis:7
+    image: redis:7-alpine
+    container_name: sage_mode_redis
     ports:
-      - "6381:6379"
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - sage_network
+    restart: unless-stopped
+
+  # FastAPI Backend Service
   fastapi:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sage_mode_fastapi
     ports:
-      - "8003:8000"
+      - "8000:8000"
     environment:
       DATABASE_URL: postgresql://sage_user:sage_password@postgres:5432/sage_mode
-      REDIS_URL: redis://redis:6379
-    depends_on:
-      - postgres
-      - redis
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      PYTHONPATH: /app
+      ENV: development
     volumes:
-      - .:/app
+      # Hot reload: mount source code for development
+      - ./sage_mode:/app/sage_mode:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["uvicorn", "sage_mode.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    networks:
+      - sage_network
+    restart: unless-stopped
+
+  # Celery Worker Service for background agent tasks
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sage_mode_celery_worker
+    environment:
+      DATABASE_URL: postgresql://sage_user:sage_password@postgres:5432/sage_mode
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      PYTHONPATH: /app
+      ENV: development
+    volumes:
+      # Hot reload: mount source code for development
+      - ./sage_mode:/app/sage_mode:ro
+      - ./requirements.txt:/app/requirements.txt:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "sage_mode.celery_app", "worker", "-l", "info", "-c", "4"]
+    networks:
+      - sage_network
+    restart: unless-stopped
+
+  # Celery Beat Scheduler (for periodic tasks)
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sage_mode_celery_beat
+    environment:
+      DATABASE_URL: postgresql://sage_user:sage_password@postgres:5432/sage_mode
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      PYTHONPATH: /app
+      ENV: development
+    volumes:
+      - ./sage_mode:/app/sage_mode:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "sage_mode.celery_app", "beat", "-l", "info"]
+    networks:
+      - sage_network
+    restart: unless-stopped
+
+  # React Frontend Service (development mode with hot reload)
+  react:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: sage_mode_react
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      VITE_API_URL: http://localhost:8000
+    volumes:
+      # Hot reload: mount source code for development
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - ./frontend/tsconfig.app.json:/app/tsconfig.app.json
+      # Exclude node_modules from mount (use container's node_modules)
+      - /app/node_modules
+    depends_on:
+      - fastapi
+    networks:
+      - sage_network
+    restart: unless-stopped
+
+# Named volumes for data persistence
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Network configuration
+networks:
+  sage_network:
+    driver: bridge
