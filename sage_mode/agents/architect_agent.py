@@ -1,13 +1,16 @@
 from sage_mode.agents.base_agent import BaseAgent
 from sage_mode.models.team_simulator import AgentRole
-from typing import Dict, Any, List
+from sage_mode.llm import LLMClient
+from typing import Dict, Any, List, Optional
+
 
 class ArchitectAgent(BaseAgent):
-    def __init__(self):
+    def __init__(self, llm_client: Optional[LLMClient] = None):
         super().__init__(
             role=AgentRole.ARCHITECT,
             name="Software Architect",
-            description="Leads system design, coordinates team members, ensures architectural consistency"
+            description="Leads system design, coordinates team members, ensures architectural consistency",
+            llm_client=llm_client,
         )
         self._is_team_lead = True
 
