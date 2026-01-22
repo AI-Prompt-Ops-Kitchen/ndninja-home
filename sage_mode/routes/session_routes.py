@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
 from sage_mode.database import get_db
 from sage_mode.models.session_model import ExecutionSession, SessionDecision
+from sage_mode.models.task_model import AgentTask
 from sage_mode.models.team_model import Team, TeamMembership
 from sage_mode.services.session_service import SessionService
 from sqlalchemy.orm import Session
@@ -41,6 +42,20 @@ class DecisionResponse(BaseModel):
     decision_text: str
     category: Optional[str] = None
     confidence: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class AgentTaskResponse(BaseModel):
+    id: int
+    session_id: int
+    agent_role: str
+    task_description: str
+    status: str
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_seconds: Optional[int] = None
+    error_message: Optional[str] = None
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
@@ -288,4 +303,45 @@ def list_decisions(
             created_at=d.created_at
         )
         for d in decisions
+    ]
+
+
+@router.get("/{session_id}/tasks", response_model=List[AgentTaskResponse])
+def list_tasks(
+    session_id: int,
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """List all agent tasks for a session"""
+    user_id = get_current_user_id(request, db)
+
+    exec_session = db.query(ExecutionSession).filter(
+        ExecutionSession.id == session_id
+    ).first()
+
+    if not exec_session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    # Only session owner can view tasks
+    if exec_session.user_id != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    tasks = db.query(AgentTask).filter(
+        AgentTask.session_id == session_id
+    ).order_by(AgentTask.created_at.asc()).all()
+
+    return [
+        AgentTaskResponse(
+            id=t.id,
+            session_id=t.session_id,
+            agent_role=t.agent_role,
+            task_description=t.task_description,
+            status=t.status,
+            started_at=t.started_at,
+            completed_at=t.completed_at,
+            duration_seconds=t.duration_seconds,
+            error_message=t.error_message,
+            created_at=t.created_at
+        )
+        for t in tasks
     ]

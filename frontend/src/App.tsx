@@ -4,6 +4,7 @@ import { useAuth } from './hooks/useAuth'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
 import { TeamsPage } from './pages/TeamsPage'
+import { SessionsPage } from './pages/SessionsPage'
 import type { ReactNode } from 'react'
 
 // Protected route component that redirects to login if not authenticated
@@ -49,16 +50,7 @@ function Dashboard() {
 }
 
 // TeamsPage is now imported from ./pages/TeamsPage
-
-// Sessions placeholder
-function SessionsPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900">Sessions</h1>
-      <p className="text-gray-600 mt-2">Session management coming soon.</p>
-    </div>
-  )
-}
+// SessionsPage is now imported from ./pages/SessionsPage
 
 function AppRoutes() {
   return (
