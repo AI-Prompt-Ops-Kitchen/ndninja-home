@@ -33,4 +33,7 @@ task_routes = {
 
 # Retry settings
 task_default_retry_delay = 30  # 30 seconds
-task_max_retries = 3
+
+# Custom constant for use in task definitions (e.g., @celery_app.task(max_retries=TASK_MAX_RETRIES))
+# Note: This is NOT a Celery config option; Celery uses max_retries at the task decorator level
+TASK_MAX_RETRIES = 3

@@ -159,7 +159,7 @@ class TestCeleryRetrySettings:
         assert celery_config.task_default_retry_delay == 30
 
     def test_max_retries(self):
-        """Verify max retries is 3."""
+        """Verify TASK_MAX_RETRIES constant is 3."""
         from sage_mode import celery_config
 
-        assert celery_config.task_max_retries == 3
+        assert celery_config.TASK_MAX_RETRIES == 3
