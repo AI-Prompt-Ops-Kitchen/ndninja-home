@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Session, SessionDecision, AgentTask } from '../../hooks/useSessions'
+import type { ConnectionStatus } from '../../hooks/useWebSocket'
 
 interface SessionDetailProps {
   session: Session | null
@@ -10,6 +11,10 @@ interface SessionDetailProps {
   onAddDecision?: (text: string, category?: string, confidence?: string) => void
   onComplete?: () => void
   onBack?: () => void
+  /** WebSocket connection status for real-time updates */
+  connectionStatus?: ConnectionStatus
+  /** Callback when a task should be updated from WebSocket message */
+  onTaskUpdate?: (taskId: number, status: string) => void
 }
 
 function formatDuration(seconds: number | null): string {
@@ -45,6 +50,51 @@ function formatTaskDuration(seconds: number | null): string {
   return `${hours}h ${remainingMinutes}m`
 }
 
+/**
+ * Connection status indicator component
+ */
+function ConnectionStatusIndicator({ status }: { status: ConnectionStatus }) {
+  const statusConfig: Record<ConnectionStatus, { label: string; dotClass: string; textClass: string }> = {
+    connected: {
+      label: 'Connected',
+      dotClass: 'bg-green-500',
+      textClass: 'text-green-700',
+    },
+    connecting: {
+      label: 'Connecting',
+      dotClass: 'bg-yellow-500 animate-pulse',
+      textClass: 'text-yellow-700',
+    },
+    disconnected: {
+      label: 'Disconnected',
+      dotClass: 'bg-gray-400',
+      textClass: 'text-gray-600',
+    },
+    reconnecting: {
+      label: 'Reconnecting',
+      dotClass: 'bg-yellow-500 animate-pulse',
+      textClass: 'text-yellow-700',
+    },
+    error: {
+      label: 'Error',
+      dotClass: 'bg-red-500',
+      textClass: 'text-red-700',
+    },
+  }
+
+  const config = statusConfig[status]
+
+  return (
+    <div
+      data-testid="connection-status"
+      className="flex items-center gap-2 text-sm"
+    >
+      <span className={`w-2 h-2 rounded-full ${config.dotClass}`} />
+      <span className={config.textClass}>{config.label}</span>
+    </div>
+  )
+}
+
 export function SessionDetail({
   session,
   decisions,
@@ -54,7 +104,11 @@ export function SessionDetail({
   onAddDecision,
   onComplete,
   onBack,
+  connectionStatus,
+  onTaskUpdate: _onTaskUpdate,
 }: SessionDetailProps) {
+  // Note: onTaskUpdate is available for parent components to pass, but task updates
+  // are typically handled by the parent via the useWebSocket hook's lastMessage
   const [decisionText, setDecisionText] = useState('')
   const [category, setCategory] = useState('')
   const [confidence, setConfidence] = useState('high')
@@ -121,6 +175,10 @@ export function SessionDetail({
               <span className={`inline-block text-sm px-3 py-1 rounded ${statusClass}`}>
                 {session.status}
               </span>
+              {/* Show connection status for active sessions */}
+              {isActive && connectionStatus && (
+                <ConnectionStatusIndicator status={connectionStatus} />
+              )}
             </div>
           </div>
           {isActive && onComplete && (
