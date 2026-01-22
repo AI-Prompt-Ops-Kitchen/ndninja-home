@@ -3,6 +3,7 @@ import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
+import { TeamsPage } from './pages/TeamsPage'
 import type { ReactNode } from 'react'
 
 // Protected route component that redirects to login if not authenticated
@@ -47,15 +48,7 @@ function Dashboard() {
   )
 }
 
-// Teams placeholder
-function TeamsPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold text-gray-900">Teams</h1>
-      <p className="text-gray-600 mt-2">Team management coming soon.</p>
-    </div>
-  )
-}
+// TeamsPage is now imported from ./pages/TeamsPage
 
 // Sessions placeholder
 function SessionsPage() {
