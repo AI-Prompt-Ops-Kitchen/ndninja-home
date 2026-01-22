@@ -39,6 +39,15 @@ projects/
 *.json
 !.claude.json
 !docs/**/*.md
+!frontend/*.json
+!frontend/*.md
+!frontend/**/*.json
+!frontend/**/*.ts
+!frontend/**/*.tsx
+!frontend/**/*.css
+!frontend/**/*.html
+!frontend/**/*.svg
+!frontend/**/*.js
 
 # Project Python files (track source and tests)
 !sage_mode/**/*.py
