@@ -1,161 +1,142 @@
-# WSL2 + CUDA Inference Server Design
+# Vengeance LLM Inference Server
 
 **Date**: 2026-01-22
-**Status**: Approved
+**Updated**: 2026-01-23
+**Status**: ✅ Completed
 **Target**: Vengeance (RTX 4090)
 
 ## Overview
 
-Set up Vengeance as a standalone LLM inference server using WSL2 with CUDA, accessible from the Kage Bunshin cluster via Tailscale.
+Set up Vengeance as a standalone LLM inference server accessible from the Kage Bunshin cluster via Tailscale.
 
-**Why WSL2:**
-- No OS replacement needed (keep Windows)
-- Full CUDA support via NVIDIA WSL driver
-- Near-native GPU performance
+**Final Solution**: Ollama on native Windows (not WSL2 + vLLM)
 
-**Why vLLM (not EXO):**
-- Better standalone server support
-- OpenAI-compatible API out of the box
-- No cluster discovery complexity
-- More mature production deployment
+## What We Learned
 
-## Architecture
+### WSL2 + vLLM Approach (Attempted)
+
+**What worked:**
+- WSL2 with CUDA detected RTX 4090 correctly (`nvidia-smi` worked)
+- Docker + NVIDIA Container Toolkit installed successfully
+- vLLM ran small models (Qwen2.5-7B) without issues
+- Port forwarding from Windows to WSL2 worked
+
+**What failed:**
+- Larger models (32B/72B) crashed with "Engine core initialization failed"
+- CUDA graph compilation issues in WSL2 environment
+- Even with `--enforce-eager` flag, containers were unstable
+- Docker log buffering in WSL2 made debugging difficult
+
+**Root cause:** vLLM's CUDA graph optimization doesn't work reliably in WSL2 for large models.
+
+### Ollama on Native Windows (Success)
+
+Ollama running directly on Windows works perfectly with all model sizes:
+- No WSL2 layer = no CUDA graph issues
+- Native Windows CUDA driver = full performance
+- Auto-starts as Windows service
+- Already had models pre-installed
+
+## Architecture (Final)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     VENGEANCE (Windows 11)                   │
+│                                                              │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │                    WSL2 (Ubuntu 22.04)               │    │
-│  │  ┌─────────────┐    ┌─────────────┐                 │    │
-│  │  │   vLLM      │───▶│  CUDA 12.x  │                 │    │
-│  │  │  Server     │    │  Libraries  │                 │    │
-│  │  │  :8000      │    └──────┬──────┘                 │    │
-│  │  └──────┬──────┘           │                        │    │
-│  └─────────┼──────────────────┼────────────────────────┘    │
-│            │                  ▼                              │
-│            │         ┌───────────────┐                      │
-│            │         │  RTX 4090     │                      │
-│            │         │  24GB VRAM    │                      │
-│            │         └───────────────┘                      │
-└────────────┼────────────────────────────────────────────────┘
-             │ Tailscale (100.x.x.x:8000)
-             ▼
-┌─────────────────────┐
-│  Kage Bunshin       │
-│  Cluster / Clients  │
-└─────────────────────┘
+│  │                 Ollama (Native Windows)              │    │
+│  │                      :11434                          │    │
+│  │  ┌─────────────────────────────────────────────┐    │    │
+│  │  │  Models: qwen2.5:72b, deepseek-r1:32b,      │    │    │
+│  │  │          deepseek-coder:33b, qwen2.5:32b    │    │    │
+│  │  └─────────────────────────────────────────────┘    │    │
+│  └──────────────────────┬──────────────────────────────┘    │
+│                         │                                    │
+│                         ▼                                    │
+│                ┌───────────────┐                            │
+│                │  RTX 4090     │                            │
+│                │  24GB VRAM    │                            │
+│                └───────────────┘                            │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ Tailscale (100.98.226.75:11434)
+                          ▼
+              ┌─────────────────────┐
+              │  Kage Bunshin       │
+              │  Cluster / Clients  │
+              └─────────────────────┘
 ```
 
-## Prerequisites
+## Configuration
 
-- Windows 11 (or Windows 10 21H2+)
-- Latest NVIDIA driver (545+)
-- WSL2 enabled
-- ~50GB free disk space
+### Prerequisites
 
-## Implementation Steps
+- Windows 11 with latest NVIDIA driver
+- Ollama for Windows installed
+- Tailscale connected
 
-### Step 1: WSL2 Setup (Windows PowerShell)
+### Environment Variable
 
-```powershell
-# Enable WSL2 and install Ubuntu
-wsl --install -d Ubuntu-22.04
+Set `OLLAMA_HOST` to listen on all interfaces:
 
-# Restart if prompted, then set as default
-wsl --set-default Ubuntu-22.04
+```
+OLLAMA_HOST=0.0.0.0:11434
 ```
 
-### Step 2: CUDA Toolkit (WSL2 Ubuntu)
+This is configured as a system environment variable on Vengeance.
 
+### Auto-Start
+
+Ollama runs as a Windows service and starts automatically on boot.
+
+## Available Models
+
+| Model | Size | Use Case |
+|-------|------|----------|
+| qwen2.5:72b | 47GB | Production quality reasoning |
+| deepseek-r1:32b | 19GB | Reasoning/thinking model |
+| deepseek-coder:33b | 19GB | Code generation |
+| qwen2.5:32b | 19GB | General purpose |
+| qwen2.5:3b | 2GB | Fast responses |
+
+## API Access
+
+### From Cluster (via Tailscale)
+
+**OpenAI-compatible endpoint:**
 ```bash
-# NVIDIA WSL-CUDA package (uses Windows driver)
-wget https://developer.download.nvidia.com/compute/cuda/repos/wsl-ubuntu/x86_64/cuda-keyring_1.1-1_all.deb
-sudo dpkg -i cuda-keyring_1.1-1_all.deb
-sudo apt update
-sudo apt install -y cuda-toolkit-12-4
-
-# Verify GPU access
-nvidia-smi
-```
-
-### Step 3: vLLM Installation
-
-```bash
-# Install Python 3.11
-sudo apt install -y python3.11 python3.11-venv python3-pip
-
-# Create venv and install vLLM
-python3.11 -m venv ~/vllm-env
-source ~/vllm-env/bin/activate
-pip install vllm
-```
-
-### Step 4: Start Server
-
-```bash
-# Run with Llama 3.1 8B for testing
-python -m vllm.entrypoints.openai.api_server \
-  --model meta-llama/Llama-3.1-8B-Instruct \
-  --host 0.0.0.0 \
-  --port 8000
-```
-
-## Testing & Validation
-
-### Local Test (WSL2)
-
-```bash
-curl http://localhost:8000/v1/chat/completions \
+curl http://100.98.226.75:11434/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{
-    "model": "meta-llama/Llama-3.1-8B-Instruct",
-    "messages": [{"role": "user", "content": "Hello!"}],
-    "max_tokens": 50
-  }'
+  -d '{"model": "qwen2.5:72b", "messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
-### Remote Test (from srv1)
-
+**Native Ollama API:**
 ```bash
-curl http://<vengeance-tailscale-ip>:8000/v1/models
-
-curl http://<vengeance-tailscale-ip>:8000/v1/chat/completions \
-  -H "Content-Type: application/json" \
-  -d '{"model": "meta-llama/Llama-3.1-8B-Instruct", "messages": [{"role": "user", "content": "Hello!"}]}'
+curl http://100.98.226.75:11434/api/generate \
+  -d '{"model": "qwen2.5:72b", "prompt": "Hello", "stream": false}'
 ```
 
-### Success Criteria
-
-- [ ] `nvidia-smi` shows RTX 4090 in WSL2
-- [ ] vLLM starts without CUDA errors
-- [ ] Local curl returns valid response
-- [ ] Remote curl from srv1 works via Tailscale
-- [ ] GPU utilization visible during inference
-
-## Model Recommendations
-
-For 24GB VRAM (RTX 4090):
-
-| Model | Size | VRAM Usage | Use Case |
-|-------|------|------------|----------|
-| Llama-3.1-8B-Instruct | 8B | ~8GB | Testing, fast responses |
-| Llama-3.1-70B-Instruct | 70B | ~20GB (4-bit) | Production quality |
-| Qwen2.5-72B-Instruct | 72B | ~22GB (4-bit) | Coding, reasoning |
-| DeepSeek-Coder-33B | 33B | ~18GB | Code generation |
-
-### Running Quantized Models
-
+**List models:**
 ```bash
-# 70B with AWQ 4-bit quantization
-python -m vllm.entrypoints.openai.api_server \
-  --model TheBloke/Llama-2-70B-Chat-AWQ \
-  --quantization awq \
-  --host 0.0.0.0 --port 8000
+curl http://100.98.226.75:11434/v1/models
 ```
+
+## Validation Results
+
+- [x] RTX 4090 detected (22.8 GiB available)
+- [x] Ollama starts without errors
+- [x] 72B model loads and responds correctly
+- [x] Remote access from srv1 works via Tailscale
+- [x] OpenAI-compatible API works
+
+## Lessons Learned
+
+1. **WSL2 + vLLM is unreliable for large models** - CUDA graph compilation fails
+2. **Native Windows apps work better for GPU** - No virtualization overhead
+3. **Ollama is simpler** - No Docker, no port forwarding, just works
+4. **Keep Windows for gaming PCs** - No need to dual-boot or replace OS
 
 ## Next Steps
 
-After Phase A is validated:
-- **Phase B**: Deploy vLLM on Linux cluster (srv1/srv2) for CPU inference
-- **Load Balancing**: Add nginx/traefik to route requests across GPU and CPU endpoints
-- **Monitoring**: Add Prometheus metrics for inference performance
+- **Load Balancing**: Add Ollama endpoint to cluster load balancer
+- **Monitoring**: Track GPU utilization and inference latency
+- **Model Updates**: Pull newer model versions as released
