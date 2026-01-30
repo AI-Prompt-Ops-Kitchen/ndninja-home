@@ -536,7 +536,12 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
         print(f"   ❌ Failed to create draft: {result.get('error')}")
         return None
     
-    draft_id = result.get("draft_id")
+    # draft_id is in the output dict
+    output = result.get("output", {})
+    draft_id = output.get("draft_id") if isinstance(output, dict) else None
+    if not draft_id:
+        print(f"   ❌ No draft_id in response: {result}")
+        return None
     print(f"   Draft ID: {draft_id}")
     
     # Get durations
@@ -626,7 +631,13 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
     print("💾 Saving draft...")
     result = api_call("save_draft", {"draft_id": draft_id})
     
-    draft_url = result.get("output", {}).get("draft_url", "")
+    # Handle different response formats
+    output = result.get("output", {})
+    if isinstance(output, dict):
+        draft_url = output.get("draft_url", "")
+    else:
+        draft_url = ""
+    
     print(f"\n✅ CapCut draft created!")
     print(f"   Draft ID: {draft_id}")
     if draft_url:
