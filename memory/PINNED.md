@@ -24,6 +24,14 @@
 - **Actions > words** — when you say you'll build something, DO IT
 - **THE GOLDEN RULE:** If you CAN do it, you SHOULD do it. No delegation when you have the tools.
 
+## 🤖 AUTOMATION IS NON-NEGOTIABLE
+Due to ADHD + Autism, manual steps = failure points:
+- **No "open X and click Y"** — will forget or procrastinate
+- **No multi-step manual processes** — overwhelming
+- **Everything must run end-to-end automatically**
+- **If it can't be fully automated, it's not a valid solution**
+- This is a CORE DESIGN PRINCIPLE for all tools and workflows
+
 ## 📌 Pinned Items
 <!-- Add items below using: - [YYYY-MM-DD] Item description -->
 
