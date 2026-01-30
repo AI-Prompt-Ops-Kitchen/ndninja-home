@@ -55,4 +55,11 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - Claude Code CLI v2.1.19
 - Path: `~/.local/bin/claude`
 
+### Vengeance (RTX 4090)
+- SSH: `ssh vengeance` (Steam@100.98.226.75 via Tailscale)
+- GPU: RTX 4090 24GB VRAM
+- WSL2 Ubuntu, conda env: `musetalk`
+- MuseTalk: `/mnt/d/musetalk/`
+- CogVideoX: TODO setup
+
 Add whatever helps you do your job. This is your cheat sheet.
