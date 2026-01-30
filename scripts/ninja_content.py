@@ -692,9 +692,9 @@ for seamless looping. Smooth Pixar-quality animation with no pauses or freezes.
 Camera locked in static medium shot. No camera movement. Studio background unchanged."""
             
             raw_video = tmpdir / "raw_video.mp4"
-            # Request short clip (2.5s) to create multiple loops → more B-roll insertion points
-            # A 2.5s clip looped for 10s audio = 4 loops = 3 seams for B-roll
-            veo_clip_duration = 2.5
+            # Request short clip to create multiple loops → more B-roll insertion points
+            # Veo minimum is 4s. A 4s clip looped for ~40s audio = ~10 loops = many seams for B-roll
+            veo_clip_duration = 4
             if not generate_veo_video(video_prompt, veo_clip_duration, str(raw_video), reference_image):
                 return None
         
@@ -776,7 +776,7 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             from ninja_broll_compositor import compose_with_broll
             broll_composed = tmpdir / "with_broll.mp4"
             # Pass the base clip duration so compositor knows where loop seams are
-            base_clip_dur = 2.5  # Matches veo_clip_duration set earlier
+            base_clip_dur = 4.0  # Matches veo_clip_duration set earlier
             if compose_with_broll(str(captioned), broll_paths, str(broll_composed), 
                                   loop_clip_duration=base_clip_dur):
                 video_for_music = broll_composed
