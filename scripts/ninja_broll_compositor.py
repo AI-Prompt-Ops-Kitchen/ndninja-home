@@ -85,25 +85,53 @@ def find_broll_insert_points(main_duration: float, freeze_points: List[float],
                               num_broll: int = 3, min_gap: float = 3.0) -> List[float]:
     """
     Calculate optimal B-roll insert points.
-    Uses even distribution to ensure ALL B-roll clips get used.
+    PRIORITY: Use freeze points (loop seams) first, then fill with even distribution.
     """
     
-    # Even distribution: divide video into (num_broll + 1) segments
-    # Insert B-roll at each boundary, with padding at start/end
-    padding_start = 2.0  # Don't insert in first 2s
-    padding_end = 2.0    # Don't insert in last 2s
+    padding_start = 1.5  # Don't insert in first 1.5s
+    padding_end = 1.5    # Don't insert in last 1.5s
     
+    # Filter freeze points to usable range
+    usable_freezes = [
+        fp for fp in freeze_points 
+        if padding_start < fp < (main_duration - padding_end)
+    ]
+    
+    if usable_freezes:
+        print(f"   🎯 Using {len(usable_freezes)} freeze points for B-roll insertion")
+        # Use freeze points as primary insert locations
+        # Limit to num_broll clips
+        insert_points = sorted(usable_freezes)[:num_broll]
+        
+        # If we have fewer freeze points than B-roll clips, fill gaps with even distribution
+        if len(insert_points) < num_broll:
+            remaining = num_broll - len(insert_points)
+            usable_duration = main_duration - padding_start - padding_end
+            interval = usable_duration / (remaining + 1)
+            
+            for i in range(remaining):
+                candidate = padding_start + interval * (i + 1)
+                # Only add if not too close to existing points
+                if all(abs(candidate - ep) > min_gap for ep in insert_points):
+                    insert_points.append(candidate)
+            
+            insert_points = sorted(insert_points)[:num_broll]
+        
+        print(f"   📍 Insert points: {[f'{p:.1f}s' for p in insert_points]}")
+        return insert_points
+    
+    # Fallback: even distribution if no freeze points detected
+    print(f"   ⚠️ No freeze points detected, using even distribution")
     usable_duration = main_duration - padding_start - padding_end
     
-    if usable_duration < num_broll * 2:
+    if usable_duration < num_broll * 1.5:
         # Video too short, use fewer insert points
-        num_broll = max(1, int(usable_duration / 3))
+        num_broll = max(1, int(usable_duration / 2))
         print(f"   ⚠️ Video short, reduced to {num_broll} B-roll clips")
     
     if num_broll == 0:
         return []
     
-    # Calculate evenly spaced insert points
     interval = usable_duration / (num_broll + 1)
     insert_points = [padding_start + interval * (i + 1) for i in range(num_broll)]
     
@@ -113,20 +141,32 @@ def find_broll_insert_points(main_duration: float, freeze_points: List[float],
 
 
 def compose_with_broll(main_video: str, broll_clips: List[str], output_path: str,
-                       broll_duration: float = 2.5, crossfade: float = 0.2) -> Optional[str]:
-    """Compose main video with B-roll cutaways at freeze points."""
+                       broll_duration: float = 1.8, crossfade: float = 0.15,
+                       loop_clip_duration: float = 2.5) -> Optional[str]:
+    """Compose main video with B-roll cutaways at loop seams.
+    
+    Args:
+        loop_clip_duration: Duration of base clip that was looped (to calculate seam positions)
+    """
     
     print(f"🎬 Composing video with {len(broll_clips)} B-roll clips")
     
     main_duration = get_video_duration(main_video)
-    print(f"   Main video: {main_duration:.1f}s")
+    print(f"   Main video: {main_duration:.1f}s, base clip: {loop_clip_duration:.1f}s")
     
-    # Detect freeze frames in main video
-    freeze_points = detect_freeze_frames(main_video)
+    # Calculate loop seam positions from known clip duration
+    # Seams occur at: clip_duration, 2*clip_duration, 3*clip_duration, etc.
+    seam_positions = []
+    seam_time = loop_clip_duration
+    while seam_time < main_duration - 1.0:  # Leave 1s at end
+        seam_positions.append(seam_time)
+        seam_time += loop_clip_duration
     
-    # Calculate insert points
-    insert_points = find_broll_insert_points(main_duration, freeze_points, len(broll_clips))
-    print(f"   Insert points: {[f'{p:.1f}s' for p in insert_points]}")
+    print(f"   🔗 Loop seams at: {[f'{p:.1f}s' for p in seam_positions]}")
+    
+    # Calculate insert points (use seam positions)
+    insert_points = find_broll_insert_points(main_duration, seam_positions, len(broll_clips))
+    print(f"   📍 Insert points: {[f'{p:.1f}s' for p in insert_points]}")
     
     if not insert_points:
         print("   ⚠️ Video too short for B-roll, copying as-is")
