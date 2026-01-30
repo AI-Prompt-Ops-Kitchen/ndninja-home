@@ -711,27 +711,13 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             if broll_clips:
                 broll_paths = [c["path"] for c in broll_clips if "path" in c]
         
-        # CapCut mode: output draft for manual editing
+        # CapCut mode: create draft with word-by-word animated captions
         if capcut:
-            print("\n🎬 CapCut Mode: Creating draft for manual editing...")
+            print("\n🎬 CapCut Mode: Creating draft with animated word captions...")
             
-            # Generate SRT captions (for CapCut to import)
-            srt_path = tmpdir / "captions.srt"
-            try:
-                from ninja_synced_captions import generate_srt_captions
-                generate_srt_captions(str(audio_path), str(srt_path), script_text)
-            except ImportError:
-                # Simple SRT fallback
-                words = script_text.split()
-                chunks = [" ".join(words[i:i+5]) for i in range(0, len(words), 5)]
-                time_per_chunk = audio_duration / len(chunks)
-                with open(srt_path, "w") as f:
-                    for i, chunk in enumerate(chunks):
-                        start = i * time_per_chunk
-                        end = (i + 1) * time_per_chunk
-                        f.write(f"{i+1}\n{format_srt_time(start)} --> {format_srt_time(end)}\n{chunk}\n\n")
+            from capcut_word_captions import generate_capcut_draft_with_word_captions
             
-            # Copy assets to output dir for CapCut access
+            # Copy assets to output dir
             import shutil
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             capcut_dir = OUTPUT_DIR / f"capcut_{output_name}_{timestamp}"
@@ -739,32 +725,33 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             
             final_video = capcut_dir / "main_video.mp4"
             final_audio = capcut_dir / "voice.mp3"
-            final_srt = capcut_dir / "captions.srt"
             
             shutil.copy(str(looped_video), str(final_video))
             shutil.copy(str(audio_path), str(final_audio))
-            shutil.copy(str(srt_path), str(final_srt))
             
+            # Copy B-roll if any
             final_broll = []
             for i, bp in enumerate(broll_paths):
                 dest = capcut_dir / f"broll_{i+1}.mp4"
                 shutil.copy(bp, str(dest))
                 final_broll.append(str(dest))
             
-            # Generate CapCut draft
-            draft_id = generate_capcut_draft(
+            # Generate CapCut draft with word-by-word animated captions
+            draft_id = generate_capcut_draft_with_word_captions(
                 str(final_video),
                 str(final_audio),
-                final_broll,
-                str(final_srt),
-                output_name
+                output_name,
+                original_script=script_text,
+                font_size=12.0,  # Smaller, cleaner size
+                animation="Pop_Up",  # Word pop effect
+                broll_clips=final_broll if final_broll else None
             )
             
             print("\n" + "="*60)
-            print(f"✅ CapCut assets saved to: {capcut_dir}")
-            print(f"   - main_video.mp4")
-            print(f"   - voice.mp3")
-            print(f"   - captions.srt")
+            print(f"✅ CapCut draft created: {draft_id}")
+            print(f"   Assets: {capcut_dir}")
+            print(f"   - Word-by-word animated captions")
+            print(f"   - Pop_Up animation on each word")
             if final_broll:
                 print(f"   - {len(final_broll)} B-roll clips")
             print("="*60 + "\n")
