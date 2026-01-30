@@ -82,51 +82,38 @@ def detect_freeze_frames(video_path: str, threshold: float = 0.98) -> List[float
 
 
 def find_broll_insert_points(main_duration: float, freeze_points: List[float],
-                              num_broll: int = 3, min_gap: float = 6.0) -> List[float]:
+                              num_broll: int = 3, min_gap: float = 3.0) -> List[float]:
     """
-    Calculate optimal B-roll insert points based on detected freeze frames.
-    Falls back to even distribution if no freezes detected.
+    Calculate optimal B-roll insert points.
+    Uses even distribution to ensure ALL B-roll clips get used.
     """
     
-    if freeze_points and len(freeze_points) >= num_broll:
-        # Use detected freeze points
-        # Sort and pick evenly distributed freeze points
-        freeze_points = sorted(freeze_points)
-        
-        # Filter out points too close together or too close to start/end
-        filtered = []
-        last_point = -min_gap
-        for fp in freeze_points:
-            if fp > 2.0 and fp < main_duration - 5.0 and fp - last_point >= min_gap:
-                filtered.append(fp)
-                last_point = fp
-        
-        # Take up to num_broll points
-        if len(filtered) >= num_broll:
-            # Pick evenly distributed ones
-            step = len(filtered) / num_broll
-            selected = [filtered[int(i * step)] for i in range(num_broll)]
-            return selected
-        elif filtered:
-            return filtered[:num_broll]
+    # Even distribution: divide video into (num_broll + 1) segments
+    # Insert B-roll at each boundary, with padding at start/end
+    padding_start = 2.0  # Don't insert in first 2s
+    padding_end = 2.0    # Don't insert in last 2s
     
-    # Fallback: even distribution based on Veo's typical 5-6s loop
-    print("   ⚠️ Using estimated loop points (no freezes detected)")
-    insert_points = []
-    loop_duration = 5.0  # Veo typically generates ~5s clips
+    usable_duration = main_duration - padding_start - padding_end
     
-    # Start inserting at first loop point, offset slightly before
-    current = loop_duration - 0.5
+    if usable_duration < num_broll * 2:
+        # Video too short, use fewer insert points
+        num_broll = max(1, int(usable_duration / 3))
+        print(f"   ⚠️ Video short, reduced to {num_broll} B-roll clips")
     
-    while len(insert_points) < num_broll and current < main_duration - 5.0:
-        insert_points.append(current)
-        current += loop_duration + 3.0  # Account for B-roll duration
+    if num_broll == 0:
+        return []
+    
+    # Calculate evenly spaced insert points
+    interval = usable_duration / (num_broll + 1)
+    insert_points = [padding_start + interval * (i + 1) for i in range(num_broll)]
+    
+    print(f"   📍 Even distribution: {num_broll} clips across {main_duration:.1f}s video")
     
     return insert_points
 
 
 def compose_with_broll(main_video: str, broll_clips: List[str], output_path: str,
-                       broll_duration: float = 4.0, crossfade: float = 0.3) -> Optional[str]:
+                       broll_duration: float = 2.5, crossfade: float = 0.2) -> Optional[str]:
     """Compose main video with B-roll cutaways at freeze points."""
     
     print(f"🎬 Composing video with {len(broll_clips)} B-roll clips")
