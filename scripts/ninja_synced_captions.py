@@ -11,25 +11,65 @@ import whisper
 from pathlib import Path
 
 
-def get_word_timestamps(audio_path, model_size="tiny", padding_offset=0.5):
-    """Get word-level timestamps from audio using Whisper."""
+def get_word_timestamps(audio_path, model_size="tiny", padding_offset=0.5, original_script=None):
+    """Get word-level timestamps from audio using Whisper.
+    
+    If original_script is provided, use those words instead of Whisper's
+    transcription (which can have errors like 'Genie' -> 'G & E').
+    """
     print(f"🎙️ Loading Whisper ({model_size})...")
     model = whisper.load_model(model_size)
     
     print("📝 Transcribing for word timestamps...")
     result = model.transcribe(audio_path, word_timestamps=True)
     
-    words = []
+    # Extract Whisper's words and timing
+    whisper_words = []
     for segment in result["segments"]:
         for word in segment.get("words", []):
-            # Add padding offset to account for silence at start
-            words.append({
+            whisper_words.append({
                 "word": word["word"].strip(),
                 "start": word["start"] + padding_offset,
                 "end": word["end"] + padding_offset
             })
     
-    return words
+    # If original script provided, use those words with Whisper's timing
+    if original_script:
+        script_words = original_script.split()
+        
+        # If counts match reasonably, replace words but keep timing
+        if len(script_words) > 0 and len(whisper_words) > 0:
+            # Scale timing to fit script words if counts differ
+            if len(script_words) != len(whisper_words):
+                print(f"   ⚠️ Word count mismatch: script={len(script_words)}, whisper={len(whisper_words)}")
+                # Interpolate timing for script words
+                if len(whisper_words) >= 2:
+                    total_duration = whisper_words[-1]["end"] - whisper_words[0]["start"]
+                    start_time = whisper_words[0]["start"]
+                    word_duration = total_duration / len(script_words)
+                    
+                    words = []
+                    for i, word in enumerate(script_words):
+                        words.append({
+                            "word": word,
+                            "start": start_time + (i * word_duration),
+                            "end": start_time + ((i + 1) * word_duration)
+                        })
+                    print(f"   ✅ Using script words with interpolated timing")
+                    return words
+            else:
+                # Counts match - use script words with Whisper timing
+                words = []
+                for i, script_word in enumerate(script_words):
+                    words.append({
+                        "word": script_word,
+                        "start": whisper_words[i]["start"],
+                        "end": whisper_words[i]["end"]
+                    })
+                print(f"   ✅ Using script words with Whisper timing")
+                return words
+    
+    return whisper_words
 
 
 def format_ass_time(seconds):
@@ -139,11 +179,15 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     return output_path
 
 
-def burn_synced_captions(video_path, audio_path, output_path, model_size="tiny"):
-    """Full workflow: transcribe audio, create synced ASS, burn into video."""
+def burn_synced_captions(video_path, audio_path, output_path, model_size="tiny", original_script=None):
+    """Full workflow: transcribe audio, create synced ASS, burn into video.
     
-    # Get word timestamps
-    words = get_word_timestamps(audio_path, model_size)
+    If original_script is provided, uses those words instead of Whisper's
+    transcription to avoid errors like 'Genie' -> 'G & E'.
+    """
+    
+    # Get word timestamps (use original script words if provided)
+    words = get_word_timestamps(audio_path, model_size, original_script=original_script)
     print(f"   Found {len(words)} words")
     
     # Create ASS file

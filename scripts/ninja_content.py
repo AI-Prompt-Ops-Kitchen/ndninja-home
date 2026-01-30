@@ -402,7 +402,8 @@ def burn_captions(video_path, script_text, output_path, audio_path=None, style="
         try:
             from ninja_synced_captions import burn_synced_captions
             print("   🎙️ Using Whisper word-sync for accurate timing...")
-            burn_synced_captions(video_path, audio_path, output_path, model_size="tiny")
+            # Pass original script to avoid transcription errors (e.g., 'Genie' -> 'G & E')
+            burn_synced_captions(video_path, audio_path, output_path, model_size="tiny", original_script=script_text)
             print(f"   ✅ Synced captions burned: {output_path}")
             return output_path
         except Exception as e:
@@ -542,11 +543,12 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
         if not multiclip:
             # Single clip mode
             video_prompt = """Animate this 3D Pixar-style ninja character at the tech news desk.
-Subtle idle animation - blinking expressive blue eyes, minimal natural hand gestures on desk.
-Character keeps head perfectly still, eyes locked on camera at all times, no head turning.
-Professional news anchor posture, facing directly forward throughout entire clip.
-Keep exact character design and studio background. Smooth Pixar-quality animation.
-Camera locked in static medium shot position. No camera movement."""
+CONTINUOUS SEAMLESS IDLE LOOP: Character breathes naturally, subtle rhythmic body sway,
+periodic slow eye blinks, gentle micro-movements that flow smoothly and loop seamlessly.
+Head perfectly still, eyes locked on camera, facing directly forward throughout.
+Professional news anchor posture. Animation must START and END in identical neutral pose
+for seamless looping. Smooth Pixar-quality animation with no pauses or freezes.
+Camera locked in static medium shot. No camera movement. Studio background unchanged."""
             
             raw_video = tmpdir / "raw_video.mp4"
             if not generate_veo_video(video_prompt, audio_duration, str(raw_video), reference_image):
