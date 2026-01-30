@@ -62,4 +62,11 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - MuseTalk: `/mnt/d/musetalk/`
 - CogVideoX: TODO setup
 
+### CapCut API Server
+- Service: `systemctl --user status capcut-api`
+- Port: 9000
+- Auto-starts on boot (linger enabled)
+- Logs: `journalctl --user -u capcut-api -f`
+- Restart: `systemctl --user restart capcut-api`
+
 Add whatever helps you do your job. This is your cheat sheet.
