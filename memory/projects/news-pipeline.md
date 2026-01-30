@@ -38,6 +38,7 @@ Camera locked in static medium shot position. No camera movement.
 - v1: Head turned, blob artifact visible — ❌
 - v2: Head still, eyes locked — ✅
 - v3: Whisper word-sync captions restored — ✅
+- v4: Audio static fixed (adelay filter) — ✅ GOOD
 
 ## Notes
 - Uses same tech stack as main content pipeline

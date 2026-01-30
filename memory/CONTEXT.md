@@ -1,5 +1,5 @@
 # CONTEXT.md — Compaction-Resistant Summary
-> Last updated: 2026-01-29 22:45 EST
+> Last updated: 2026-01-29 23:12 EST
 > This file survives compaction. Keep under 50 lines.
 
 ## Active Projects
@@ -26,8 +26,10 @@ All 3 tiers implemented:
 - **THE GOLDEN RULE**: If you CAN do it, you SHOULD do it. No delegation.
 
 ## Open Loops
-- **Setting up remote access to user's RTX 4090** (need hostname/IP)
-- Local B-roll scripts created: `ninja_broll_local.py`, `local_broll_setup.py`
+- **Vengeance 4090 SSH working**: `ssh vengeance` (Steam@100.98.226.75)
+- **CogVideoX 5B WORKING** on Vengeance! ~2min/clip, $0 cost, no rate limits
+- MuseTalk already installed — test for better lip sync next
+- musetalk conda env corrupted, using base env instead
 - YouTube OAuth still needs user to run browser auth
 - Awaiting v3 video feedback (audio distortion fix)
 

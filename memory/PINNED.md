@@ -14,6 +14,7 @@
 - **Voice Clone ID:** `pDrEFcc78kuc76ECGkU8`
 - **Reference Image (video):** `assets/reference/ninja_concept.jpg`
 - **Reference Image (thumbnail):** `assets/reference/ninja_pixar_avatar.jpg`
+- **Reference Image (news anchor):** `assets/reference/ninja_news_anchor.jpg`
 - **Vertex AI Project:** `gen-lang-client-0601509945`
 
 ## 🔒 Non-Negotiables
