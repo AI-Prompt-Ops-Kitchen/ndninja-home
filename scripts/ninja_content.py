@@ -506,7 +506,137 @@ def add_background_music(video_path, output_path, music_volume=0.1):
     return output_path
 
 
-def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, broll=False):
+def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, output_name):
+    """Generate a CapCut draft for manual editing."""
+    import requests
+    
+    CAPCUT_API = "http://127.0.0.1:9000"
+    
+    def api_call(endpoint, data):
+        try:
+            r = requests.post(f"{CAPCUT_API}/{endpoint}", json=data, timeout=60)
+            return r.json()
+        except Exception as e:
+            print(f"   ❌ API error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    # Check server
+    try:
+        requests.get(f"{CAPCUT_API}/", timeout=3)
+    except:
+        print("   ❌ CapCut API server not running!")
+        print("   Start with: cd /home/ndninja/projects/capcut-api && source venv/bin/activate && python capcut_server.py &")
+        return None
+    
+    print("📋 Creating CapCut draft...")
+    
+    # Create draft
+    result = api_call("create_draft", {"width": 1080, "height": 1920, "name": output_name})
+    if not result.get("success"):
+        print(f"   ❌ Failed to create draft: {result.get('error')}")
+        return None
+    
+    draft_id = result.get("draft_id")
+    print(f"   Draft ID: {draft_id}")
+    
+    # Get durations
+    audio_duration = float(subprocess.run([
+        "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+        "-of", "csv=p=0", audio_path
+    ], capture_output=True, text=True).stdout.strip())
+    
+    video_duration = float(subprocess.run([
+        "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+        "-of", "csv=p=0", video_path
+    ], capture_output=True, text=True).stdout.strip())
+    
+    # Add main video track (loop if needed)
+    print("🎥 Adding video track...")
+    video_path = str(Path(video_path).resolve())
+    num_loops = int(audio_duration / video_duration) + 1
+    current_time = 0
+    
+    for i in range(num_loops):
+        segment_dur = min(video_duration, audio_duration - current_time)
+        if segment_dur <= 0:
+            break
+        
+        api_call("add_video", {
+            "draft_id": draft_id,
+            "video_url": f"file://{video_path}",
+            "start": 0,
+            "end": segment_dur,
+            "target_start": current_time,
+            "volume": 0,
+            "transition": "Fade" if i > 0 else None,
+            "transition_duration": 0.5 if i > 0 else 0,
+            "track_name": "main_video"
+        })
+        current_time += segment_dur
+    
+    # Add B-roll clips
+    if broll_clips:
+        print(f"🎬 Adding {len(broll_clips)} B-roll clips...")
+        interval = audio_duration / (len(broll_clips) + 1)
+        for i, broll_path in enumerate(broll_clips):
+            insert_time = interval * (i + 1)
+            broll_path = str(Path(broll_path).resolve())
+            broll_dur = min(4, float(subprocess.run([
+                "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                "-of", "csv=p=0", broll_path
+            ], capture_output=True, text=True).stdout.strip()))
+            
+            api_call("add_video", {
+                "draft_id": draft_id,
+                "video_url": f"file://{broll_path}",
+                "start": 0,
+                "end": broll_dur,
+                "target_start": insert_time,
+                "volume": 0,
+                "transition": "Fade",
+                "transition_duration": 0.3,
+                "track_name": f"broll_{i+1}"
+            })
+    
+    # Add audio
+    print("🔊 Adding audio track...")
+    audio_path = str(Path(audio_path).resolve())
+    api_call("add_audio", {
+        "draft_id": draft_id,
+        "audio_url": f"file://{audio_path}",
+        "start": 0,
+        "end": audio_duration,
+        "target_start": 0,
+        "volume": 1.0,
+        "track_name": "voice"
+    })
+    
+    # Add subtitles
+    if captions_srt and Path(captions_srt).exists():
+        print("📝 Adding captions...")
+        captions_srt = str(Path(captions_srt).resolve())
+        api_call("add_subtitle", {
+            "draft_id": draft_id,
+            "subtitle_url": f"file://{captions_srt}",
+            "font_size": 42,
+            "font_color": "#FFFFFF"
+        })
+    
+    # Save draft
+    print("💾 Saving draft...")
+    result = api_call("save_draft", {"draft_id": draft_id})
+    
+    draft_url = result.get("output", {}).get("draft_url", "")
+    print(f"\n✅ CapCut draft created!")
+    print(f"   Draft ID: {draft_id}")
+    if draft_url:
+        print(f"   Preview: {draft_url}")
+    print(f"\n   Open in CapCut to review and export!")
+    
+    return draft_id
+
+
+def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, broll=False, capcut=False):
     """Run the full content pipeline."""
     print("\n" + "="*60)
     print("🥷 NINJA CONTENT PIPELINE" + (" (MULTI-CLIP MODE)" if multiclip else ""))
@@ -554,10 +684,83 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             if not generate_veo_video(video_prompt, audio_duration, str(raw_video), reference_image):
                 return None
         
-        # 3. Loop video to match audio
+        # 3. Loop video to match audio (muted for CapCut, with audio for normal)
         looped_video = tmpdir / "looped_video.mp4"
         loop_video_to_duration(str(raw_video), audio_duration, str(looped_video))
         
+        # 6. B-roll cutaways (generate early if capcut mode needs them)
+        broll_paths = []
+        if broll:
+            from ninja_broll_veo import generate_broll_clips  # Veo-generated video B-roll
+            
+            print("\n🎬 Generating B-roll cutaways...")
+            broll_dir = tmpdir / "broll"
+            broll_clips = generate_broll_clips(script_text, str(broll_dir), num_clips=4)
+            
+            if broll_clips:
+                broll_paths = [c["path"] for c in broll_clips if "path" in c]
+        
+        # CapCut mode: output draft for manual editing
+        if capcut:
+            print("\n🎬 CapCut Mode: Creating draft for manual editing...")
+            
+            # Generate SRT captions (for CapCut to import)
+            srt_path = tmpdir / "captions.srt"
+            try:
+                from ninja_synced_captions import generate_srt_captions
+                generate_srt_captions(str(audio_path), str(srt_path), script_text)
+            except ImportError:
+                # Simple SRT fallback
+                words = script_text.split()
+                chunks = [" ".join(words[i:i+5]) for i in range(0, len(words), 5)]
+                time_per_chunk = audio_duration / len(chunks)
+                with open(srt_path, "w") as f:
+                    for i, chunk in enumerate(chunks):
+                        start = i * time_per_chunk
+                        end = (i + 1) * time_per_chunk
+                        f.write(f"{i+1}\n{format_srt_time(start)} --> {format_srt_time(end)}\n{chunk}\n\n")
+            
+            # Copy assets to output dir for CapCut access
+            import shutil
+            timestamp = time.strftime("%Y%m%d_%H%M%S")
+            capcut_dir = OUTPUT_DIR / f"capcut_{output_name}_{timestamp}"
+            capcut_dir.mkdir(exist_ok=True)
+            
+            final_video = capcut_dir / "main_video.mp4"
+            final_audio = capcut_dir / "voice.mp3"
+            final_srt = capcut_dir / "captions.srt"
+            
+            shutil.copy(str(looped_video), str(final_video))
+            shutil.copy(str(audio_path), str(final_audio))
+            shutil.copy(str(srt_path), str(final_srt))
+            
+            final_broll = []
+            for i, bp in enumerate(broll_paths):
+                dest = capcut_dir / f"broll_{i+1}.mp4"
+                shutil.copy(bp, str(dest))
+                final_broll.append(str(dest))
+            
+            # Generate CapCut draft
+            draft_id = generate_capcut_draft(
+                str(final_video),
+                str(final_audio),
+                final_broll,
+                str(final_srt),
+                output_name
+            )
+            
+            print("\n" + "="*60)
+            print(f"✅ CapCut assets saved to: {capcut_dir}")
+            print(f"   - main_video.mp4")
+            print(f"   - voice.mp3")
+            print(f"   - captions.srt")
+            if final_broll:
+                print(f"   - {len(final_broll)} B-roll clips")
+            print("="*60 + "\n")
+            
+            return str(capcut_dir)
+        
+        # Normal mode: burn captions and composite
         # 4. Combine video + audio
         combined = tmpdir / "combined.mp4"
         combine_video_audio(str(looped_video), str(audio_path), str(combined))
@@ -566,22 +769,14 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
         captioned = tmpdir / "captioned.mp4"
         burn_captions(str(combined), script_text, str(captioned), audio_path=str(audio_path))
         
-        # 6. B-roll cutaways (if enabled)
+        # Composite B-roll if generated
         video_for_music = captioned
-        if broll:
-            from ninja_broll_veo import generate_broll_clips  # Veo-generated video B-roll
+        if broll_paths:
             from ninja_broll_compositor import compose_with_broll
-            
-            print("\n🎬 Generating B-roll cutaways...")
-            broll_dir = tmpdir / "broll"
-            broll_clips = generate_broll_clips(script_text, str(broll_dir), num_clips=4)
-            
-            if broll_clips:
-                broll_composed = tmpdir / "with_broll.mp4"
-                broll_paths = [c["path"] for c in broll_clips if "path" in c]
-                if compose_with_broll(str(captioned), broll_paths, str(broll_composed)):
-                    video_for_music = broll_composed
-                    print("   ✅ B-roll inserted")
+            broll_composed = tmpdir / "with_broll.mp4"
+            if compose_with_broll(str(captioned), broll_paths, str(broll_composed)):
+                video_for_music = broll_composed
+                print("   ✅ B-roll inserted")
         
         # 7. Add background music
         timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -633,6 +828,8 @@ def main():
                         help="Privacy status for published video")
     parser.add_argument("--broll", action="store_true",
                         help="Generate and insert B-roll cutaways to hide loop points")
+    parser.add_argument("--capcut", action="store_true",
+                        help="Output as CapCut draft for manual editing (requires CapCut API server)")
     
     args = parser.parse_args()
     
@@ -677,7 +874,7 @@ def main():
     print("-" * 40 + "\n")
     
     # Run pipeline
-    output = run_pipeline(script_text, ref_image, args.output, multiclip=args.multiclip, no_music=args.no_music, broll=args.broll)
+    output = run_pipeline(script_text, ref_image, args.output, multiclip=args.multiclip, no_music=args.no_music, broll=args.broll, capcut=args.capcut)
     
     if output:
         print(f"\n🎉 Content ready: {output}")
