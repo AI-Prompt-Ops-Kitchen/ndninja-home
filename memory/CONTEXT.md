@@ -1,5 +1,5 @@
 # CONTEXT.md — Compaction-Resistant Summary
-> Last updated: 2026-01-29 19:13 EST
+> Last updated: 2026-01-29 22:45 EST
 > This file survives compaction. Keep under 50 lines.
 
 ## Active Projects
@@ -20,13 +20,16 @@ All 3 tiers implemented:
 - Single clip + hard loop > multiclip (better quality, cheaper)
 - Nano Banana Pro > Imagen for thumbnails
 - Veo B-roll generator fixed (was Ken Burns, now real video)
-- Shadow Council consulted for compaction system design ($0.06)
-- **Object permanence matters for neurodivergent users** (Gemini insight)
+- **Audio fix**: Keep original audio as WAV, strip from segments, re-attach cleanly
+- **B-roll prompts**: All include "no text, no logos" to prevent gibberish
+- **4 clips default** instead of 3 for better coverage
+- **THE GOLDEN RULE**: If you CAN do it, you SHOULD do it. No delegation.
 
 ## Open Loops
-- Integrate B-roll into main content pipeline
-- Test compaction safety with real scenario
+- **Setting up remote access to user's RTX 4090** (need hostname/IP)
+- Local B-roll scripts created: `ninja_broll_local.py`, `local_broll_setup.py`
 - YouTube OAuth still needs user to run browser auth
+- Awaiting v3 video feedback (audio distortion fix)
 
 ## User Communication Notes
 - **ONE question at a time** (neurodivergent, multiple Qs overwhelming)
@@ -39,3 +42,4 @@ All 3 tiers implemented:
 - **PINNED.md** = items that NEVER get compressed
 - Use "archive" not "delete", "checkpoint" not "save point"
 - Show what's preserved, don't just say "it's saved"
+- **THE GOLDEN RULE**: If you CAN do it, DO it. No delegation.
