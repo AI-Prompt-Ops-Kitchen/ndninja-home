@@ -142,12 +142,12 @@ def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=
         # Add padding at start to prevent first word cutoff
         if pad_start > 0:
             print(f"   🔇 Adding {pad_start}s padding at start...")
+            delay_ms = int(pad_start * 1000)
             subprocess.run([
                 "ffmpeg", "-y",
-                "-f", "lavfi", "-i", f"anullsrc=r=44100:cl=stereo:d={pad_start}",
                 "-i", raw_path,
-                "-filter_complex", "[0:a][1:a]concat=n=2:v=0:a=1[out]",
-                "-map", "[out]",
+                "-af", f"adelay={delay_ms}|{delay_ms},apad=pad_dur={pad_start}",
+                "-c:a", "libmp3lame", "-q:a", "2",  # High quality MP3
                 output_path
             ], capture_output=True)
             os.remove(raw_path)
