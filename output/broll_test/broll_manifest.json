@@ -1,0 +1,26 @@
+[
+  {
+    "topic": "Creator Studio",
+    "index": 0,
+    "duration": 5.0,
+    "path": "output/broll_test/broll_1.mp4",
+    "source": "kenburns",
+    "effect": "zoom_in"
+  },
+  {
+    "topic": "Final Cut Pro",
+    "index": 1,
+    "duration": 5.0,
+    "path": "output/broll_test/broll_2.mp4",
+    "source": "kenburns",
+    "effect": "zoom_out"
+  },
+  {
+    "topic": "Hey Ninjas",
+    "index": 2,
+    "duration": 5.0,
+    "path": "output/broll_test/broll_3.mp4",
+    "source": "kenburns",
+    "effect": "pan_left"
+  }
+]

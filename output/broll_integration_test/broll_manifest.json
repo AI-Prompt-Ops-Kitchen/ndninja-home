@@ -1,0 +1,9 @@
+[
+  {
+    "topic": "Apple iPhone",
+    "prompt": "Cinematic close-up of sleek Apple products on minimalist desk, soft lighting, shallow depth of field",
+    "path": "output/broll_integration_test/broll_1.mp4",
+    "duration": 6,
+    "index": 0
+  }
+]
