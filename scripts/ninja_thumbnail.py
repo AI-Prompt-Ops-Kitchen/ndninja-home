@@ -129,10 +129,24 @@ def main():
                         choices=["engaging", "shocked", "thinking", "pointing", "excited"],
                         help="Ninja pose/expression style")
     parser.add_argument("--output", help="Output path for thumbnail")
+    parser.add_argument("--reference", help="Custom reference image for the ninja character")
+    parser.add_argument("--both", action="store_true", 
+                        help="Generate both Pixar avatar AND news anchor thumbnails")
     
     args = parser.parse_args()
     
-    generate_thumbnail(args.topic, args.style, args.output)
+    if args.both:
+        # Generate with default Pixar avatar
+        base_output = args.output or f"output/thumbnails/thumb_{args.topic[:20]}_{args.style}"
+        pixar_out = base_output.replace('.png', '_pixar.png') if '.png' in str(base_output) else f"{base_output}_pixar.png"
+        anchor_out = base_output.replace('.png', '_anchor.png') if '.png' in str(base_output) else f"{base_output}_anchor.png"
+        
+        print("🎨 Generating BOTH thumbnail variants...")
+        generate_thumbnail(args.topic, args.style, pixar_out, None)  # Default Pixar
+        generate_thumbnail(args.topic, args.style, anchor_out, 
+                          str(Path(__file__).parent.parent / "assets/reference/ninja_news_anchor.jpg"))
+    else:
+        generate_thumbnail(args.topic, args.style, args.output, args.reference)
 
 
 if __name__ == "__main__":
