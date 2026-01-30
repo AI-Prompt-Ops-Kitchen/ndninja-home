@@ -393,11 +393,22 @@ def combine_video_audio(video_path, audio_path, output_path):
     return output_path
 
 
-def burn_captions(video_path, script_text, output_path, style="animated"):
-    """Burn animated Instagram-style captions into video."""
+def burn_captions(video_path, script_text, output_path, audio_path=None, style="animated"):
+    """Burn animated Instagram-style captions into video using Whisper word sync."""
     print(f"📝 Burning {style} captions...")
     
-    # Use the ninja_captions module for fancy effects
+    # Prefer Whisper-synced captions for accurate word-by-word highlighting
+    if audio_path:
+        try:
+            from ninja_synced_captions import burn_synced_captions
+            print("   🎙️ Using Whisper word-sync for accurate timing...")
+            burn_synced_captions(video_path, audio_path, output_path, model_size="tiny")
+            print(f"   ✅ Synced captions burned: {output_path}")
+            return output_path
+        except Exception as e:
+            print(f"   ⚠️ Whisper sync failed ({e}), falling back to estimated timing...")
+    
+    # Fallback: Use estimated timing (ninja_captions)
     try:
         from ninja_captions import generate_ass_captions, burn_ass_captions
         
@@ -531,10 +542,11 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
         if not multiclip:
             # Single clip mode
             video_prompt = """Animate this 3D Pixar-style ninja character at the tech news desk.
-Subtle idle animation - slight head movements, blinking expressive blue eyes,
-natural hand gestures on desk surface, engaged body language, occasional glances to side.
-Keep exact character design and studio environment. Smooth Pixar-quality animation.
-Camera locked in medium shot position."""
+Subtle idle animation - blinking expressive blue eyes, minimal natural hand gestures on desk.
+Character keeps head perfectly still, eyes locked on camera at all times, no head turning.
+Professional news anchor posture, facing directly forward throughout entire clip.
+Keep exact character design and studio background. Smooth Pixar-quality animation.
+Camera locked in static medium shot position. No camera movement."""
             
             raw_video = tmpdir / "raw_video.mp4"
             if not generate_veo_video(video_prompt, audio_duration, str(raw_video), reference_image):
@@ -550,7 +562,7 @@ Camera locked in medium shot position."""
         
         # 5. Burn captions
         captioned = tmpdir / "captioned.mp4"
-        burn_captions(str(combined), script_text, str(captioned))
+        burn_captions(str(combined), script_text, str(captioned), audio_path=str(audio_path))
         
         # 6. B-roll cutaways (if enabled)
         video_for_music = captioned
