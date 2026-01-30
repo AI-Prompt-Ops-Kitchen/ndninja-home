@@ -22,7 +22,7 @@ TOKEN_FILE = TOKEN_DIR / 'token.json'
 CLIENT_SECRETS = Path(__file__).parent / 'client_secrets.json'
 
 
-def get_credentials():
+def get_credentials(manual_code=None):
     """Get valid credentials, refreshing or re-authenticating as needed."""
     creds = None
     
@@ -41,9 +41,21 @@ def get_credentials():
                 print("   Download OAuth 2.0 Client ID JSON from Google Cloud Console")
                 return None
             
-            print("🔐 Starting OAuth flow (browser will open)...")
             flow = InstalledAppFlow.from_client_secrets_file(str(CLIENT_SECRETS), SCOPES)
-            creds = flow.run_local_server(port=8080)
+            
+            if manual_code:
+                # Complete flow with provided code
+                flow.redirect_uri = 'http://localhost:8080/'
+                flow.fetch_token(code=manual_code)
+                creds = flow.credentials
+            else:
+                # Try local server first, fall back to console
+                try:
+                    print("🔐 Starting OAuth flow (browser will open)...")
+                    creds = flow.run_local_server(port=8080, open_browser=False)
+                except Exception:
+                    print("🔐 Starting manual OAuth flow...")
+                    creds = flow.run_console()
         
         # Save credentials
         TOKEN_DIR.mkdir(parents=True, exist_ok=True)

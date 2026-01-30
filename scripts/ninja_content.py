@@ -560,7 +560,7 @@ Camera locked in medium shot position."""
             
             print("\n🎬 Generating B-roll cutaways...")
             broll_dir = tmpdir / "broll"
-            broll_clips = generate_broll_clips(script_text, str(broll_dir), num_clips=3)
+            broll_clips = generate_broll_clips(script_text, str(broll_dir), num_clips=4)
             
             if broll_clips:
                 broll_composed = tmpdir / "with_broll.mp4"

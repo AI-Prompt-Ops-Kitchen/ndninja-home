@@ -3,7 +3,7 @@
 ninja_broll_compositor.py — Compose main video with B-roll cutaways
 
 Takes main ninja video + B-roll clips, inserts B-roll at strategic points
-to hide loop transitions and add visual interest.
+to hide loop transitions (freeze frames) and add visual interest.
 
 Usage:
     python ninja_broll_compositor.py --main video.mp4 --broll broll_dir/ --output final.mp4
@@ -15,7 +15,8 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple
+import hashlib
 
 
 def get_video_duration(video_path: str) -> float:
@@ -28,34 +29,116 @@ def get_video_duration(video_path: str) -> float:
     return float(result.stdout.strip())
 
 
-def find_broll_insert_points(main_duration: float, loop_duration: float = 8.0,
-                              broll_duration: float = 5.0, num_broll: int = 3) -> List[float]:
-    """Calculate optimal points to insert B-roll to hide loop transitions."""
+def detect_freeze_frames(video_path: str, threshold: float = 0.98) -> List[float]:
+    """
+    Detect freeze frames by comparing consecutive frames.
+    Returns list of timestamps where freezes START.
+    """
+    print("   🔍 Detecting freeze frames...")
     
+    freeze_points = []
+    
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Extract frames at 4fps for analysis
+        subprocess.run([
+            "ffmpeg", "-y", "-i", video_path,
+            "-vf", "fps=4,scale=160:90",  # Low res for fast comparison
+            f"{tmpdir}/frame_%04d.jpg"
+        ], capture_output=True)
+        
+        frames = sorted(Path(tmpdir).glob("frame_*.jpg"))
+        
+        if len(frames) < 2:
+            return []
+        
+        # Compare consecutive frames using file hash (fast approximation)
+        prev_hash = None
+        freeze_start = None
+        freeze_count = 0
+        
+        for i, frame in enumerate(frames):
+            # Simple hash-based comparison
+            with open(frame, 'rb') as f:
+                current_hash = hashlib.md5(f.read()).hexdigest()
+            
+            if prev_hash is not None:
+                if current_hash == prev_hash:
+                    # Identical frame detected
+                    if freeze_start is None:
+                        freeze_start = i / 4.0  # Convert frame index to seconds
+                    freeze_count += 1
+                else:
+                    # Freeze ended
+                    if freeze_count >= 2:  # At least 0.5s freeze
+                        freeze_points.append(freeze_start)
+                        print(f"      Found freeze at {freeze_start:.1f}s (duration: {freeze_count * 0.25:.1f}s)")
+                    freeze_start = None
+                    freeze_count = 0
+            
+            prev_hash = current_hash
+    
+    print(f"   📍 Detected {len(freeze_points)} freeze points")
+    return freeze_points
+
+
+def find_broll_insert_points(main_duration: float, freeze_points: List[float],
+                              num_broll: int = 3, min_gap: float = 6.0) -> List[float]:
+    """
+    Calculate optimal B-roll insert points based on detected freeze frames.
+    Falls back to even distribution if no freezes detected.
+    """
+    
+    if freeze_points and len(freeze_points) >= num_broll:
+        # Use detected freeze points
+        # Sort and pick evenly distributed freeze points
+        freeze_points = sorted(freeze_points)
+        
+        # Filter out points too close together or too close to start/end
+        filtered = []
+        last_point = -min_gap
+        for fp in freeze_points:
+            if fp > 2.0 and fp < main_duration - 5.0 and fp - last_point >= min_gap:
+                filtered.append(fp)
+                last_point = fp
+        
+        # Take up to num_broll points
+        if len(filtered) >= num_broll:
+            # Pick evenly distributed ones
+            step = len(filtered) / num_broll
+            selected = [filtered[int(i * step)] for i in range(num_broll)]
+            return selected
+        elif filtered:
+            return filtered[:num_broll]
+    
+    # Fallback: even distribution based on Veo's typical 5-6s loop
+    print("   ⚠️ Using estimated loop points (no freezes detected)")
     insert_points = []
+    loop_duration = 5.0  # Veo typically generates ~5s clips
     
-    # Insert B-roll at each loop point (every 8 seconds)
-    # Offset slightly before the loop point so the cut feels natural
-    current = loop_duration - 1.0  # First insert at ~7 seconds
+    # Start inserting at first loop point, offset slightly before
+    current = loop_duration - 0.5
     
-    while len(insert_points) < num_broll and current < main_duration - broll_duration:
+    while len(insert_points) < num_broll and current < main_duration - 5.0:
         insert_points.append(current)
-        current += loop_duration + broll_duration  # Next insert after B-roll plays
+        current += loop_duration + 3.0  # Account for B-roll duration
     
     return insert_points
 
 
 def compose_with_broll(main_video: str, broll_clips: List[str], output_path: str,
-                       broll_duration: float = 5.0) -> Optional[str]:
-    """Compose main video with B-roll cutaways."""
+                       broll_duration: float = 4.0, crossfade: float = 0.3) -> Optional[str]:
+    """Compose main video with B-roll cutaways at freeze points."""
     
     print(f"🎬 Composing video with {len(broll_clips)} B-roll clips")
     
     main_duration = get_video_duration(main_video)
     print(f"   Main video: {main_duration:.1f}s")
     
+    # Detect freeze frames in main video
+    freeze_points = detect_freeze_frames(main_video)
+    
     # Calculate insert points
-    insert_points = find_broll_insert_points(main_duration, 8.0, broll_duration, len(broll_clips))
+    insert_points = find_broll_insert_points(main_duration, freeze_points, len(broll_clips))
     print(f"   Insert points: {[f'{p:.1f}s' for p in insert_points]}")
     
     if not insert_points:
@@ -71,41 +154,58 @@ def compose_with_broll(main_video: str, broll_clips: List[str], output_path: str
         for i, insert_point in enumerate(insert_points):
             if i >= len(broll_clips):
                 break
-                
-            # Main segment before B-roll
+            
+            # Main segment before B-roll (video only, no audio)
             main_seg = f"{tmpdir}/main_{i}.mp4"
+            seg_duration = insert_point - prev_end + crossfade
+            
             subprocess.run([
                 "ffmpeg", "-y", "-i", main_video,
-                "-ss", str(prev_end), "-t", str(insert_point - prev_end),
-                "-c:v", "libx264", "-crf", "18", "-c:a", "aac",
+                "-ss", str(max(0, prev_end - crossfade if i > 0 else prev_end)),
+                "-t", str(seg_duration),
+                "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+                "-an",  # No audio - we'll add original audio at the end
                 main_seg
             ], capture_output=True)
-            segments.append(main_seg)
             
-            # Prepare B-roll (ensure same format as main video - 9:16 vertical)
+            if Path(main_seg).exists() and os.path.getsize(main_seg) > 0:
+                segments.append(main_seg)
+            
+            # Prepare B-roll (ensure 9:16 vertical format)
             broll_seg = f"{tmpdir}/broll_{i}.mp4"
+            broll_actual = min(broll_duration, get_video_duration(broll_clips[i]))
+            
             subprocess.run([
                 "ffmpeg", "-y", "-i", broll_clips[i],
-                "-t", str(broll_duration),
+                "-t", str(broll_actual),
                 "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1,fps=30",
-                "-c:v", "libx264", "-crf", "18",
+                "-c:v", "libx264", "-crf", "18", "-preset", "fast",
                 "-an",  # No audio for B-roll
                 broll_seg
             ], capture_output=True)
-            segments.append(broll_seg)
             
-            prev_end = insert_point
+            if Path(broll_seg).exists() and os.path.getsize(broll_seg) > 0:
+                segments.append(broll_seg)
+                # Update prev_end to account for B-roll duration
+                prev_end = insert_point + broll_actual
+            else:
+                prev_end = insert_point
         
-        # Final main segment after last B-roll
+        # Final main segment after last B-roll (video only)
         if prev_end < main_duration:
             final_seg = f"{tmpdir}/main_final.mp4"
             subprocess.run([
                 "ffmpeg", "-y", "-i", main_video,
-                "-ss", str(prev_end),
-                "-c:v", "libx264", "-crf", "18", "-c:a", "aac",
+                "-ss", str(max(0, prev_end - crossfade)),
+                "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+                "-an",  # No audio - we'll add original audio at the end
                 final_seg
             ], capture_output=True)
-            segments.append(final_seg)
+            
+            if Path(final_seg).exists() and os.path.getsize(final_seg) > 0:
+                segments.append(final_seg)
+        
+        print(f"   Created {len(segments)} segments")
         
         # Create concat file
         concat_file = f"{tmpdir}/concat.txt"
@@ -114,35 +214,45 @@ def compose_with_broll(main_video: str, broll_clips: List[str], output_path: str
                 if Path(seg).exists():
                     f.write(f"file '{seg}'\n")
         
-        # Get audio from main video (we'll mix it back)
-        audio_file = f"{tmpdir}/audio.aac"
+        # Extract audio from ORIGINAL main video (before any processing)
+        audio_file = f"{tmpdir}/audio_original.wav"
         subprocess.run([
             "ffmpeg", "-y", "-i", main_video,
-            "-vn", "-c:a", "aac", audio_file
+            "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2",
+            audio_file
         ], capture_output=True)
         
-        # Concatenate all segments
+        # Concatenate all video segments (video only, no audio)
         video_only = f"{tmpdir}/video_only.mp4"
         subprocess.run([
             "ffmpeg", "-y",
             "-f", "concat", "-safe", "0",
             "-i", concat_file,
-            "-c:v", "libx264", "-crf", "18",
-            "-an", video_only
+            "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+            "-an",  # Strip all audio from concat
+            video_only
         ], capture_output=True)
         
-        # Mix audio back (loop/stretch to match new video duration)
-        new_duration = get_video_duration(video_only)
-        print(f"   New duration: {new_duration:.1f}s")
+        if not Path(video_only).exists():
+            print("   ❌ Video concatenation failed")
+            return None
         
-        # Final composition with audio
+        new_duration = get_video_duration(video_only)
+        audio_duration = get_video_duration(audio_file) if Path(audio_file).exists() else 0
+        print(f"   New video duration: {new_duration:.1f}s, Audio: {audio_duration:.1f}s")
+        
+        # Combine video with ORIGINAL audio (no re-encoding of audio)
+        # Use -shortest to handle any duration mismatch
         subprocess.run([
             "ffmpeg", "-y",
             "-i", video_only,
             "-i", audio_file,
             "-c:v", "copy",
-            "-c:a", "aac",
+            "-c:a", "aac", "-b:a", "192k",  # High quality audio encode
+            "-map", "0:v:0",
+            "-map", "1:a:0",
             "-shortest",
+            "-async", "1",  # Fix audio sync issues
             output_path
         ], capture_output=True)
     
@@ -160,7 +270,9 @@ def main():
     parser.add_argument("--main", required=True, help="Main video file")
     parser.add_argument("--broll", required=True, help="B-roll directory or manifest JSON")
     parser.add_argument("--output", required=True, help="Output video path")
-    parser.add_argument("--duration", type=float, default=5.0, help="B-roll clip duration")
+    parser.add_argument("--duration", type=float, default=4.0, help="B-roll clip duration (seconds)")
+    parser.add_argument("--crossfade", type=float, default=0.3, help="Crossfade duration (seconds)")
+    parser.add_argument("--num-clips", type=int, default=None, help="Number of B-roll clips to use")
     
     args = parser.parse_args()
     
@@ -178,9 +290,12 @@ def main():
         print(f"❌ Invalid B-roll path: {args.broll}")
         return
     
+    if args.num_clips:
+        broll_clips = broll_clips[:args.num_clips]
+    
     print(f"📂 Found {len(broll_clips)} B-roll clips")
     
-    compose_with_broll(args.main, broll_clips, args.output, args.duration)
+    compose_with_broll(args.main, broll_clips, args.output, args.duration, args.crossfade)
 
 
 if __name__ == "__main__":

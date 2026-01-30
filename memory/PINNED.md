@@ -21,6 +21,7 @@
 - **Don't dismiss info** the user just gave — if it doesn't fit assumptions, ASK
 - **Be resourceful** before asking questions
 - **Actions > words** — when you say you'll build something, DO IT
+- **THE GOLDEN RULE:** If you CAN do it, you SHOULD do it. No delegation when you have the tools.
 
 ## 📌 Pinned Items
 <!-- Add items below using: - [YYYY-MM-DD] Item description -->

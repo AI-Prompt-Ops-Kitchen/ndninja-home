@@ -132,31 +132,42 @@ def _extract_topics_regex(script_text: str, max_topics: int = 3) -> List[str]:
 
 
 def topic_to_broll_prompt(topic: str) -> str:
-    """Convert a topic into a cinematic B-roll prompt."""
+    """Convert a topic into a cinematic B-roll prompt. Avoids text/logos."""
+    
+    # IMPORTANT: All prompts must include "no text, no logos, no writing"
+    NO_TEXT = "no text, no logos, no writing, no words on screen"
     
     # Map common topics to visual prompts
     visual_mappings = {
-        'apple': 'Cinematic close-up of sleek Apple products on minimalist desk, soft lighting, shallow depth of field',
-        'iphone': 'Smooth tracking shot of iPhone on desk, screen glowing, modern office environment',
-        'ipad': 'Dramatic reveal of iPad Pro being used for creative work, stylus drawing',
-        'macbook': 'Elegant MacBook Pro in use, code on screen, warm ambient lighting',
-        'ai': 'Futuristic visualization of neural networks and data flowing, blue tech aesthetic',
-        'artificial intelligence': 'Abstract visualization of AI processing, glowing nodes and connections',
-        'code': 'Close-up of code scrolling on screen, soft keyboard clacking, developer workspace',
-        'coding': 'Hands typing on mechanical keyboard, code reflecting in glasses, focused developer',
-        'developer': 'Developer workspace with multiple monitors, code on screens, coffee nearby',
-        'google': 'Clean modern tech workspace with Google products, bright natural lighting',
-        'microsoft': 'Professional office environment with Surface devices, Windows on screens',
-        'smartphone': 'Cinematic shot of smartphone being used, notifications appearing, modern lifestyle',
-        'social media': 'Dynamic montage of social feeds scrolling, engagement notifications',
-        'youtube': 'Creator studio setup with ring light, camera, editing software on screen',
-        'video': 'Professional video editing timeline, color grading in progress',
-        'music': 'Audio waveforms visualizing, headphones, mixing console with soft lighting',
-        'gaming': 'RGB gaming setup, controller in hands, dynamic gameplay on ultrawide monitor',
-        'security': 'Lock icons, encrypted data visualization, cybersecurity operations center',
-        'privacy': 'Abstract visualization of data protection, shields and encryption',
-        'money': 'Stock charts and financial data, professional trading environment',
-        'business': 'Modern corporate office, professionals in meeting, glass walls',
+        'apple': f'Cinematic close-up of sleek consumer electronics on minimalist desk, soft lighting, shallow depth of field, {NO_TEXT}',
+        'iphone': f'Smooth tracking shot of modern smartphone on desk, screen glowing softly, modern office environment, {NO_TEXT}',
+        'ipad': f'Dramatic reveal of tablet being used for creative work, stylus drawing abstract art, {NO_TEXT}',
+        'macbook': f'Elegant laptop in use, abstract colorful display, warm ambient lighting, {NO_TEXT}',
+        'ai': f'Futuristic visualization of neural networks and data flowing, blue tech aesthetic, abstract glowing particles, {NO_TEXT}',
+        'artificial intelligence': f'Abstract visualization of AI processing, glowing nodes and connections, digital brain, {NO_TEXT}',
+        'code': f'Close-up of abstract code patterns on screen, soft keyboard clacking, developer workspace, {NO_TEXT}',
+        'coding': f'Hands typing on mechanical keyboard, screen reflecting in glasses, focused developer, {NO_TEXT}',
+        'developer': f'Developer workspace with multiple monitors, abstract code patterns, coffee nearby, {NO_TEXT}',
+        'google': f'Clean modern tech workspace, bright natural lighting, minimalist design, {NO_TEXT}',
+        'microsoft': f'Professional office environment with modern devices, natural lighting, {NO_TEXT}',
+        'smartphone': f'Cinematic shot of smartphone being used, soft glow from screen, modern lifestyle, {NO_TEXT}',
+        'social media': f'Hands scrolling on phone, engagement visualized as soft glowing particles, {NO_TEXT}',
+        'youtube': f'Creator studio setup with ring light, camera, soft ambient lighting, {NO_TEXT}',
+        'video': f'Professional video editing timeline abstract view, color grading in progress, {NO_TEXT}',
+        'music': f'Audio waveforms visualizing abstractly, headphones, mixing console with soft lighting, {NO_TEXT}',
+        'gaming': f'RGB gaming setup, controller in hands, dynamic colorful lighting, {NO_TEXT}',
+        'security': f'Abstract lock icons and shields, encrypted data visualization, cyber aesthetic, {NO_TEXT}',
+        'privacy': f'Abstract visualization of data protection, glowing shields and barriers, {NO_TEXT}',
+        'money': f'Stock charts abstract visualization, financial data as flowing particles, {NO_TEXT}',
+        'business': f'Modern corporate office, professionals in meeting, glass walls, natural lighting, {NO_TEXT}',
+        'samsung': f'Close-up of memory chips and semiconductors on circuit board, blue tech lighting, {NO_TEXT}',
+        'nvidia': f'High-tech GPU with glowing circuits, data center servers, green ambient glow, {NO_TEXT}',
+        'chip': f'Macro shot of semiconductor wafer, microchips in production, clean room aesthetic, {NO_TEXT}',
+        'memory': f'Close-up of RAM modules and memory chips, circuit board traces, blue tech lighting, {NO_TEXT}',
+        'hbm': f'Stacked memory chips visualization, high-bandwidth data flowing, futuristic tech, {NO_TEXT}',
+        'data center': f'Server racks with blinking lights, cooling systems, blue ambient lighting, {NO_TEXT}',
+        'power plant': f'Industrial facility with cooling towers, steam rising, sunset lighting, {NO_TEXT}',
+        'energy': f'Power grid visualization, electricity flowing through lines, dramatic lighting, {NO_TEXT}',
     }
     
     # Check for keyword matches
@@ -165,8 +176,8 @@ def topic_to_broll_prompt(topic: str) -> str:
         if key in topic_lower:
             return prompt
     
-    # Default: generate a generic cinematic shot of the topic
-    return f"Cinematic B-roll footage of {topic}, professional lighting, shallow depth of field, smooth camera movement, high production value"
+    # Default: generate a generic cinematic shot avoiding text
+    return f"Cinematic B-roll footage of {topic}, professional lighting, shallow depth of field, smooth camera movement, high production value, {NO_TEXT}"
 
 
 def generate_veo_broll(client, prompt: str, output_path: str, duration: int = 5) -> Optional[str]:
@@ -283,7 +294,7 @@ def generate_broll_set(topics: List[str], output_dir: Path, duration: int = 5) -
     return results
 
 
-def generate_broll_clips(script_text: str, output_dir: str, num_clips: int = 3,
+def generate_broll_clips(script_text: str, output_dir: str, num_clips: int = 4,
                          duration: int = 6, style: str = "cinematic") -> List[Dict]:
     """
     Generate B-roll clips from script text. 
