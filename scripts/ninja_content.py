@@ -3,20 +3,26 @@
 ninja_content.py — Full content pipeline: News → Script → Video → Ready to Post
 
 The Neurodivergent Ninja content factory.
+Now with LIP-SYNC powered by fal.ai Kling Avatar v2!
 
 Usage:
-    # Full auto mode (discovers news, picks top story, generates everything)
+    # Full auto mode with lip-sync (DEFAULT)
     ninja-content --auto
     
-    # Interactive mode (choose your story)
-    ninja-content --discover
-    ninja-content --pick 3
-    
-    # From custom script
+    # Custom script with lip-sync
     ninja-content --script "Your script text here"
+    
+    # Use pro quality lip-sync ($0.115/sec vs $0.056/sec)
+    ninja-content --script "..." --kling-model pro
+    
+    # Disable lip-sync (fall back to Veo looping)
+    ninja-content --script "..." --no-lip-sync
     
     # From script file
     ninja-content --script-file script.txt
+    
+    # With thumbnail and auto-publish
+    ninja-content --auto --thumbnail --publish youtube
 """
 
 import argparse
@@ -27,6 +33,7 @@ import sys
 import time
 import tempfile
 import requests
+import keyring
 from pathlib import Path
 
 # Add scripts directory to path for imports
@@ -171,6 +178,88 @@ def get_audio_duration(audio_path):
         "-of", "csv=p=0", audio_path
     ], capture_output=True, text=True)
     return float(result.stdout.strip())
+
+
+def generate_kling_avatar_video(image_path, audio_path, output_path, model="standard"):
+    """Generate lip-synced video using fal.ai Kling Avatar v2.
+    
+    Args:
+        image_path: Path to character image
+        audio_path: Path to audio file (voice)
+        output_path: Where to save the generated video
+        model: "standard" ($0.056/sec) or "pro" ($0.115/sec, higher quality)
+    
+    Returns:
+        output_path on success, None on failure
+    """
+    print("🎬 Generating lip-synced video with Kling Avatar v2...")
+    
+    # Get fal.ai API key from keyring
+    fal_key = keyring.get_password("fal_ai", "api_key")
+    if not fal_key:
+        print("   ❌ fal.ai API key not found in keyring")
+        print("   Run: keyring set fal_ai api_key")
+        return None
+    
+    os.environ["FAL_KEY"] = fal_key
+    
+    try:
+        import fal_client
+    except ImportError:
+        print("   ❌ fal_client not installed. Run: pip install fal-client")
+        return None
+    
+    # Upload image
+    print(f"   📤 Uploading image: {image_path}")
+    with open(image_path, "rb") as f:
+        image_data = f.read()
+    image_url = fal_client.upload(image_data, "image/jpeg")
+    
+    # Upload audio
+    print(f"   📤 Uploading audio: {audio_path}")
+    with open(audio_path, "rb") as f:
+        audio_data = f.read()
+    audio_url = fal_client.upload(audio_data, "audio/mpeg")
+    
+    # Select model
+    model_id = f"fal-ai/kling-video/ai-avatar/v2/{model}"
+    print(f"   🎭 Model: {model_id}")
+    print(f"   ⏳ Generating (typically 2-5 min)...")
+    
+    start_time = time.time()
+    
+    try:
+        result = fal_client.subscribe(
+            model_id,
+            arguments={
+                "image_url": image_url,
+                "audio_url": audio_url
+            },
+            with_logs=True
+        )
+    except Exception as e:
+        print(f"   ❌ Kling Avatar failed: {e}")
+        return None
+    
+    elapsed = time.time() - start_time
+    duration = result.get("duration", "N/A")
+    print(f"   ✅ Generated in {elapsed:.1f}s (video: {duration}s)")
+    
+    # Download video
+    video_url = result.get("video", {}).get("url")
+    if not video_url:
+        print(f"   ❌ No video URL in response: {result}")
+        return None
+    
+    print(f"   📥 Downloading video...")
+    r = requests.get(video_url)
+    with open(output_path, "wb") as f:
+        f.write(r.content)
+    
+    size = os.path.getsize(output_path)
+    print(f"   ✅ Video saved: {output_path} ({size/1024/1024:.1f}MB)")
+    
+    return output_path
 
 
 def generate_veo_video(prompt, duration_seconds, output_path, reference_image=None, use_vertex=True):
@@ -647,10 +736,22 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
     return draft_id
 
 
-def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, broll=False, capcut=False):
-    """Run the full content pipeline."""
+def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, broll=False, capcut=False, lip_sync=True, kling_model="standard"):
+    """Run the full content pipeline.
+    
+    Args:
+        lip_sync: If True (default), use Kling Avatar for lip-synced video.
+                  If False, use Veo looping background video.
+        kling_model: "standard" or "pro" for Kling Avatar quality.
+    """
+    mode_str = ""
+    if lip_sync:
+        mode_str = " (LIP-SYNC MODE)"
+    elif multiclip:
+        mode_str = " (MULTI-CLIP MODE)"
+    
     print("\n" + "="*60)
-    print("🥷 NINJA CONTENT PIPELINE" + (" (MULTI-CLIP MODE)" if multiclip else ""))
+    print("🥷 NINJA CONTENT PIPELINE" + mode_str)
     print("="*60 + "\n")
     
     OUTPUT_DIR.mkdir(exist_ok=True)
@@ -666,41 +767,66 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
         audio_duration = get_audio_duration(str(audio_path))
         print(f"   Audio duration: {audio_duration:.1f}s")
         
-        # 2. Generate video (single or multi-clip)
-        if multiclip:
-            # Import and use multi-clip generator
-            from ninja_multiclip import generate_multiclip
+        # 2. Generate video
+        if lip_sync:
+            # === LIP-SYNC MODE: Use Kling Avatar ===
+            # Generates lip-synced video directly from image + audio
+            # No looping needed - video matches audio duration perfectly
+            lip_sync_video = tmpdir / "lip_sync_video.mp4"
             
-            # Calculate how many clips we need (8s each, want ~30s unique)
-            num_clips = min(4, max(2, int(audio_duration / 8) + 1))
-            print(f"🎬 Generating {num_clips} varied clips for more natural movement...")
+            if not reference_image or not Path(reference_image).exists():
+                print("   ❌ Lip-sync requires a reference image (--image)")
+                return None
             
-            raw_video = tmpdir / "raw_video.mp4"
-            # Use Vertex AI for higher rate limits
-            if not generate_multiclip(reference_image, str(raw_video), num_clips, use_vertex=True):
-                print("   ⚠️ Multi-clip failed, falling back to single clip...")
-                multiclip = False
+            if not generate_kling_avatar_video(
+                reference_image, 
+                str(audio_path), 
+                str(lip_sync_video),
+                model=kling_model
+            ):
+                print("   ⚠️ Kling Avatar failed, falling back to Veo...")
+                lip_sync = False
+            else:
+                # Lip-sync video already has audio baked in!
+                # Skip straight to captions
+                combined = lip_sync_video
         
-        if not multiclip:
-            # Single clip mode
-            video_prompt = """Animate this 3D Pixar-style ninja character at the tech news desk.
+        if not lip_sync:
+            # === VEO MODE: Generate background video and loop ===
+            if multiclip:
+                # Import and use multi-clip generator
+                from ninja_multiclip import generate_multiclip
+                
+                # Calculate how many clips we need (8s each, want ~30s unique)
+                num_clips = min(4, max(2, int(audio_duration / 8) + 1))
+                print(f"🎬 Generating {num_clips} varied clips for more natural movement...")
+                
+                raw_video = tmpdir / "raw_video.mp4"
+                # Use Vertex AI for higher rate limits
+                if not generate_multiclip(reference_image, str(raw_video), num_clips, use_vertex=True):
+                    print("   ⚠️ Multi-clip failed, falling back to single clip...")
+                    multiclip = False
+            
+            if not multiclip:
+                # Single clip mode
+                video_prompt = """Animate this 3D Pixar-style ninja character at the tech news desk.
 CONTINUOUS SEAMLESS IDLE LOOP: Character breathes naturally, subtle rhythmic body sway,
 periodic slow eye blinks, gentle micro-movements that flow smoothly and loop seamlessly.
 Head perfectly still, eyes locked on camera, facing directly forward throughout.
 Professional news anchor posture. Animation must START and END in identical neutral pose
 for seamless looping. Smooth Pixar-quality animation with no pauses or freezes.
 Camera locked in static medium shot. No camera movement. Studio background unchanged."""
+                
+                raw_video = tmpdir / "raw_video.mp4"
+                # Request short clip to create multiple loops → more B-roll insertion points
+                # Veo minimum is 4s. A 4s clip looped for ~40s audio = ~10 loops = many seams for B-roll
+                veo_clip_duration = 4
+                if not generate_veo_video(video_prompt, veo_clip_duration, str(raw_video), reference_image):
+                    return None
             
-            raw_video = tmpdir / "raw_video.mp4"
-            # Request short clip to create multiple loops → more B-roll insertion points
-            # Veo minimum is 4s. A 4s clip looped for ~40s audio = ~10 loops = many seams for B-roll
-            veo_clip_duration = 4
-            if not generate_veo_video(video_prompt, veo_clip_duration, str(raw_video), reference_image):
-                return None
-        
-        # 3. Loop video to match audio (muted for CapCut, with audio for normal)
-        looped_video = tmpdir / "looped_video.mp4"
-        loop_video_to_duration(str(raw_video), audio_duration, str(looped_video))
+            # 3. Loop video to match audio (muted for CapCut, with audio for normal)
+            looped_video = tmpdir / "looped_video.mp4"
+            loop_video_to_duration(str(raw_video), audio_duration, str(looped_video))
         
         # 6. B-roll cutaways (generate early if capcut mode needs them)
         broll_paths = []
@@ -729,7 +855,9 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             final_video = capcut_dir / "main_video.mp4"
             final_audio = capcut_dir / "voice.mp3"
             
-            shutil.copy(str(looped_video), str(final_video))
+            # Use lip-sync video if available, otherwise looped video
+            source_video = str(lip_sync_video) if lip_sync else str(looped_video)
+            shutil.copy(source_video, str(final_video))
             shutil.copy(str(audio_path), str(final_audio))
             
             # Copy B-roll if any
@@ -762,9 +890,12 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             return str(capcut_dir)
         
         # Normal mode: burn captions and composite
-        # 4. Combine video + audio
-        combined = tmpdir / "combined.mp4"
-        combine_video_audio(str(looped_video), str(audio_path), str(combined))
+        # 4. Combine video + audio (skip if lip-sync already has audio)
+        if lip_sync:
+            combined = lip_sync_video  # Kling Avatar output already has synced audio
+        else:
+            combined = tmpdir / "combined.mp4"
+            combine_video_audio(str(looped_video), str(audio_path), str(combined))
         
         # 5. Burn captions
         captioned = tmpdir / "captioned.mp4"
@@ -813,7 +944,7 @@ def main():
     mode.add_argument("--script-file", type=str, help="Use script from file")
     
     parser.add_argument("--image", type=str, help="Reference image for character", 
-                        default=str(ASSETS_DIR / "reference" / "ninja_concept.jpg"))
+                        default=str(ASSETS_DIR / "reference" / "ninja_news_anchor.jpg"))
     parser.add_argument("--output", type=str, default="ninja_content", help="Output filename prefix")
     parser.add_argument("--category", type=str, default="tech", help="News category")
     parser.add_argument("--multiclip", action="store_true", 
@@ -834,6 +965,11 @@ def main():
                         help="Generate and insert B-roll cutaways to hide loop points")
     parser.add_argument("--capcut", action="store_true",
                         help="Output as CapCut draft for manual editing (requires CapCut API server)")
+    parser.add_argument("--no-lip-sync", action="store_true",
+                        help="Disable lip-sync (use Veo looping instead of Kling Avatar)")
+    parser.add_argument("--kling-model", default="standard",
+                        choices=["standard", "pro"],
+                        help="Kling Avatar quality: standard ($0.056/sec) or pro ($0.115/sec)")
     
     args = parser.parse_args()
     
@@ -878,7 +1014,17 @@ def main():
     print("-" * 40 + "\n")
     
     # Run pipeline
-    output = run_pipeline(script_text, ref_image, args.output, multiclip=args.multiclip, no_music=args.no_music, broll=args.broll, capcut=args.capcut)
+    output = run_pipeline(
+        script_text, 
+        ref_image, 
+        args.output, 
+        multiclip=args.multiclip, 
+        no_music=args.no_music, 
+        broll=args.broll, 
+        capcut=args.capcut,
+        lip_sync=not args.no_lip_sync,
+        kling_model=args.kling_model
+    )
     
     if output:
         print(f"\n🎉 Content ready: {output}")
