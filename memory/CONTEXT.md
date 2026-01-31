@@ -7,8 +7,14 @@
 ### 🥷 Ninja Content Pipeline [WORKING]
 Automated YouTube/social video creation. See `memory/projects/ninja-content.md`
 - Command: `ninja_content.py --auto --no-music --thumbnail`
-- Uses: Veo 3.1 (Vertex AI), ElevenLabs, Nano Banana Pro
+- Uses: Kling Avatar lip-sync, ElevenLabs, Nano Banana Pro
 - Voice clone: `pDrEFcc78kuc76ECGkU8`
+
+### 🤖 Ninja Assist [PHASE 2 COMPLETE]
+Neurodivergent-friendly AI routing layer. See `memory/projects/ninja-assist.md`
+- Phase 1 ✅: Intent Router (zero-token pattern matching)
+- Phase 2 ✅: Context State System (project awareness across sessions)
+- Next: Phase 3 (Auto-Triggers / Heartbeat integration)
 
 ### 🛡️ Compaction Safety System [JUST COMPLETED]
 All 3 tiers implemented:

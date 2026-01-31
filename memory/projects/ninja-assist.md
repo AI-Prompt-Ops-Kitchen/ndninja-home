@@ -30,8 +30,8 @@ Hybrid A+C architecture:
 | Design/Brainstorm | Shadow Council |
 
 ## Phases
-1. ⏳ Intent Router (Foundation)
-2. ⏳ Context State System
+1. ✅ Intent Router (Foundation) - `src/intent_router.py` (33/33 tests)
+2. ✅ Context State System - `src/state_manager.py` (8/8 tests)
 3. ⏳ Auto-Triggers (Heartbeat)
 4. ⏳ Clawdbot Integration
 5. ⏳ Learning & Refinement
