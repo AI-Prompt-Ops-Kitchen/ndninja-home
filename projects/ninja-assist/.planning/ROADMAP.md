@@ -1,14 +1,14 @@
 # Ninja Assist - Roadmap
 
-## Phase 1: Intent Router (Foundation)
+## Phase 1: Intent Router (Foundation) ✅ COMPLETE
 **Goal:** Plain language → categorized intent
 
-- [ ] Define intent categories (code, research, install, design)
-- [ ] Build pattern matching layer (regex/keywords)
-- [ ] Create intent → tool mapping
-- [ ] Test with common phrases
+- [x] Define intent categories (code, research, install, design)
+- [x] Build pattern matching layer (regex/keywords)
+- [x] Create intent → tool mapping
+- [x] Test with common phrases (33/33 tests passing)
 
-**Deliverable:** `intent_router.py` that classifies user input
+**Deliverable:** `src/intent_router.py` - classifies user input with 0 LLM tokens
 
 ---
 
