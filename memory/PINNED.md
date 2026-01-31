@@ -40,6 +40,20 @@ Due to ADHD + Autism, manual steps = failure points:
 - **If it can't be fully automated, it's not a valid solution**
 - This is a CORE DESIGN PRINCIPLE for all tools and workflows
 
+## 🛠️ GSD (Get Shit Done) - Claude Code Framework
+- **Installed:** `~/.claude/commands/GSD/`
+- **Source:** https://github.com/OutcomefocusAi/GSD
+- **Key Commands:**
+  - `/gsd:new-project` - Initialize with questioning → research → requirements → roadmap
+  - `/gsd:map-codebase` - Analyze existing codebase (brownfield)
+  - `/gsd:plan-phase N` - Create detailed execution plan
+  - `/gsd:execute-phase N` - Wave-based parallel execution
+  - `/gsd:verify-work` - Conversational UAT
+  - `/gsd:debug` - Systematic debugging with persistent state
+  - `/gsd:progress` - Check status, route to next action
+- **11 sub-agents:** planner, executor, verifier, roadmapper, researchers, debugger, codebase-mapper
+- **Creates `.planning/` folder** with PROJECT.md, REQUIREMENTS.md, ROADMAP.md, STATE.md
+
 ## 📌 Pinned Items
 <!-- Add items below using: - [YYYY-MM-DD] Item description -->
 

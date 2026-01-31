@@ -69,6 +69,13 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - Logs: `journalctl --user -u capcut-api -f`
 - Restart: `systemctl --user restart capcut-api`
 
+### GSD (Get Shit Done) - Claude Code Framework
+- **Location:** `~/.claude/commands/GSD/`
+- **Source:** https://github.com/OutcomefocusAi/GSD
+- **Purpose:** Multi-agent project planning & execution for Claude Code
+- **Use:** Run `/gsd:help` in Claude Code to see all commands
+- **Key flow:** `/gsd:new-project` → `/gsd:plan-phase 1` → `/gsd:execute-phase 1`
+
 ### Higgsfield (Kling Avatar)
 - SDK: `pip install higgsfield-client`
 - Auth: `HF_KEY="api-key:api-secret"` or `HF_API_KEY` + `HF_API_SECRET`
