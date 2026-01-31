@@ -59,12 +59,18 @@
 
 ---
 
-## Phase 5: Learning & Refinement
+## Phase 5: Learning & Refinement ✅ COMPLETE
 **Goal:** Get smarter over time
 
-- [ ] Log successful routes for pattern learning
-- [ ] Add user corrections mechanism
-- [ ] Expand pattern library based on usage
-- [ ] Measure token savings
+- [x] Log successful routes for pattern learning
+- [x] Add user corrections mechanism
+- [x] Expand pattern library based on usage
+- [x] Measure token savings
 
-**Deliverable:** Self-improving routing system
+**Deliverable:** `src/learning.py` - self-improving system (8/8 tests passing)
+
+**Features:**
+- Route logging to `~/.ninja-assist/route_logs.jsonl`
+- Correction with `--correct <category>` learns new patterns
+- Stats tracking: tokens saved, cost, accuracy
+- Learned patterns auto-applied before built-in patterns

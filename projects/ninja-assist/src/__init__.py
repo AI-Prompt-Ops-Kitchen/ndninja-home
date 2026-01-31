@@ -18,6 +18,15 @@ from .auto_triggers import (
     TriggerPriority,
     check_heartbeat,
 )
+from .learning import (
+    LearningSystem,
+    RouteLog,
+    LearnedPattern,
+    get_learner,
+    log_route,
+    correct,
+    stats,
+)
 
 __all__ = [
     # Intent Router
@@ -40,4 +49,12 @@ __all__ = [
     "TriggerType",
     "TriggerPriority",
     "check_heartbeat",
+    # Learning
+    "LearningSystem",
+    "RouteLog",
+    "LearnedPattern",
+    "get_learner",
+    "log_route",
+    "correct",
+    "stats",
 ]

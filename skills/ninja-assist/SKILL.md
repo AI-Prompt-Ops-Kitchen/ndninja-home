@@ -68,6 +68,27 @@ Trigger types:
 - `stale_project` — No activity in 48h
 - `phase_complete` — All tasks done, suggest next phase
 
+## Learning System
+
+Ninja Assist learns from corrections and tracks token savings.
+
+Correct a misclassification:
+```bash
+python3 /home/ndninja/clawd/skills/ninja-assist/scripts/route.py --correct research
+# Learns a new pattern from the last route
+```
+
+View stats:
+```bash
+python3 /home/ndninja/clawd/skills/ninja-assist/scripts/stats.py
+# Shows tokens saved, accuracy, learned patterns
+```
+
+Data stored in `~/.ninja-assist/`:
+- `route_logs.jsonl` — All routing decisions
+- `learned_patterns.json` — Patterns from corrections
+- `stats.json` — Token savings, route counts
+
 ## Usage in Conversation
 
 When user says something like:
@@ -77,3 +98,5 @@ When user says something like:
 - "install numpy" → Run `pip install numpy`
 
 Don't ask "which tool?" — just route based on intent.
+
+If user says "that was wrong, I meant research" → Run correction to learn.
