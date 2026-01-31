@@ -32,8 +32,19 @@ All 3 tiers implemented:
 - **CogVideoX 5B WORKING** on Vengeance! ~2min/clip, $0 cost, no rate limits
 - MuseTalk already installed — test for better lip sync next
 - musetalk conda env corrupted, using base env instead
-- YouTube OAuth still needs user to run browser auth
-- Awaiting v3 video feedback (audio distortion fix)
+- **YouTube OAuth WORKING** - branding token saved for channel updates
+
+## Active Content Queue
+- **Sat Feb 1, 9 AM CT:** Sonos Super Bowl Sale video
+- **Sun Feb 2, 9 AM CT:** Google AI Gaming Stocks video  
+- **Mon Feb 3, 9 AM CT:** Moltbook AI Social Network video
+- Reminders set via cron jobs
+
+## Ninja Assist Project (NEW)
+- Neurodivergent-friendly AI routing layer
+- Phase 1 COMPLETE: Intent Router (zero-token pattern matching)
+- Next: Phase 2 (Context State System)
+- Location: `projects/ninja-assist/`
 
 ## User Communication Notes
 - **ONE question at a time** (neurodivergent, multiple Qs overwhelming)
