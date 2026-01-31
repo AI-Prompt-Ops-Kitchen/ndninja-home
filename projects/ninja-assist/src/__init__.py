@@ -10,6 +10,14 @@ from .state_manager import (
     set_task,
     record_action,
 )
+from .auto_triggers import (
+    AutoTriggerEngine,
+    Trigger,
+    TriggerConfig,
+    TriggerType,
+    TriggerPriority,
+    check_heartbeat,
+)
 
 __all__ = [
     # Intent Router
@@ -25,4 +33,11 @@ __all__ = [
     "get_context",
     "set_task",
     "record_action",
+    # Auto-Triggers
+    "AutoTriggerEngine",
+    "Trigger",
+    "TriggerConfig",
+    "TriggerType",
+    "TriggerPriority",
+    "check_heartbeat",
 ]

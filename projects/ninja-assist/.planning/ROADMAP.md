@@ -24,15 +24,21 @@
 
 ---
 
-## Phase 3: Auto-Triggers (Heartbeat Integration)
+## Phase 3: Auto-Triggers (Heartbeat Integration) ✅ COMPLETE
 **Goal:** Proactive assistance without being asked
 
-- [ ] Define trigger conditions (pending tasks, time-based, etc.)
-- [ ] Integrate with Clawdbot heartbeat system
-- [ ] Surface relevant actions during heartbeats
-- [ ] Smart notification (don't spam)
+- [x] Define trigger conditions (pending tasks, stale project, phase complete)
+- [x] Integrate with Clawdbot heartbeat system
+- [x] Surface relevant actions during heartbeats
+- [x] Smart notification (spam prevention via TriggerHistory)
 
-**Deliverable:** Heartbeat hooks that check project states
+**Deliverable:** `src/auto_triggers.py` - heartbeat hooks with 8/8 tests passing
+
+**Trigger Types:**
+- `pending_tasks` - Surface when ≥3 tasks waiting
+- `stale_project` - Nudge after 48h inactivity
+- `phase_complete` - Celebrate + suggest next phase
+- `custom` - Register your own checks
 
 ---
 
