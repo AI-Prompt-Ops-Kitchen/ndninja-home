@@ -42,15 +42,20 @@
 
 ---
 
-## Phase 4: Clawdbot Integration
+## Phase 4: Clawdbot Integration ✅ COMPLETE
 **Goal:** Seamless integration with existing system
 
-- [ ] Create Ninja Assist skill for Clawdbot
-- [ ] Route intents to existing tools (ninja_content, exec, etc.)
-- [ ] Fallback to full LLM for ambiguous requests
-- [ ] Token usage tracking/optimization
+- [x] Create Ninja Assist skill for Clawdbot
+- [x] Route intents to existing tools (ninja_content, exec, etc.)
+- [x] Fallback to full LLM for ambiguous requests
+- [ ] Token usage tracking/optimization (deferred to Phase 5)
 
-**Deliverable:** Working skill that makes commands invisible
+**Deliverable:** `skills/ninja-assist/` - Clawdbot skill with 3 scripts
+
+**Scripts:**
+- `route.py` — Classify intent, suggest tool
+- `context.py` — Show project state
+- `heartbeat.py` — Check for triggers
 
 ---
 

@@ -33,7 +33,7 @@ Hybrid A+C architecture:
 1. ✅ Intent Router (Foundation) - `src/intent_router.py` (33/33 tests)
 2. ✅ Context State System - `src/state_manager.py` (8/8 tests)
 3. ✅ Auto-Triggers (Heartbeat) - `src/auto_triggers.py` (8/8 tests)
-4. ⏳ Clawdbot Integration
+4. ✅ Clawdbot Integration - `skills/ninja-assist/` (3 scripts)
 5. ⏳ Learning & Refinement
 
 ## Key Files
