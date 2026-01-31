@@ -69,4 +69,12 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - Logs: `journalctl --user -u capcut-api -f`
 - Restart: `systemctl --user restart capcut-api`
 
+### Higgsfield (Kling Avatar)
+- SDK: `pip install higgsfield-client`
+- Auth: `HF_KEY="api-key:api-secret"` or `HF_API_KEY` + `HF_API_SECRET`
+- Docs: https://docs.higgsfield.ai
+- Console: https://cloud.higgsfield.ai
+- Key model: **Kling Avatar 2.0** - image + audio → lip-synced video (up to 5 min)
+- Test script: `scripts/higgsfield_test.py`
+
 Add whatever helps you do your job. This is your cheat sheet.

@@ -16,13 +16,15 @@ All 3 tiers implemented:
 - Tier 2: Pin system, turn estimation, version history, language reframing
 - Tier 3: Named checkpoints, two-tier memory (PINNED.md), restore points
 
-## Recent Decisions (2026-01-29)
+## Recent Decisions (2026-01-30)
+- **CapCut DROPPED** - too many moving parts
+- **MuseTalk DROPPED** - dependency hell on Vengeance, too fragile
+- **Higgsfield Kling Avatar 2.0** - NEW LIP SYNC SOLUTION
+  - Image + custom audio → lip-synced video (up to 5 min)
+  - Cloud API, no local GPU needed
+  - User getting subscription now
 - Single clip + hard loop > multiclip (better quality, cheaper)
 - Nano Banana Pro > Imagen for thumbnails
-- Veo B-roll generator fixed (was Ken Burns, now real video)
-- **Audio fix**: Keep original audio as WAV, strip from segments, re-attach cleanly
-- **B-roll prompts**: All include "no text, no logos" to prevent gibberish
-- **4 clips default** instead of 3 for better coverage
 - **THE GOLDEN RULE**: If you CAN do it, you SHOULD do it. No delegation.
 
 ## Open Loops

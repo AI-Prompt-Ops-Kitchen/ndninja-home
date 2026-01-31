@@ -17,6 +17,14 @@
 - **Reference Image (news anchor):** `assets/reference/ninja_news_anchor.jpg`
 - **Vertex AI Project:** `gen-lang-client-0601509945`
 
+## 🎨 NNNN Branding (Neurodivergent Ninja News Network)
+- **Official Folder:** `assets/branding/nnnn_official/`
+- **Logo (All Blue):** `logo_all_blue.png` - ocean/sapphire monochrome
+- **Logo (Blue+White):** `logo_blue_white.png` - high contrast
+- **YouTube Banner:** `banner_all_blue_*.png` or `banner_blue_white_*.png`
+- **Watermark:** `watermark_*.png` (200x200)
+- **Profile Pic:** `profile_*.png` (800x800)
+
 ## 🔒 Non-Negotiables
 - **Database:** PostgreSQL always
 - **Don't dismiss info** the user just gave — if it doesn't fit assumptions, ASK
