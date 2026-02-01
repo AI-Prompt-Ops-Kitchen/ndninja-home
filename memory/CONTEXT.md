@@ -1,5 +1,5 @@
 # CONTEXT.md — Compaction-Resistant Summary
-> Last updated: 2026-01-29 23:12 EST
+> Last updated: 2026-01-31 21:59 EST
 > This file survives compaction. Keep under 50 lines.
 
 ## Active Projects
@@ -62,6 +62,13 @@ All 3 tiers implemented:
 - They hate re-explaining things
 - When unsure, check memory files BEFORE asking
 - **User felt understood** by neurodivergent insight — remember this matters
+
+## Chat History Database (NEW)
+- **Database:** `clawd_chat` in PostgreSQL
+- **6,859 messages** from last 48 hours imported
+- Full-text search enabled for catching up after compaction
+- Query: `python3 scripts/query_chat.py <command>`
+- Import: `python3 scripts/import_chat_history.py`
 
 ## Don't Forget
 - **PINNED.md** = items that NEVER get compressed

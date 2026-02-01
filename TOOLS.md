@@ -84,4 +84,18 @@ Skills are shared. Your setup is yours. Keeping them apart means you can update 
 - Key model: **Kling Avatar 2.0** - image + audio → lip-synced video (up to 5 min)
 - Test script: `scripts/higgsfield_test.py`
 
+### Development Rules
+- **Database:** PostgreSQL only — no SQLite, MySQL, etc. unless something critical absolutely requires it
+
+### Chat History Database
+- **Database:** `clawd_chat` (PostgreSQL)
+- **Table:** `chat_messages` (full-text search enabled)
+- **Import:** `python3 scripts/import_chat_history.py` (imports last 48h)
+- **Query:** `python3 scripts/query_chat.py <command>`
+  - `summary` — Stats and message counts
+  - `recent -H 24 -n 50` — Last N messages from past H hours
+  - `search "query" -n 20` — Full-text search
+  - `topics -H 12` — Recent user requests
+- **Use case:** After compaction, query this to catch up on conversation context
+
 Add whatever helps you do your job. This is your cheat sheet.
