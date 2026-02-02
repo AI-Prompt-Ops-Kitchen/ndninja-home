@@ -20,7 +20,7 @@ from benchmarks.cli_agent_arena.adapter_factory import get_adapter, check_adapte
 
 def list_tasks() -> List[str]:
     """List all available benchmark tasks"""
-    tasks_dir = Path("shared-tasks/algorithms")
+    tasks_dir = Path("benchmarks/shared-tasks/algorithms")
     task_paths = []
 
     if not tasks_dir.exists():
@@ -91,7 +91,7 @@ Examples:
     if args.list_tasks:
         print("Available benchmark tasks:\n")
         for task_path in list_tasks():
-            task = load_task(Path(f"shared-tasks/{task_path}"))
+            task = load_task(f"benchmarks/shared-tasks/{task_path}")
             print(f"  {task_path:30s} ({task.difficulty:6s}, ~{task.estimated_time_seconds}s)")
         return 0
 
@@ -149,11 +149,11 @@ def run_benchmarks(args):
 
         print(f"Running benchmarks with {agent}:")
 
+        adapter = None
         for task_path in task_list:
-            task = load_task(Path(f"shared-tasks/{task_path}"))
+            task = load_task(f"benchmarks/shared-tasks/{task_path}")
             print(f"  - {task.name} ({task.difficulty}, ~{task.estimated_time_seconds}s)...", end=" ", flush=True)
 
-            adapter = None
             try:
                 # Get adapter
                 adapter = get_adapter(agent)
