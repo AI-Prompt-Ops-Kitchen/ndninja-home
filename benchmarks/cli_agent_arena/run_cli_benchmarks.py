@@ -7,6 +7,7 @@ and records metrics (speed, correctness, cost, autonomy, quality).
 
 import argparse
 import sys
+import uuid
 from pathlib import Path
 from typing import List
 
@@ -14,11 +15,12 @@ from typing import List
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from benchmarks.cli_agent_arena.task_loader import load_task, list_all_tasks
+from benchmarks.cli_agent_arena.adapter_factory import get_adapter, check_adapter_availability
 
 
 def list_tasks() -> List[str]:
     """List all available benchmark tasks"""
-    tasks_dir = Path("benchmarks/shared-tasks/algorithms")
+    tasks_dir = Path("shared-tasks/algorithms")
     task_paths = []
 
     if not tasks_dir.exists():
@@ -50,7 +52,7 @@ Examples:
 
     parser.add_argument(
         "--agent",
-        choices=["kimi", "claude", "gemini"],
+        choices=["mock", "kimi", "claude", "gemini"],
         help="CLI agent to benchmark"
     )
 
@@ -77,19 +79,116 @@ Examples:
         help="Run all tasks for all agents"
     )
 
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Run benchmarks without saving to database"
+    )
+
     args = parser.parse_args()
 
     # Handle --list-tasks
     if args.list_tasks:
         print("Available benchmark tasks:\n")
         for task_path in list_tasks():
-            task = load_task(f"benchmarks/shared-tasks/{task_path}")
+            task = load_task(Path(f"shared-tasks/{task_path}"))
             print(f"  {task_path:30s} ({task.difficulty:6s}, ~{task.estimated_time_seconds}s)")
         return 0
 
-    # TODO: Implement actual benchmark execution
-    print("Benchmark execution not yet implemented")
-    print(f"Would run: agent={args.agent}, tasks={args.tasks}, category={args.category}, all={args.all}")
+    # Handle execution
+    if args.all or args.tasks or args.category:
+        return run_benchmarks(args)
+
+    print("No action specified. Use --help for usage information.")
+    return 1
+
+
+def run_benchmarks(args):
+    """Run benchmarks based on arguments
+
+    Args:
+        args: Parsed command-line arguments
+
+    Returns:
+        Exit code (0 = success)
+    """
+    # Determine which tasks to run
+    if args.all or args.category:
+        all_tasks = list_tasks()
+        if args.category:
+            task_list = [t for t in all_tasks if t.startswith(f"{args.category}/")]
+        else:
+            task_list = all_tasks
+    else:
+        task_list = args.tasks or []
+
+    if not task_list:
+        print("No tasks to run")
+        return 1
+
+    # Determine which agents to test
+    if args.all:
+        agents = ["mock", "kimi", "claude", "gemini"]
+    elif args.agent:
+        agents = [args.agent]
+    else:
+        print("Error: Must specify --agent or --all")
+        return 1
+
+    # Check adapter availability
+    availability = check_adapter_availability()
+
+    run_id = str(uuid.uuid4())
+    print(f"Benchmark Run ID: {run_id}\n")
+
+    results = []
+    for agent in agents:
+        if not availability.get(agent, False):
+            print(f"⚠️  Skipping {agent}: CLI not available")
+            continue
+
+        print(f"Running benchmarks with {agent}:")
+
+        for task_path in task_list:
+            task = load_task(Path(f"shared-tasks/{task_path}"))
+            print(f"  - {task.name} ({task.difficulty}, ~{task.estimated_time_seconds}s)...", end=" ", flush=True)
+
+            adapter = None
+            try:
+                # Get adapter
+                adapter = get_adapter(agent)
+
+                # Setup
+                adapter.setup(str(task.task_dir))
+
+                # Execute (this will fail for non-mock adapters)
+                result = adapter.execute_task(task.prompt, timeout=task.estimated_time_seconds * 2)
+
+                if result.success:
+                    print(f"✅ Success ({result.wall_time:.1f}s)")
+                else:
+                    print(f"❌ Failed")
+
+                results.append((agent, task, result))
+
+            except NotImplementedError as e:
+                print(f"⚠️  Not implemented: {e}")
+            except Exception as e:
+                print(f"❌ Error: {e}")
+            finally:
+                if adapter:
+                    adapter.cleanup()
+
+    # Summary
+    print(f"\n{'='*60}")
+    print(f"Completed {len(results)} benchmarks")
+
+    if args.dry_run:
+        print("(Dry run - results not saved to database)")
+    else:
+        # TODO: Save to database
+        print("(Database saving not yet implemented)")
+
     return 0
 
 

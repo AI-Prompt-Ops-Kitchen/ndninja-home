@@ -3,14 +3,17 @@
 import pytest
 import subprocess
 import sys
+from pathlib import Path
 
 
 def test_runner_help():
     """Test --help flag"""
+    runner_path = Path(__file__).parent / "run_cli_benchmarks.py"
     result = subprocess.run(
-        [sys.executable, "benchmarks/cli_agent_arena/run_cli_benchmarks.py", "--help"],
+        [sys.executable, str(runner_path), "--help"],
         capture_output=True,
-        text=True
+        text=True,
+        cwd=Path(__file__).parent.parent  # Run from benchmarks/ directory
     )
     assert result.returncode == 0
     assert "CLI Agent Benchmark Runner" in result.stdout
@@ -20,10 +23,12 @@ def test_runner_help():
 
 def test_runner_list_tasks():
     """Test --list-tasks flag"""
+    runner_path = Path(__file__).parent / "run_cli_benchmarks.py"
     result = subprocess.run(
-        [sys.executable, "benchmarks/cli_agent_arena/run_cli_benchmarks.py", "--list-tasks"],
+        [sys.executable, str(runner_path), "--list-tasks"],
         capture_output=True,
-        text=True
+        text=True,
+        cwd=Path(__file__).parent.parent  # Run from benchmarks/ directory
     )
     assert result.returncode == 0
     assert "quicksort" in result.stdout
