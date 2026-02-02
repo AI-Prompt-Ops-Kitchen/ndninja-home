@@ -18,9 +18,17 @@ from benchmarks.cli_agent_arena.task_loader import load_task, list_all_tasks
 from benchmarks.cli_agent_arena.adapter_factory import get_adapter, check_adapter_availability
 
 
+def get_shared_tasks_base() -> Path:
+    """Get the base path for shared-tasks directory"""
+    for base_path in [Path("benchmarks/shared-tasks"), Path("shared-tasks")]:
+        if base_path.exists():
+            return base_path
+    return Path("benchmarks/shared-tasks")  # Default
+
+
 def list_tasks() -> List[str]:
     """List all available benchmark tasks"""
-    tasks_dir = Path("benchmarks/shared-tasks/algorithms")
+    tasks_dir = get_shared_tasks_base() / "algorithms"
     task_paths = []
 
     if not tasks_dir.exists():
@@ -91,7 +99,7 @@ Examples:
     if args.list_tasks:
         print("Available benchmark tasks:\n")
         for task_path in list_tasks():
-            task = load_task(f"benchmarks/shared-tasks/{task_path}")
+            task = load_task(get_shared_tasks_base() / task_path)
             print(f"  {task_path:30s} ({task.difficulty:6s}, ~{task.estimated_time_seconds}s)")
         return 0
 
@@ -151,7 +159,7 @@ def run_benchmarks(args):
 
         adapter = None
         for task_path in task_list:
-            task = load_task(f"benchmarks/shared-tasks/{task_path}")
+            task = load_task(get_shared_tasks_base() / task_path)
             print(f"  - {task.name} ({task.difficulty}, ~{task.estimated_time_seconds}s)...", end=" ", flush=True)
 
             try:
