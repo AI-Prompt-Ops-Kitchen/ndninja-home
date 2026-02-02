@@ -9,5 +9,9 @@ pytest-asyncio>=0.23.2
 # Terminal recording
 asciinema>=2.4.0
 
-# Future dependencies (commented for Phase 3+)
+# Code quality (for Phase 4)
+# pylint>=3.0.0
+# flake8>=7.0.0
+
+# Future dependencies (commented for Phase 4+)
 # Pillow>=10.0.0    # Image processing for video export
