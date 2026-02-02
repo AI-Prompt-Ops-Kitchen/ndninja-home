@@ -1,5 +1,5 @@
 import pytest
-from benchmarks.cli_agent_arena.adapters.base import BenchmarkResult, CLIAgentAdapter
+from base import BenchmarkResult, CLIAgentAdapter
 
 
 class MockAdapter(CLIAgentAdapter):
