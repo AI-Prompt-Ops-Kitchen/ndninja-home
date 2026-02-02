@@ -1,0 +1,21 @@
+name: binary_search
+category: algorithms
+difficulty: easy
+description: Implement iterative binary search algorithm
+budgeted_cost_usd: 0.03
+estimated_time_seconds: 90
+test_command: pytest test_binary_search.py -v
+success_criteria:
+  - All tests must pass
+  - Must use iterative approach (not recursive)
+  - Time complexity must be O(log n)
+  - Must include type hints and docstring
+validation:
+  required_files:
+    - binary_search.py
+  test_file: test_binary_search.py
+  min_correctness_score: 100.0
+tags:
+  - searching
+  - algorithms
+  - binary-search

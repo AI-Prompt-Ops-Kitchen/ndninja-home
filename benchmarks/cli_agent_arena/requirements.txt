@@ -1,0 +1,11 @@
+# Core dependencies
+PyYAML>=6.0.1
+psycopg2-binary>=2.9.9
+
+# Testing
+pytest>=7.4.4
+pytest-asyncio>=0.23.2
+
+# Future dependencies (commented for Phase 2+)
+# asciinema>=2.4.0  # Terminal recording
+# Pillow>=10.0.0    # Image processing for recordings
