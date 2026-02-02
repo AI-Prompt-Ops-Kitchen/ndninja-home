@@ -16,6 +16,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from benchmarks.cli_agent_arena.task_loader import load_task, list_all_tasks
 from benchmarks.cli_agent_arena.adapter_factory import get_adapter, check_adapter_availability
+from benchmarks.cli_agent_arena.test_harness import TestHarness
+from benchmarks.cli_agent_arena.scoring import ScoringEngine
+from benchmarks.cli_agent_arena.database import DatabaseClient
 
 
 def get_shared_tasks_base() -> Path:
@@ -146,6 +149,11 @@ def run_benchmarks(args):
     # Check adapter availability
     availability = check_adapter_availability()
 
+    # Initialize services
+    test_harness = TestHarness()
+    scoring_engine = ScoringEngine()
+    db_client = DatabaseClient() if not args.dry_run else None
+
     run_id = str(uuid.uuid4())
     print(f"Benchmark Run ID: {run_id}\n")
 
@@ -157,11 +165,11 @@ def run_benchmarks(args):
 
         print(f"Running benchmarks with {agent}:")
 
-        adapter = None
         for task_path in task_list:
             task = load_task(get_shared_tasks_base() / task_path)
             print(f"  - {task.name} ({task.difficulty}, ~{task.estimated_time_seconds}s)...", end=" ", flush=True)
 
+            adapter = None
             try:
                 # Get adapter
                 adapter = get_adapter(agent)
@@ -169,18 +177,48 @@ def run_benchmarks(args):
                 # Setup
                 adapter.setup(str(task.task_dir))
 
-                # Execute (this will fail for non-mock adapters)
-                result = adapter.execute_task(task.prompt, timeout=task.estimated_time_seconds * 2)
+                # Execute
+                benchmark_result = adapter.execute_task(task.prompt, timeout=task.estimated_time_seconds * 2)
 
-                if result.success:
-                    print(f"✅ Success ({result.wall_time:.1f}s)")
+                # Run tests for correctness
+                test_result = test_harness.run_tests(
+                    task_dir=str(task.task_dir),
+                    test_command=task.test_command
+                )
+
+                # Calculate score
+                score = scoring_engine.calculate_total_score(
+                    benchmark_result=benchmark_result,
+                    test_result=test_result,
+                    estimated_time=task.estimated_time_seconds,
+                    budgeted_cost=task.budgeted_cost_usd,
+                    linting_issues=0  # TODO: Add linting in Phase 4
+                )
+
+                # Display result
+                if benchmark_result.success and test_result.pass_rate == 100.0:
+                    print(f"✅ Score: {score.total_score:.1f}/100 ({benchmark_result.wall_time:.1f}s)")
+                elif test_result.pass_rate > 0:
+                    print(f"⚠️  Partial: {score.total_score:.1f}/100 ({test_result.pass_rate:.0f}% tests passed)")
                 else:
-                    print(f"❌ Failed")
+                    print(f"❌ Failed: {score.total_score:.1f}/100")
 
-                results.append((agent, task, result))
+                # Save to database
+                if db_client:
+                    result_id = db_client.save_result(
+                        agent_name=agent,
+                        task_name=task.name,
+                        task_category=task.category,
+                        benchmark_result=benchmark_result,
+                        test_result=test_result,
+                        score=score
+                    )
+                    print(f"     Saved to database (ID: {result_id})")
+
+                results.append((agent, task, benchmark_result, test_result, score))
 
             except NotImplementedError as e:
-                print(f"⚠️  Not implemented: {e}")
+                print(f"⚠️  Not implemented")
             except Exception as e:
                 print(f"❌ Error: {e}")
             finally:
@@ -193,9 +231,6 @@ def run_benchmarks(args):
 
     if args.dry_run:
         print("(Dry run - results not saved to database)")
-    else:
-        # TODO: Save to database
-        print("(Database saving not yet implemented)")
 
     return 0
 
