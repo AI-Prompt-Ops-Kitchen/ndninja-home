@@ -1,0 +1,123 @@
+# LLM Benchmark Suite Configuration
+
+# Vengeance server settings
+vengeance:
+  host: "100.98.226.75"
+  user: "Steam"
+  ollama_path: "ollama"
+
+# Models to benchmark
+models:
+  production:
+    - name: "qwen2.5:32b"
+      vram: "19GB"
+      recommended: true
+
+  rapid:
+    - name: "qwen2.5:3b"
+      vram: "1.9GB"
+      recommended: true
+
+  excluded:
+    - name: "codellama:34b"
+      reason: "Known reliability issues (LLM Council 2026-01-08)"
+      vram: "19GB"
+
+  experimental:
+    - name: "llama3.1:70b"
+      vram: "42GB"
+      note: "CPU offloading - slow but educational"
+
+# Benchmark categories
+categories:
+  algorithms:
+    enabled: true
+    weight: 0.30
+    timeout: 120
+    benchmarks:
+      - quicksort
+      - mergesort
+      - binary_search
+      - lru_cache
+      - dijkstra
+      - fibonacci_dp
+
+  api_integration:
+    enabled: true
+    weight: 0.25
+    timeout: 180
+    benchmarks:
+      - rest_client
+      - db_query_builder
+      - async_fetch
+      - retry_logic
+
+  debugging:
+    enabled: true
+    weight: 0.20
+    timeout: 120
+    benchmarks:
+      - off_by_one
+      - race_condition
+      - memory_leak
+      - edge_cases
+
+  multi_language:
+    enabled: true
+    weight: 0.15
+    timeout: 120
+    benchmarks:
+      - javascript_promises
+      - typescript_interfaces
+
+  real_world:
+    enabled: true
+    weight: 0.10
+    timeout: 90
+    benchmarks:
+      - config_parser
+      - file_processor
+      - date_formatter
+      - string_sanitizer
+
+# Scoring weights
+scoring:
+  correctness: 0.40    # Unit test pass rate
+  code_quality: 0.25   # Linting, formatting, complexity
+  performance: 0.20    # Runtime vs reference
+  security: 0.15       # Security scan results
+
+# Validation settings
+validation:
+  pipeline: "/home/ndninja/scripts/llm-code-validator.py"
+  required_pass_rate: 0.80  # 80% of tests must pass
+  fail_fast: false          # Continue even if validation fails
+  save_generated_code: true
+
+# Database settings
+database:
+  enabled: true
+  connection: "postgresql://postgres@localhost/workspace"
+  table: "llm_benchmark_results"
+
+# Report settings
+reports:
+  output_dir: "./reports"
+  formats:
+    - json
+    - html
+    - markdown
+  include_charts: true
+  include_code_samples: true
+
+# Timeouts
+timeouts:
+  generation: 300      # Max time for LLM to generate code (seconds)
+  test_execution: 60   # Max time for tests to run (seconds)
+  total_per_benchmark: 600  # Max total time per benchmark (10 min)
+
+# Resource limits
+limits:
+  max_concurrent_benchmarks: 1
+  max_retries: 2
+  log_retention_days: 30

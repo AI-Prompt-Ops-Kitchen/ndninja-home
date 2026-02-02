@@ -1,0 +1,21 @@
+Implement the quicksort algorithm in Python.
+
+Requirements:
+1. Function signature: def quicksort(arr: list) -> list
+2. Use the standard quicksort algorithm with a pivot
+3. Handle edge cases (empty list, single element, duplicates)
+4. Return a new sorted list (do not modify the input)
+5. Include type hints
+6. Add a docstring explaining the algorithm
+
+Example:
+>>> quicksort([3, 1, 4, 1, 5, 9, 2, 6])
+[1, 1, 2, 3, 4, 5, 6, 9]
+
+>>> quicksort([])
+[]
+
+>>> quicksort([5])
+[5]
+
+Write clean, readable code with proper variable names.
