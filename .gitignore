@@ -1,1 +1,4 @@
 .env.calendar
+scripts/youtube/client_secrets.json
+scripts/youtube/youtube_oauth.json
+.redis_password
