@@ -10,3 +10,4 @@ output/*.mp3
 assets/music/*.mp3
 assets/backgrounds/*.png
 assets/scenes/
+.worktrees/
