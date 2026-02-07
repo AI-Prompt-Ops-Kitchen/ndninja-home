@@ -58,7 +58,7 @@ def get_api_keys():
     keys = {}
     
     # Google/Veo
-    keys['google'] = os.environ.get('GOOGLE_API_KEY', 'AIzaSyAFQJmUow1dsNqYTXRvEuRVZowzpr8-cXk')
+    keys['google'] = os.environ.get('GOOGLE_API_KEY', 'YOUR_GOOGLE_API_KEY_HERE')
     
     # ElevenLabs
     keys['elevenlabs'] = os.environ.get('ELEVENLABS_API_KEY', '')
