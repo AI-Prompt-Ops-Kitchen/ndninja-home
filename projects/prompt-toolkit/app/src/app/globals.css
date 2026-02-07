@@ -1,0 +1,267 @@
+@import "tailwindcss";
+
+@theme {
+  /* === Color Palette === */
+  /* Base surfaces */
+  --color-background: #0a0a0f;
+  --color-surface: #111119;
+  --color-surface-hover: #16161f;
+  --color-elevated: #1a1a27;
+
+  /* Gray scale */
+  --color-gray-950: #0a0a0f;
+  --color-gray-900: #111119;
+  --color-gray-850: #16161f;
+  --color-gray-800: #1e1e2e;
+  --color-gray-700: #2d2d40;
+  --color-gray-600: #3d3d55;
+  --color-gray-500: #5a5a78;
+  --color-gray-400: #8888a0;
+  --color-gray-300: #b0b0c4;
+  --color-gray-200: #d0d0dd;
+  --color-gray-100: #eeeef2;
+
+  /* Accent - Indigo */
+  --color-indigo-700: #4338ca;
+  --color-indigo-600: #6366f1;
+  --color-indigo-500: #818cf8;
+  --color-indigo-400: #a5b4fc;
+  --color-indigo-300: #c7d2fe;
+
+  /* Purple */
+  --color-purple-700: #7c3aed;
+  --color-purple-600: #a855f7;
+  --color-purple-500: #c084fc;
+  --color-purple-400: #d8b4fe;
+
+  /* Cyan */
+  --color-cyan-600: #06b6d4;
+  --color-cyan-500: #22d3ee;
+  --color-cyan-400: #67e8f9;
+
+  /* Semantic */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #3b82f6;
+
+  /* Shadows */
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15), 0 0 60px rgba(99, 102, 241, 0.05);
+  --shadow-glow-strong: 0 0 30px rgba(99, 102, 241, 0.25), 0 0 80px rgba(99, 102, 241, 0.1);
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.3), 0 0 20px rgba(99, 102, 241, 0.08);
+
+  /* Fonts */
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+}
+
+/* === Global Styles === */
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-gray-100);
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gray-700);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gray-600);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-gray-700) transparent;
+}
+
+/* === Selection === */
+::selection {
+  background: color-mix(in srgb, var(--color-indigo-600) 40%, transparent);
+}
+
+/* === Focus === */
+*:focus-visible {
+  outline: 2px solid var(--color-indigo-500);
+  outline-offset: 2px;
+}
+
+/* === Glass morphism utility === */
+.glass {
+  background: rgba(17, 17, 25, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-strong {
+  background: rgba(17, 17, 25, 0.85);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* === Gradient text === */
+.gradient-text {
+  background: linear-gradient(90deg, #818cf8 0%, #c084fc 50%, #22d3ee 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-accent {
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* === Glow button === */
+.glow-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-button::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #6366f1, #a855f7, #06b6d4);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glow-button:hover::before {
+  opacity: 1;
+}
+
+.glow-button::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  background: var(--color-gray-900);
+  border-radius: inherit;
+  z-index: -1;
+}
+
+/* === Mesh gradient background === */
+.mesh-gradient {
+  background:
+    radial-gradient(at 27% 37%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+    radial-gradient(at 97% 21%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
+    radial-gradient(at 52% 99%, rgba(6, 182, 212, 0.06) 0px, transparent 50%);
+}
+
+/* === Animated gradient border === */
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #6366f1, #a855f7, #06b6d4);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.5;
+}
+
+/* === Noise texture overlay === */
+.noise {
+  position: relative;
+}
+
+.noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* === Shimmer animation === */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+}
+
+/* === Pulse dot === */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* === Float animation === */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* === Scrollbar-hide utility === */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* === Code block styling === */
+pre code {
+  font-family: var(--font-mono);
+}
+
+/* === Template variable highlighting === */
+.template-var {
+  color: #c084fc;
+  background: rgba(168, 85, 247, 0.1);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}

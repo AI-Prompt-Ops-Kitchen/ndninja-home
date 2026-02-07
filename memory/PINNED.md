@@ -11,11 +11,35 @@
 
 ## 🎯 Active Project: Ninja Content Pipeline
 - **Command:** `ninja_content.py --auto --no-music --thumbnail`
-- **Voice Clone ID:** `pDrEFcc78kuc76ECGkU8`
-- **Reference Image (video):** `assets/reference/ninja_concept.jpg`
-- **Reference Image (thumbnail):** `assets/reference/ninja_pixar_avatar.jpg`
-- **Reference Image (news anchor):** `assets/reference/ninja_news_anchor.jpg`
+- **Voice ID:** `aQspKon0UdKOuBZQQrEE` (Neurodivergent Ninja Remix)
+- **TTS Model:** `eleven_v3` (works with remix, more natural flow)
+- **Reference Image (video):** `assets/reference/ninja_helmet_v4_hires.jpg` (1568x2720)
+- **Reference Image (thumbnail):** `assets/reference/ninja_helmet_v4_hires.jpg`
 - **Vertex AI Project:** `gen-lang-client-0601509945`
+
+### Video Generation Stack (2026-02-07) ✅ VERIFIED WORKING
+1. **TTS:** Remix voice + eleven_v3 (no timestamps needed - skip captions)
+2. **Avatar:** Kling Avatar v2 Standard via fal.ai
+3. **Captions:** NONE - rely on YouTube/Instagram auto-captions
+
+### ⚠️ CRITICAL: Image Resolution Requirements
+- **MINIMUM:** 1024x1792 pixels
+- **WhatsApp compresses images!** Always use HD mode or send as Document
+- Low-res images cause Kling to hallucinate Chinese/foreign text
+
+### Standard Intro
+```
+What's up my fellow ninjas!? This is Neurodivergent Ninja here and I'm back with another quick update video.
+```
+
+### Standard Outro
+```
+Thanks for watching my video! Please like, follow and subscribe to help this channel grow! This is Neurodivergent Ninja signing off. I'll see you in my next video!
+```
+
+### Pipeline Backup
+- **Location:** `backups/pipeline_20260207_103704/`
+- **Config Doc:** `PIPELINE_CONFIG.md`
 
 ## 🎨 NNNN Branding (Neurodivergent Ninja News Network)
 - **Official Folder:** `assets/branding/nnnn_official/`

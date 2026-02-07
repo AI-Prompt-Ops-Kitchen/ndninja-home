@@ -52,6 +52,7 @@ def test_kling_avatar(image_path: str, audio_path: str, output_dir: str = "outpu
                     "audio": audio_url,
                     # These params may vary by model
                     "aspect_ratio": "9:16",
+                    "prompt": "Static camera, stable framing. Professional presenter speaking to camera. No camera movement or zoom.",
                 },
                 on_queue_update=lambda s: print(f"  Status: {s}")
             )
