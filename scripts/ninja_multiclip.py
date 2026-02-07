@@ -22,7 +22,7 @@ from google.genai import types
 
 
 def get_api_key():
-    return os.environ.get('GOOGLE_API_KEY', 'AIzaSyAFQJmUow1dsNqYTXRvEuRVZowzpr8-cXk')
+    return os.environ.get('GOOGLE_API_KEY', '')
 
 
 def get_client(use_vertex=False):

@@ -92,7 +92,7 @@ def generate_kenburns_image(topic: str, output_path: str, style: str = "tech") -
     from google import genai
     from google.genai import types
     
-    api_key = os.environ.get('GOOGLE_API_KEY', 'AIzaSyAFQJmUow1dsNqYTXRvEuRVZowzpr8-cXk')
+    api_key = os.environ.get('GOOGLE_API_KEY', '')
     client = genai.Client(api_key=api_key)
     
     style_prompts = {
