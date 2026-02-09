@@ -54,12 +54,56 @@ class ClaudeParser(BaseOutputParser):
 
         return input_cost + output_cost
 
-    def extract_metrics(self, stdout: str, stderr: str) -> Dict[str, Any]:
+    def count_tool_calls(self, output: str) -> int:
+        """Count tool usage from output
+
+        Args:
+            output: Claude CLI output
+
+        Returns:
+            Number of tool calls
+        """
+        # Pattern matches: "Using tool: X" or "Tool use:" or "<tool_use>"
+        pattern = r'Using tool:|Tool use:|<tool_use>'
+        matches = re.findall(pattern, output, re.IGNORECASE)
+        return len(matches)
+
+    def detect_retries(self, output: str) -> int:
+        """Detect retry attempts from output
+
+        Args:
+            output: Claude CLI output
+
+        Returns:
+            Number of retries
+        """
+        # Pattern matches: "Retry", "Attempting again", "Re-attempting"
+        pattern = r'Retry|Attempting again|Re-attempting'
+        matches = re.findall(pattern, output, re.IGNORECASE)
+        return len(matches)
+
+    def detect_error_recovery(self, output: str, exit_code: int) -> bool:
+        """Detect if errors were recovered from
+
+        Args:
+            output: Claude CLI output
+            exit_code: Process exit code
+
+        Returns:
+            True if errors present but final success
+        """
+        has_errors = bool(re.search(r'Error:|Failed:|Exception:', output, re.IGNORECASE))
+        successful_exit = exit_code == 0
+
+        return has_errors and successful_exit
+
+    def extract_metrics(self, stdout: str, stderr: str, exit_code: int = 0) -> Dict[str, Any]:
         """Extract all metrics from Claude output
 
         Args:
             stdout: Standard output from Claude CLI
             stderr: Standard error from Claude CLI
+            exit_code: Process exit code
 
         Returns:
             Dictionary with all extracted metrics
@@ -72,10 +116,19 @@ class ClaudeParser(BaseOutputParser):
         # Calculate cost
         cost = self.calculate_cost(tokens)
 
+        # Count tool calls
+        tool_calls = self.count_tool_calls(output)
+
+        # Detect retries
+        retries = self.detect_retries(output)
+
+        # Detect error recovery
+        error_recovered = self.detect_error_recovery(output, exit_code)
+
         return {
             "token_count": tokens,
             "cost": cost,
-            "tool_calls": 0,
-            "retries": 0,
-            "error_recovered": False,
+            "tool_calls": tool_calls,
+            "retries": retries,
+            "error_recovered": error_recovered,
         }
