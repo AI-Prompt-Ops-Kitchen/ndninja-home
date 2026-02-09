@@ -1,34 +1,36 @@
-"""Test Claude Code adapter"""
-
 import pytest
+from unittest.mock import patch, MagicMock
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from adapters.claude import ClaudeCodeAdapter
-from adapters.base import BenchmarkResult
 
 
-def test_claude_adapter_creation():
-    """Test Claude adapter can be instantiated"""
+def test_adapter_initialization():
+    """Test ClaudeCodeAdapter initialization"""
+    adapter = ClaudeCodeAdapter(api_key="test-key")
+    assert adapter.api_key == "test-key"
+    assert adapter.task_dir is None
+
+
+def test_setup():
+    """Test adapter setup"""
     adapter = ClaudeCodeAdapter()
-    assert adapter is not None
+    adapter.setup("/tmp/task")
+    assert adapter.task_dir == "/tmp/task"
 
 
-def test_claude_adapter_setup():
-    """Test Claude adapter setup"""
-    adapter = ClaudeCodeAdapter()
-    adapter.setup("/tmp/test-task")
-    assert adapter.task_dir == "/tmp/test-task"
+@patch('adapters.claude.subprocess.run')
+def test_check_available_installed(mock_run):
+    """Test check_available when Claude is installed"""
+    mock_run.return_value = MagicMock(returncode=0)
+
+    assert ClaudeCodeAdapter.check_available() is True
+    mock_run.assert_called_once()
 
 
-@pytest.mark.skip(reason="Requires Claude Code CLI and API key")
-def test_claude_adapter_execute():
-    """Test Claude adapter execution (integration test)"""
-    adapter = ClaudeCodeAdapter()
-    adapter.setup("../../shared-tasks/quicksort")
-
-    result = adapter.execute_task("Implement quicksort", timeout=300)
-
-    assert isinstance(result, BenchmarkResult)
-    assert result.recording_path.endswith(".cast")
+@patch('adapters.claude.subprocess.run', side_effect=FileNotFoundError)
+def test_check_available_not_installed(mock_run):
+    """Test check_available when Claude is not installed"""
+    assert ClaudeCodeAdapter.check_available() is False
