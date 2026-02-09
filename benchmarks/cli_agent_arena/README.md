@@ -30,7 +30,7 @@ Comprehensive benchmark system for comparing AI CLI coding agents (Kimi CLI, Cla
 - Runner integration with scoring ✅
 - **55 tests passing, 4 skipped**
 
-**Phase 4: Reporting & Analytics** 🚧 In Progress
+**Phase 4: Reporting & Analytics** 🚧 In Progress (Milestone 2/3 complete)
 
 **Milestone 1: Kimi + Basic Report** ✅ Complete
 - Code quality analysis (pylint/flake8) ✅
@@ -39,12 +39,13 @@ Comprehensive benchmark system for comparing AI CLI coding agents (Kimi CLI, Cla
 - HTML report generator with dashboard ✅
 - **85 tests passing, 4 skipped** (30 new tests: 7 base parser, 9 kimi parser, 5 quality, 2 base result, 5 kimi adapter, 3 html, 3 integration)
 
-**Milestone 2: Claude + Comparison** 🚧 Next
-- Claude Code adapter implementation
-- Claude output parser
-- Multi-agent comparison reports
+**Milestone 2: Claude + Comparison** ✅ Complete
+- Claude Code adapter implementation ✅
+- Claude output parser ✅
+- Multi-agent comparison reports ✅
+- **105+ tests passing, 4 skipped** (20 new tests: 7 claude parser, 4 claude adapter, 2 comparison, 3 integration, 2 determine_winner, 2 generate_comparison)
 
-**Milestone 3: Gemini + Polish** 🔜 Future
+**Milestone 3: Gemini + Polish** 🚧 Next
 - Gemini CLI adapter
 - Three-way comparison dashboard
 - Final polish and optimization
@@ -93,6 +94,46 @@ metrics = parser.extract_metrics(
     'Executing tool: write_file\ninput=1500, output=2300', ''
 )
 print(f'Tokens: {metrics[\"tokens\"]}, Cost: ${metrics[\"cost\"]:.3f}')
+"
+```
+
+### Milestone 2 Usage Examples
+
+```bash
+# Run both Kimi and Claude on same task for comparison
+python benchmarks/cli_agent_arena/run_cli_benchmarks.py \
+  --agent kimi,claude \
+  --tasks algorithms/quicksort
+
+# Generate comparison report from database
+python -c "
+from benchmarks.cli_agent_arena.reporting import HTMLGenerator
+from benchmarks.cli_agent_arena.database import DatabaseClient
+
+db = DatabaseClient()
+results = db.get_results_for_task('algorithms/quicksort')
+
+# results = {'kimi': BenchmarkResult(...), 'claude': BenchmarkResult(...)}
+generator = HTMLGenerator()
+html = generator.generate_comparison(results, 'algorithms/quicksort')
+generator.save(html, 'reports/comparison.html')
+print('Comparison report saved to reports/comparison.html')
+"
+
+# Parse Claude Code output
+python -c "
+from benchmarks.cli_agent_arena.adapters.parsers import ClaudeParser
+
+parser = ClaudeParser()
+output = '''
+Using tool: Read
+Using tool: Write
+Input tokens: 1,234
+Output tokens: 567
+'''
+metrics = parser.extract_metrics(output, '', exit_code=0)
+print(f'Tokens: {metrics[\"token_count\"]}, Cost: ${metrics[\"cost\"]:.4f}')
+print(f'Tool calls: {metrics[\"tool_calls\"]}, Retries: {metrics[\"retries\"]}')
 "
 ```
 
