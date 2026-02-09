@@ -79,3 +79,65 @@ def test_html_generator_output_to_file():
             assert "claude" in content
     finally:
         os.unlink(temp_path)
+
+
+def test_generate_comparison_table():
+    """Test generating comparison table for multiple agents"""
+    from adapters.base import BenchmarkResult
+
+    generator = HTMLGenerator()
+
+    kimi_result = BenchmarkResult(
+        success=True,
+        wall_time=45.2,
+        token_count={"input": 1500, "output": 2300},
+        cost=0.038,
+        retries=1,
+        tool_calls=12,
+        error_recovered=True,
+        generated_files=["quicksort.py"],
+        logs="Kimi execution log",
+        recording_path="kimi.cast",
+        quality_score=87.5,
+    )
+
+    claude_result = BenchmarkResult(
+        success=True,
+        wall_time=38.7,
+        token_count={"input": 1200, "output": 1800},
+        cost=0.042,
+        retries=0,
+        tool_calls=8,
+        error_recovered=False,
+        generated_files=["quicksort.py"],
+        logs="Claude execution log",
+        recording_path="claude.cast",
+        quality_score=92.3,
+    )
+
+    results = {"kimi": kimi_result, "claude": claude_result}
+
+    html = generator.generate_comparison(results, "algorithms/quicksort")
+
+    assert "kimi" in html.lower()
+    assert "claude" in html.lower()
+    assert "45.2" in html  # Kimi time
+    assert "38.7" in html  # Claude time
+    assert "comparison" in html.lower()
+
+
+def test_determine_winner():
+    """Test determining winner for a metric"""
+    generator = HTMLGenerator()
+
+    # Lower is better (time, cost)
+    winner = generator.determine_winner({"kimi": 45.2, "claude": 38.7}, lower_is_better=True)
+    assert winner == "claude"
+
+    # Higher is better (score, quality)
+    winner = generator.determine_winner({"kimi": 87.5, "claude": 92.3}, lower_is_better=False)
+    assert winner == "claude"
+
+    # Tie
+    winner = generator.determine_winner({"kimi": 100.0, "claude": 100.0}, lower_is_better=False)
+    assert winner == "tie"
