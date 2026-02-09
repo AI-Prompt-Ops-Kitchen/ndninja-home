@@ -35,6 +35,25 @@ class ClaudeParser(BaseOutputParser):
 
         return tokens
 
+    def calculate_cost(self, tokens: Dict[str, int]) -> float:
+        """Calculate cost from token counts
+
+        Args:
+            tokens: Dictionary with 'input' and 'output' counts
+
+        Returns:
+            Cost in USD
+        """
+        # Anthropic pricing (as of Feb 2026)
+        # Sonnet 4.5: $3/MTok input, $15/MTok output
+        INPUT_PRICE_PER_1K = 0.003
+        OUTPUT_PRICE_PER_1K = 0.015
+
+        input_cost = tokens.get("input", 0) * INPUT_PRICE_PER_1K / 1000
+        output_cost = tokens.get("output", 0) * OUTPUT_PRICE_PER_1K / 1000
+
+        return input_cost + output_cost
+
     def extract_metrics(self, stdout: str, stderr: str) -> Dict[str, Any]:
         """Extract all metrics from Claude output
 
@@ -50,10 +69,13 @@ class ClaudeParser(BaseOutputParser):
         # Extract tokens
         tokens = self.extract_tokens(output)
 
+        # Calculate cost
+        cost = self.calculate_cost(tokens)
+
         return {
             "token_count": tokens,
-            "cost": 0.0,  # Calculated separately
-            "tool_calls": 0,  # Implemented in next task
-            "retries": 0,  # Implemented in next task
-            "error_recovered": False,  # Implemented in next task
+            "cost": cost,
+            "tool_calls": 0,
+            "retries": 0,
+            "error_recovered": False,
         }
