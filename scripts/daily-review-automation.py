@@ -184,11 +184,11 @@ def throttle_suggestions(suggestions, max_count=MAX_NEW_SUGGESTIONS):
     return kept, throttled
 
 
-def analyze_with_council(conversations):
-    """Send conversations to LLM Council for analysis."""
-    logger.info("Analyzing conversations with LLM Council...")
+COUNCIL_SCRIPT = Path('/home/ndninja/projects/llm-council/council.py')
 
-    # Format conversations for analysis
+
+def _build_analysis_prompt(conversations):
+    """Build the analysis prompt from conversation data."""
     conv_data = []
     for conv in conversations:
         conv_data.append({
@@ -201,8 +201,7 @@ def analyze_with_council(conversations):
             'date': conv['created_at'].isoformat() if conv['created_at'] else None
         })
 
-    # Create analysis prompt
-    prompt = f"""Analyze these Claude Code conversation summaries to identify patterns and suggest improvements.
+    return f"""Analyze these Claude Code conversation summaries to identify patterns and suggest improvements.
 
 CONVERSATION DATA:
 {json.dumps(conv_data, indent=2)}
@@ -224,68 +223,108 @@ For each suggestion, provide:
 
 Return ONLY a valid JSON array of suggestion objects, nothing else. Example:
 [
-  {{
-    "type": "skill",
-    "title": "Create /example skill",
-    "rationale": "User requested this 3 times",
-    "implementation_notes": "Use X approach",
-    "priority": "high"
-  }}
+  {{"type": "skill", "title": "Create /example skill", "rationale": "User requested this 3 times", "implementation_notes": "Use X approach", "priority": "high"}}
 ]
 """
 
-    # Call LLM Council
+
+def _parse_json_suggestions(text):
+    """Extract JSON array of suggestions from LLM response text."""
+    # Try to find a JSON array in the response
+    match = re.search(r'(\[[\s\S]*\])', text)
+    if not match:
+        return []
+
+    try:
+        suggestions = json.loads(match.group(1))
+        if isinstance(suggestions, list):
+            return suggestions
+    except json.JSONDecodeError:
+        pass
+
+    return []
+
+
+def _dedup_within_run(suggestions):
+    """Deduplicate suggestions by title within a single run."""
+    seen_titles = set()
+    unique = []
+    for s in suggestions:
+        title_lower = s.get('title', '').lower()
+        if title_lower and title_lower not in seen_titles:
+            seen_titles.add(title_lower)
+            unique.append(s)
+    return unique
+
+
+def _analyze_with_claude_cli(prompt):
+    """Fallback: use claude CLI for analysis when LLM Council is unavailable."""
+    logger.info("Using claude CLI as fallback analyzer...")
+
     try:
         result = subprocess.run(
-            ['python3', '/home/ndninja/projects/llm-council/council.py', prompt],
+            ['claude', '-p', prompt, '--output-format', 'text'],
             capture_output=True,
             text=True,
-            timeout=300  # 5 minute timeout
+            timeout=120
         )
 
         if result.returncode != 0:
-            logger.error(f"LLM Council failed: {result.stderr}")
+            logger.error(f"claude CLI failed (exit {result.returncode}): {result.stderr[:200]}")
             return []
 
-        # Parse council output
-        # The council saves to /tmp/council_result.json
+        suggestions = _parse_json_suggestions(result.stdout)
+        logger.info(f"claude CLI returned {len(suggestions)} suggestions")
+        return _dedup_within_run(suggestions)
+
+    except FileNotFoundError:
+        logger.error("claude CLI not found")
+        return []
+    except subprocess.TimeoutExpired:
+        logger.error("claude CLI timed out (120s)")
+        return []
+    except Exception as e:
+        logger.error(f"Error calling claude CLI: {e}")
+        return []
+
+
+def _analyze_with_council(prompt):
+    """Use LLM Council for analysis (multi-model)."""
+    logger.info("Using LLM Council for analysis...")
+
+    try:
+        result = subprocess.run(
+            ['python3', str(COUNCIL_SCRIPT), prompt],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        if result.returncode != 0:
+            logger.error(f"LLM Council failed: {result.stderr[:200]}")
+            return []
+
         try:
             with open('/tmp/council_result.json', 'r') as f:
                 council_data = json.load(f)
 
                 all_suggestions = []
-
                 for model, response in council_data.get('individual_responses', {}).items():
                     logger.info(f"Parsing {model} response...")
-
-                    # Look for JSON array in response
-                    match = re.search(r'(\[[\s\S]*?\])', response)
-                    if match:
-                        try:
-                            model_suggestions = json.loads(match.group(1))
-                            logger.info(f"  Found {len(model_suggestions)} suggestions from {model}")
-                            all_suggestions.extend(model_suggestions)
-                        except json.JSONDecodeError:
-                            logger.warning(f"  {model} response contains [ but not valid JSON")
-                            continue
+                    model_suggestions = _parse_json_suggestions(response)
+                    if model_suggestions:
+                        logger.info(f"  Found {len(model_suggestions)} suggestions from {model}")
+                        all_suggestions.extend(model_suggestions)
                     else:
-                        logger.warning(f"  No JSON array found in {model} response")
+                        logger.warning(f"  No valid JSON suggestions from {model}")
 
                 if not all_suggestions:
                     logger.warning("No suggestions extracted from any model")
                     return []
 
-                # Deduplicate suggestions by title within this run (case-insensitive)
-                seen_titles = set()
-                unique_suggestions = []
-                for suggestion in all_suggestions:
-                    title_lower = suggestion.get('title', '').lower()
-                    if title_lower and title_lower not in seen_titles:
-                        seen_titles.add(title_lower)
-                        unique_suggestions.append(suggestion)
-
-                logger.info(f"Total suggestions: {len(all_suggestions)} ({len(unique_suggestions)} unique within run)")
-                return unique_suggestions
+                unique = _dedup_within_run(all_suggestions)
+                logger.info(f"Total: {len(all_suggestions)} raw, {len(unique)} unique")
+                return unique
 
         except FileNotFoundError:
             logger.error("Council result file not found")
@@ -300,6 +339,22 @@ Return ONLY a valid JSON array of suggestion objects, nothing else. Example:
     except Exception as e:
         logger.error(f"Error calling LLM Council: {e}")
         return []
+
+
+def analyze_with_council(conversations):
+    """Analyze conversations using LLM Council (primary) or claude CLI (fallback)."""
+    logger.info("Analyzing conversations...")
+
+    prompt = _build_analysis_prompt(conversations)
+
+    # Try LLM Council first, fall back to claude CLI
+    if COUNCIL_SCRIPT.exists():
+        suggestions = _analyze_with_council(prompt)
+        if suggestions:
+            return suggestions
+        logger.warning("Council returned no results, falling back to claude CLI")
+
+    return _analyze_with_claude_cli(prompt)
 
 
 def insert_suggestions(suggestions, source_session=None, dry_run=False):
