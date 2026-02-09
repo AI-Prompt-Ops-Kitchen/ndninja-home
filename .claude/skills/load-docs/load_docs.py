@@ -24,6 +24,7 @@ else:
 from context7_cache import CacheManager
 from context7_fingerprint import generate_fingerprint
 from manifest_parsers import parse_all_manifests
+from context7_mcp import Context7MCPClient
 
 # Configure logging to file only (stdout is for user-facing output)
 os.makedirs(os.path.expanduser('~/.logs'), exist_ok=True)
@@ -60,7 +61,8 @@ def detect_libraries_from_project(project_path: str) -> list:
     return libraries
 
 
-def load_library(cache_manager, library: str, version: str, force_refresh: bool) -> dict:
+def load_library(cache_manager, library: str, version: str,
+                 force_refresh: bool, mcp_client=None) -> dict:
     """Load documentation for a single library.
 
     Returns: {'library': str, 'version': str, 'source': str, 'time_ms': int, 'success': bool}
@@ -81,7 +83,6 @@ def load_library(cache_manager, library: str, version: str, force_refresh: bool)
         cached = cache_manager.get(fingerprint)
         if cached:
             elapsed = int((time.monotonic() - start) * 1000)
-            # Determine if it came from Redis or PostgreSQL by checking Redis directly
             redis_key = f"context7:cache:{fingerprint}"
             if cache_manager.redis.get(redis_key):
                 result['source'] = 'Redis'
@@ -91,15 +92,34 @@ def load_library(cache_manager, library: str, version: str, force_refresh: bool)
             result['success'] = True
             return result
 
-    # Cache miss — need Context7 MCP API
-    # TODO: Phase 5 will implement context7_mcp.py to actually call the MCP tool
-    # For now, log the miss and report it
-    elapsed = int((time.monotonic() - start) * 1000)
-    result['time_ms'] = elapsed
-    result['source'] = 'api_needed'
-    result['success'] = False
+    # Cache miss — fetch via Context7 MCP
+    if mcp_client is None:
+        elapsed = int((time.monotonic() - start) * 1000)
+        result['time_ms'] = elapsed
+        result['source'] = 'no_client'
+        logger.warning(f"Cache MISS for {library}-{version} — no MCP client available")
+        return result
 
-    logger.info(f"Cache MISS for {library}-{version} — Context7 MCP query needed")
+    try:
+        fetch_result = mcp_client.fetch_and_cache(
+            library=library,
+            version=version,
+            intent='general',
+            cache_manager=cache_manager
+        )
+        elapsed = int((time.monotonic() - start) * 1000)
+        result['time_ms'] = elapsed
+        if fetch_result['success']:
+            result['source'] = 'API'
+            result['success'] = True
+        else:
+            result['source'] = fetch_result['source']
+    except Exception as e:
+        elapsed = int((time.monotonic() - start) * 1000)
+        result['time_ms'] = elapsed
+        result['source'] = 'error'
+        logger.error(f"MCP fetch failed for {library}-{version}: {e}")
+
     return result
 
 
@@ -135,8 +155,9 @@ def main():
         print("       /load-docs --auto  (detect from project manifests)")
         return 1
 
-    # Initialize cache
+    # Initialize cache and MCP client
     cache = get_cache_manager()
+    mcp_client = None
 
     print(f"Loading documentation...")
 
@@ -146,20 +167,35 @@ def main():
     miss_count = 0
 
     for entry in lib_entries:
-        result = load_library(cache, entry['library'], entry['version'], args.refresh)
+        result = load_library(cache, entry['library'], entry['version'],
+                              args.refresh, mcp_client)
+        # If cache miss and no MCP client yet, try connecting
+        if not result['success'] and mcp_client is None:
+            mcp_client = Context7MCPClient(timeout=30, max_queries=len(lib_entries) * 2)
+            if mcp_client.connect():
+                print("  Connected to Context7 MCP server")
+                result = load_library(cache, entry['library'], entry['version'],
+                                      args.refresh, mcp_client)
+            else:
+                print("  Could not connect to Context7 MCP server")
+                mcp_client = None
+
         results.append(result)
 
         # Format output
         lib_label = f"{result['library']} {result['version']}"
-        if result['success']:
+        if result['success'] and result['source'] == 'API':
+            fetched_count += 1
+            print(f"  {lib_label:<20s} fetched (API)       {result['time_ms']}ms")
+        elif result['success']:
             cached_count += 1
             print(f"  {lib_label:<20s} cached ({result['source']:<10s}) {result['time_ms']}ms")
-        elif result['source'] == 'api_needed':
-            miss_count += 1
-            print(f"  {lib_label:<20s} needs fetch (Context7 MCP not yet wired)")
         else:
             miss_count += 1
-            print(f"  {lib_label:<20s} failed")
+            print(f"  {lib_label:<20s} failed ({result['source']})")
+
+    if mcp_client:
+        mcp_client.close()
 
     # Summary
     print()
@@ -167,16 +203,13 @@ def main():
     parts = []
     if cached_count:
         parts.append(f"{cached_count} cached")
+    if fetched_count:
+        parts.append(f"{fetched_count} fetched")
     if miss_count:
-        parts.append(f"{miss_count} pending API")
+        parts.append(f"{miss_count} failed")
     summary = ', '.join(parts) if parts else 'none'
     print(f"Loaded {len(results)} libraries ({summary})")
     print(f"Total time: {total_ms}ms")
-
-    if miss_count:
-        print()
-        print("Note: Context7 MCP integration pending (Phase 5).")
-        print("Cached entries will be served instantly on future runs.")
 
     return 0
 
