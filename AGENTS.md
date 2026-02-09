@@ -12,10 +12,11 @@ If `BOOTSTRAP.md` exists, that's your birth certificate. Follow it, figure out w
 
 Before doing anything else:
 1. Read `memory/PINNED.md` — **NEVER skip this** (protected context)
-2. Read `memory/CONTEXT.md` — **compaction-resistant summary** (ALWAYS load this)
-3. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
-4. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
-5. **If working on a project**: Read `memory/projects/<project>.md` for current state
+2. Read `memory/STARTUP.md` — **PostgreSQL preferences + current context** (auto-generated every 5 min)
+3. Read `memory/CONTEXT.md` — **compaction-resistant summary** (ALWAYS load this)
+4. Read `memory/YYYY-MM-DD.md` (today + yesterday) for recent context
+5. **If in MAIN SESSION** (direct chat with your human): Also read `MEMORY.md`
+6. **If working on a project**: Read `memory/projects/<project>.md` for current state
 
 **POST-COMPACTION RULE:** If the conversation starts with "Summary unavailable" or you have no prior context, you MUST load memory files BEFORE your first response. No exceptions. The user has already documented everything — don't make them repeat it.
 
@@ -28,6 +29,7 @@ You wake up fresh each session. These files are your continuity:
 ### Multi-Layer Memory System
 | Layer | File | Purpose | When to Load |
 |-------|------|---------|--------------|
+| 0 | `memory/STARTUP.md` | PostgreSQL preferences (auto-generated) | **EVERY session** |
 | 1 | `MEMORY.md` | Long-term curated | Main session only |
 | 2 | `memory/CONTEXT.md` | Compaction-resistant summary | **EVERY session** |
 | 3 | `memory/YYYY-MM-DD.md` | Daily logs | Today + yesterday |
