@@ -240,11 +240,6 @@
             "type": "command",
             "command": "/home/ndninja/.claude/hooks/on-stop-reflect.sh",
             "timeout": 60
-          },
-          {
-            "type": "command",
-            "command": "/home/ndninja/.claude/hooks/on-stop-save-summary.py",
-            "timeout": 90
           }
         ]
       }
