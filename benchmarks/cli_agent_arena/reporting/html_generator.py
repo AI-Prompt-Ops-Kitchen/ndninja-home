@@ -113,3 +113,142 @@ class HTMLGenerator:
 
         with open(output_file, "w") as f:
             f.write(html)
+
+    def determine_winner(self, values: Dict[str, float], lower_is_better: bool = False) -> str:
+        """Determine winner for a metric
+
+        Args:
+            values: Dict of agent_name -> metric value
+            lower_is_better: True if lower values are better (time, cost)
+
+        Returns:
+            Agent name that won, or "tie"
+        """
+        if not values:
+            return "tie"
+
+        if lower_is_better:
+            min_val = min(values.values())
+            winners = [k for k, v in values.items() if v == min_val]
+        else:
+            max_val = max(values.values())
+            winners = [k for k, v in values.items() if v == max_val]
+
+        return winners[0] if len(winners) == 1 else "tie"
+
+    def generate_comparison(self, results: Dict[str, BenchmarkResult], task_name: str) -> str:
+        """Generate comparison report for multiple agents
+
+        Args:
+            results: Dict of agent_name -> BenchmarkResult
+            task_name: Name of task being compared
+
+        Returns:
+            HTML string with comparison dashboard
+        """
+        if not results:
+            return "<html><body><h1>No results to compare</h1></body></html>"
+
+        agents = list(results.keys())
+
+        # Build comparison table
+        comparison_rows = []
+
+        # Speed comparison
+        speeds = {agent: results[agent].wall_time for agent in agents}
+        speed_winner = self.determine_winner(speeds, lower_is_better=True)
+        comparison_rows.append({
+            "metric": "Speed (seconds)",
+            "values": speeds,
+            "winner": speed_winner,
+        })
+
+        # Cost comparison
+        costs = {agent: results[agent].cost for agent in agents}
+        cost_winner = self.determine_winner(costs, lower_is_better=True)
+        comparison_rows.append({
+            "metric": "Cost (USD)",
+            "values": costs,
+            "winner": cost_winner,
+        })
+
+        # Tool calls comparison
+        tool_calls = {agent: results[agent].tool_calls for agent in agents}
+        tools_winner = self.determine_winner(tool_calls, lower_is_better=True)
+        comparison_rows.append({
+            "metric": "Tool Calls",
+            "values": tool_calls,
+            "winner": tools_winner,
+        })
+
+        # Quality comparison
+        qualities = {agent: getattr(results[agent], 'quality_score', 0.0) for agent in agents}
+        quality_winner = self.determine_winner(qualities, lower_is_better=False)
+        comparison_rows.append({
+            "metric": "Code Quality",
+            "values": qualities,
+            "winner": quality_winner,
+        })
+
+        # Build HTML
+        html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Benchmark Comparison: {task_name}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        h1 {{ color: #333; }}
+        table {{ border-collapse: collapse; width: 100%; margin-top: 20px; }}
+        th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+        th {{ background-color: #4CAF50; color: white; }}
+        .winner {{ background-color: #d4edda; font-weight: bold; }}
+        .tie {{ background-color: #f8f9fa; }}
+    </style>
+</head>
+<body>
+    <h1>Benchmark Comparison: {task_name}</h1>
+    <h2>Head-to-Head Comparison</h2>
+    <table>
+        <tr>
+            <th>Metric</th>
+"""
+
+        for agent in agents:
+            html += f"            <th>{agent.capitalize()}</th>\n"
+        html += "            <th>Winner</th>\n        </tr>\n"
+
+        for row in comparison_rows:
+            html += "        <tr>\n"
+            html += f"            <td>{row['metric']}</td>\n"
+
+            for agent in agents:
+                value = row['values'][agent]
+                is_winner = row['winner'] == agent
+                is_tie = row['winner'] == "tie"
+                cell_class = "winner" if is_winner else ("tie" if is_tie else "")
+
+                # Format value
+                if isinstance(value, float):
+                    if "Cost" in row['metric']:
+                        formatted = f"${value:.4f}"
+                    elif "Quality" in row['metric']:
+                        formatted = f"{value:.1f}"
+                    else:
+                        formatted = f"{value:.1f}"
+                else:
+                    formatted = str(value)
+
+                checkmark = " ✓" if is_winner else ""
+                html += f"            <td class='{cell_class}'>{formatted}{checkmark}</td>\n"
+
+            winner_text = row['winner'].capitalize() if row['winner'] != "tie" else "Tie"
+            html += f"            <td>{winner_text}</td>\n"
+            html += "        </tr>\n"
+
+        html += """
+    </table>
+</body>
+</html>
+"""
+        return html
