@@ -205,6 +205,15 @@
         ]
       },
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/ndninja/.claude/hooks/on-session-start-context7.sh",
+            "timeout": 15
+          }
+        ]
+      },
+      {
         "matcher": "",
         "hooks": [
           {
