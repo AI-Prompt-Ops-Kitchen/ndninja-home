@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CLI Agent Benchmark - {{ task_name }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header .task-name {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .summary {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .summary h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .winner {
+            font-size: 1.5em;
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-card .label {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .results-table {
+            padding: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-winner {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .quality-score {
+            font-weight: bold;
+        }
+
+        .quality-high {
+            color: #28a745;
+        }
+
+        .quality-medium {
+            color: #ffc107;
+        }
+
+        .quality-low {
+            color: #dc3545;
+        }
+
+        .footer {
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9em;
+            background: #f8f9fa;
+        }
+
+        .recording-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .recording-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CLI Agent Benchmark Arena</h1>
+            <div class="task-name">Task: {{ task_name }}</div>
+        </div>
+
+        <div class="summary">
+            <h2>Summary</h2>
+            {% if winner %}
+            <div class="winner">Winner: {{ winner.name }} (Score: {{ "%.1f"|format(winner.score) }}/100)</div>
+            {% endif %}
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="label">Agents Tested</div>
+                    <div class="value">{{ results|length }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Fastest Time</div>
+                    <div class="value">{{ "%.1f"|format(fastest_time) }}s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Lowest Cost</div>
+                    <div class="value">${{ "%.3f"|format(lowest_cost) }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Highest Quality</div>
+                    <div class="value">{{ "%.1f"|format(highest_quality) }}/100</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-table">
+            <h2>Detailed Results</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Agent</th>
+                        <th>Status</th>
+                        <th>Time (s)</th>
+                        <th>Cost (USD)</th>
+                        <th>Quality</th>
+                        <th>Tool Calls</th>
+                        <th>Recording</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agent_name, result in results.items() %}
+                    <tr>
+                        <td>
+                            <strong>{{ agent_name }}</strong>
+                            {% if agent_name == winner.name %}
+                            <span class="badge badge-winner">WINNER</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if result.success %}
+                            <span class="badge badge-success">SUCCESS</span>
+                            {% else %}
+                            <span class="badge badge-danger">FAILED</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ "%.1f"|format(result.wall_time) }}</td>
+                        <td>${{ "%.3f"|format(result.cost) }}</td>
+                        <td>
+                            <span class="quality-score {% if result.quality_score >= 80 %}quality-high{% elif result.quality_score >= 60 %}quality-medium{% else %}quality-low{% endif %}">
+                                {{ "%.1f"|format(result.quality_score) }}/100
+                            </span>
+                        </td>
+                        <td>{{ result.tool_calls }}</td>
+                        <td>
+                            {% if result.recording_path %}
+                            <a href="{{ result.recording_path }}" class="recording-link">View Recording</a>
+                            {% else %}
+                            <span style="color: #6c757d;">N/A</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            Generated on {{ timestamp }}<br>
+            CLI Agent Benchmark Arena - Phase 4
+        </div>
+    </div>
+</body>
+</html>
