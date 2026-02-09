@@ -46,3 +46,52 @@ def test_calculate_cost_zero_tokens():
     cost = parser.calculate_cost(tokens)
 
     assert cost == 0.0
+
+
+def test_count_tool_calls():
+    """Test counting tool usage from output"""
+    parser = ClaudeParser()
+
+    output = """
+Running task...
+Using tool: Read
+Using tool: Bash
+Using tool: Write
+Task complete.
+"""
+
+    tool_calls = parser.count_tool_calls(output)
+    assert tool_calls == 3
+
+
+def test_detect_retries():
+    """Test detecting retry attempts"""
+    parser = ClaudeParser()
+
+    output = """
+Attempting operation...
+Error occurred
+Retrying...
+Attempting again...
+Success!
+"""
+
+    retries = parser.detect_retries(output)
+    assert retries == 2
+
+
+def test_detect_error_recovery():
+    """Test detecting error recovery"""
+    parser = ClaudeParser()
+
+    # Errors present but successful exit
+    output_with_recovery = "Error: File not found\nRetrying...\nSuccess!"
+    assert parser.detect_error_recovery(output_with_recovery, exit_code=0) is True
+
+    # Errors and failed exit
+    output_failed = "Error: File not found\nFailed."
+    assert parser.detect_error_recovery(output_failed, exit_code=1) is False
+
+    # No errors
+    output_clean = "Task completed successfully"
+    assert parser.detect_error_recovery(output_clean, exit_code=0) is False
