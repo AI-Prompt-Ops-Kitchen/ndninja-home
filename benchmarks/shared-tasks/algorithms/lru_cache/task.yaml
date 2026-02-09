@@ -1,0 +1,21 @@
+name: lru_cache
+category: algorithms
+difficulty: medium
+description: Implement LRU (Least Recently Used) cache data structure
+budgeted_cost_usd: 0.05
+estimated_time_seconds: 240
+test_command: pytest test_lru_cache.py -v
+success_criteria:
+  - All tests must pass
+  - Implementation must use LRU eviction policy
+  - O(1) time complexity for get and put operations
+validation:
+  required_files:
+    - lru_cache.py
+  test_file: test_lru_cache.py
+  min_correctness_score: 80.0
+tags:
+  - data-structures
+  - caching
+  - lru
+  - hash-map

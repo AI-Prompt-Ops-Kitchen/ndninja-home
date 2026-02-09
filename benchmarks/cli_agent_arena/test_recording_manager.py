@@ -23,7 +23,8 @@ def test_recording_manager_init(temp_recordings_dir):
 def test_recording_manager_default_dir():
     """Test default recordings directory"""
     manager = RecordingManager()
-    assert manager.output_dir == Path("recordings")
+    expected = Path(__file__).parent / "recordings"
+    assert manager.output_dir == expected
 
 
 def test_get_recording_path(temp_recordings_dir):

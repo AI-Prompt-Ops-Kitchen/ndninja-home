@@ -1,0 +1,20 @@
+name: binary_search
+category: algorithms
+difficulty: easy
+description: Implement binary search algorithm for sorted arrays
+budgeted_cost_usd: 0.03
+estimated_time_seconds: 120
+test_command: pytest test_binary_search.py -v
+success_criteria:
+  - All tests must pass
+  - Implementation must use binary search (O(log n))
+  - Handle edge cases (empty array, single element, not found)
+validation:
+  required_files:
+    - binary_search.py
+  test_file: test_binary_search.py
+  min_correctness_score: 80.0
+tags:
+  - searching
+  - binary-search
+  - algorithms

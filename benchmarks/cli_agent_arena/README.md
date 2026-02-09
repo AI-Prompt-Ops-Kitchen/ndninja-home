@@ -30,25 +30,29 @@ Comprehensive benchmark system for comparing AI CLI coding agents (Kimi CLI, Cla
 - Runner integration with scoring ✅
 - **55 tests passing, 4 skipped**
 
-**Phase 4: Reporting & Analytics** 🚧 In Progress (Milestone 2/3 complete)
+**Phase 4: Reporting & Analytics** ✅ Complete
 
 **Milestone 1: Kimi + Basic Report** ✅ Complete
 - Code quality analysis (pylint/flake8) ✅
 - Output parsers (BaseOutputParser, KimiParser) ✅
 - Real Kimi CLI adapter implementation ✅
 - HTML report generator with dashboard ✅
-- **85 tests passing, 4 skipped** (30 new tests: 7 base parser, 9 kimi parser, 5 quality, 2 base result, 5 kimi adapter, 3 html, 3 integration)
+- **85 tests passing, 4 skipped**
 
 **Milestone 2: Claude + Comparison** ✅ Complete
 - Claude Code adapter implementation ✅
 - Claude output parser ✅
 - Multi-agent comparison reports ✅
-- **105+ tests passing, 4 skipped** (20 new tests: 7 claude parser, 4 claude adapter, 2 comparison, 3 integration, 2 determine_winner, 2 generate_comparison)
+- **105+ tests passing, 4 skipped**
 
-**Milestone 3: Gemini + Polish** 🚧 Next
-- Gemini CLI adapter
-- Three-way comparison dashboard
-- Final polish and optimization
+**Milestone 3: Gemini + Polish** ✅ Complete
+- Gemini CLI adapter (GeminiParser + GeminiAdapter) ✅
+- Three-way comparison dashboard with radar chart ✅
+- Agent ranking with medal icons (1st/2nd/3rd) ✅
+- Autonomy metric (retries + error recovery) ✅
+- Path-dependent test failures fixed ✅
+- Restored missing shared-tasks data files ✅
+- **118 tests passing, 3 skipped**
 
 ## Quick Start
 
@@ -137,6 +141,46 @@ print(f'Tool calls: {metrics[\"tool_calls\"]}, Retries: {metrics[\"retries\"]}')
 "
 ```
 
+### Milestone 3 Usage Examples
+
+```bash
+# Run all three agents on the same task
+python benchmarks/cli_agent_arena/run_cli_benchmarks.py --all --tasks algorithms/quicksort --dry-run
+
+# Generate three-way comparison with radar chart
+python -c "
+from benchmarks.cli_agent_arena.reporting import HTMLGenerator
+from benchmarks.cli_agent_arena.adapters.base import BenchmarkResult
+
+# Example results for all three agents
+results = {
+    'kimi': BenchmarkResult(success=True, wall_time=45.2, token_count={'input': 1500, 'output': 2300}, cost=0.038, retries=1, tool_calls=12, error_recovered=True, generated_files=['quicksort.py'], logs='...', recording_path='', quality_score=87.5),
+    'claude': BenchmarkResult(success=True, wall_time=38.7, token_count={'input': 1200, 'output': 1800}, cost=0.042, retries=0, tool_calls=8, error_recovered=False, generated_files=['quicksort.py'], logs='...', recording_path='', quality_score=92.3),
+    'gemini': BenchmarkResult(success=True, wall_time=32.1, token_count={'input': 2000, 'output': 2500}, cost=0.0012, retries=0, tool_calls=10, error_recovered=False, generated_files=['quicksort.py'], logs='...', recording_path='', quality_score=89.0),
+}
+
+generator = HTMLGenerator()
+html = generator.generate_comparison(results, 'algorithms/quicksort')
+generator.save(html, 'reports/three-way-comparison.html')
+print('Three-way comparison saved to reports/three-way-comparison.html')
+"
+
+# Parse Gemini CLI JSON output
+python -c "
+from benchmarks.cli_agent_arena.adapters.parsers import GeminiParser
+
+parser = GeminiParser()
+import json
+output = json.dumps({
+    'response': 'done',
+    'stats': {'models': [{'name': 'gemini-2.0-flash', 'tokens': {'input': 2000, 'output': 2500}}], 'tools': {'totalCalls': 10}}
+})
+metrics = parser.extract_metrics(output, '')
+print(f'Tokens: {metrics[\"tokens\"]}, Cost: \${metrics[\"cost\"]:.4f}')
+print(f'Tool calls: {metrics[\"tool_calls\"]}')
+"
+```
+
 ### Check Adapter Availability
 
 ```bash
@@ -156,7 +200,7 @@ python benchmarks/cli_agent_arena/run_cli_benchmarks.py --agent mock --tasks alg
 ```bash
 cd benchmarks/cli_agent_arena
 python3 -m pytest -v
-# Expected: 85 tests passing, 4 skipped
+# Expected: 118 tests passing, 3 skipped
 ```
 
 ### Check Database Schema
@@ -171,11 +215,13 @@ psql -U ndninja -d workspace -c "SELECT * FROM cli_agent_comparison LIMIT 5"
   - `base.py` - Abstract interface with BenchmarkResult dataclass
   - `mock.py` - Testing adapter
   - `kimi.py` - Kimi CLI (real implementation) ✅
-  - `claude.py` - Claude Code (stub)
-  - `gemini.py` - Gemini (stub)
+  - `claude.py` - Claude Code (real implementation) ✅
+  - `gemini.py` - Gemini CLI (real implementation) ✅
   - `parsers/` - Output parsers for CLI tools ✅
     - `base_parser.py` - BaseOutputParser interface
     - `kimi_parser.py` - KimiParser implementation
+    - `claude_parser.py` - ClaudeParser implementation ✅
+    - `gemini_parser.py` - GeminiParser (JSON) implementation ✅
 - `quality/` - Code quality analysis ✅
   - `analyzer.py` - QualityAnalyzer (pylint/flake8)
 - `reporting/` - Report generators ✅
@@ -262,21 +308,22 @@ SELECT * FROM cli_agent_strengths;
 
 **Test Summary:** 85 tests passing, 4 skipped (30 new Milestone 1 tests)
 
-## Next Steps
+## Phase 4 Milestone 3 Deliverables
 
-**Milestone 2: Claude + Comparison**
-1. Implement Claude Code adapter
-2. Create ClaudeParser for output extraction
-3. Update HTML reports for multi-agent comparison
+✅ GeminiParser for JSON output extraction (`-o json`)
+✅ GeminiAdapter with subprocess execution, cwd-based isolation, quality analysis
+✅ Three-way comparison dashboard with rank-based color coding
+✅ Agent ranking system with medal icons (1st/2nd/3rd)
+✅ Autonomy metric row (retries + error recovery scoring)
+✅ Radar chart (Chart.js) for visual performance comparison
+✅ Path-dependent test failures fixed (RecordingManager, runner shared-tasks)
+✅ Restored missing shared-tasks files (task.yaml, prompt.md, tests)
+✅ Integration tests for Gemini parser, adapter, three-way comparison, ranking
 
-**Milestone 3: Gemini + Polish**
-1. Research and implement Gemini CLI adapter
-2. Three-way comparison dashboard
-3. Embedded asciinema players
-4. Final optimization and polish
+**Test Summary:** 118 tests passing, 3 skipped (23 new Milestone 3 tests: 9 gemini parser, 7 gemini adapter, 5 integration, 2 path fixes)
 
 See plans at:
 - `docs/plans/2026-02-01-cli-agent-arena-phase1-foundation.md` ✅
 - `docs/plans/2026-02-01-cli-agent-arena-phase2-adapters.md` ✅
 - `docs/plans/2026-02-02-cli-agent-arena-phase3-scoring.md` ✅
-- `docs/plans/2026-02-02-cli-agent-arena-phase4-adapters-reporting.md` ✅ (Milestone 1)
+- `docs/plans/2026-02-02-cli-agent-arena-phase4-adapters-reporting.md` ✅
