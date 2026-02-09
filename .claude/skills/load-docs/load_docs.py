@@ -182,6 +182,15 @@ def main():
 
         results.append(result)
 
+        # Track usage for successful loads
+        if result['success']:
+            cache.track_usage(
+                project_path=args.project_path,
+                library_id=entry['library'],
+                library_version=entry['version'],
+                detection_source='skill'
+            )
+
         # Format output
         lib_label = f"{result['library']} {result['version']}"
         if result['success'] and result['source'] == 'API':

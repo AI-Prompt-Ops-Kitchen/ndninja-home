@@ -178,3 +178,22 @@ class CacheManager:
                     conn.commit()
         except Exception as e:
             logger.error(f"Log query failed: {e}")
+
+    def track_usage(self, project_path: str, library_id: str,
+                    library_version: str, detection_source: str = 'manifest'):
+        """Record or increment library usage for a project."""
+        try:
+            with psycopg2.connect(**self.pg_config) as conn:
+                with conn.cursor() as cur:
+                    cur.execute("""
+                        INSERT INTO context7_project_libraries
+                        (project_path, library_id, library_version, detection_source, usage_count, last_used)
+                        VALUES (%s, %s, %s, %s, 1, NOW())
+                        ON CONFLICT (project_path, library_id) DO UPDATE SET
+                            usage_count = context7_project_libraries.usage_count + 1,
+                            last_used = NOW(),
+                            library_version = COALESCE(EXCLUDED.library_version, context7_project_libraries.library_version);
+                    """, (project_path, library_id, library_version, detection_source))
+                    conn.commit()
+        except Exception as e:
+            logger.error(f"Track usage failed: {e}")

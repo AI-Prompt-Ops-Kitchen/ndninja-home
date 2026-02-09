@@ -111,7 +111,8 @@ def get_top_libraries(project_path: str, max_count: int) -> list:
     return libraries[:max_count]
 
 
-def preload_libraries(cache_manager, libraries: list, timeout: int) -> dict:
+def preload_libraries(cache_manager, libraries: list, timeout: int,
+                      project_path: str = '') -> dict:
     """Preload libraries into cache via Context7 MCP.
 
     Returns: {'cached': int, 'fetched': int, 'missed': int, 'elapsed_ms': int}
@@ -162,6 +163,15 @@ def preload_libraries(cache_manager, libraries: list, timeout: int) -> dict:
                 stats['missed'] += 1
                 logger.warning(f"  {lib['library']}-{lib['version']}: error ({e})")
 
+        # Track usage regardless of cache hit or fetch
+        if project_path:
+            cache_manager.track_usage(
+                project_path=project_path,
+                library_id=lib['library'],
+                library_version=lib['version'],
+                detection_source=lib.get('source', 'manifest')
+            )
+
     if mcp_client:
         mcp_client.close()
 
@@ -194,7 +204,7 @@ def main():
 
     # Preload
     cache = get_cache_manager()
-    stats = preload_libraries(cache, libraries, args.timeout)
+    stats = preload_libraries(cache, libraries, args.timeout, args.project_path)
 
     logger.info(f"Preload complete: {stats['cached']} cached, "
                 f"{stats['fetched']} fetched, {stats['missed']} missed "
