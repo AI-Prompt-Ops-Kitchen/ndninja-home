@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
 from manifest_parsers import parse_all_manifests
 from context7_cache import CacheManager
 from context7_fingerprint import generate_fingerprint
+from context7_mcp import Context7MCPClient
 
 os.makedirs(os.path.expanduser('~/.logs'), exist_ok=True)
 logging.basicConfig(
@@ -111,13 +112,15 @@ def get_top_libraries(project_path: str, max_count: int) -> list:
 
 
 def preload_libraries(cache_manager, libraries: list, timeout: int) -> dict:
-    """Preload libraries into cache.
+    """Preload libraries into cache via Context7 MCP.
 
     Returns: {'cached': int, 'fetched': int, 'missed': int, 'elapsed_ms': int}
     """
     start = time.monotonic()
     deadline = start + timeout
     stats = {'cached': 0, 'fetched': 0, 'missed': 0, 'elapsed_ms': 0}
+
+    mcp_client = None
 
     for lib in libraries:
         if time.monotonic() > deadline:
@@ -131,9 +134,36 @@ def preload_libraries(cache_manager, libraries: list, timeout: int) -> dict:
             stats['cached'] += 1
             logger.info(f"  {lib['library']}-{lib['version']}: cached")
         else:
-            # TODO: Phase 5 — call Context7 MCP to fetch and cache
-            stats['missed'] += 1
-            logger.info(f"  {lib['library']}-{lib['version']}: needs API (not yet wired)")
+            # Lazy-connect MCP client on first cache miss
+            if mcp_client is None:
+                mcp_client = Context7MCPClient(
+                    timeout=min(timeout, 30),
+                    max_queries=len(libraries) * 2  # resolve + query per lib
+                )
+                if not mcp_client.connect():
+                    logger.error("Could not connect to Context7 MCP server")
+                    stats['missed'] += len(libraries) - stats['cached']
+                    break
+
+            try:
+                result = mcp_client.fetch_and_cache(
+                    library=lib['library'],
+                    version=lib['version'],
+                    intent='general',
+                    cache_manager=cache_manager
+                )
+                if result['success']:
+                    stats['fetched'] += 1
+                    logger.info(f"  {lib['library']}-{lib['version']}: fetched ({result['time_ms']}ms)")
+                else:
+                    stats['missed'] += 1
+                    logger.info(f"  {lib['library']}-{lib['version']}: {result['source']}")
+            except Exception as e:
+                stats['missed'] += 1
+                logger.warning(f"  {lib['library']}-{lib['version']}: error ({e})")
+
+    if mcp_client:
+        mcp_client.close()
 
     stats['elapsed_ms'] = int((time.monotonic() - start) * 1000)
     return stats
@@ -167,7 +197,7 @@ def main():
     stats = preload_libraries(cache, libraries, args.timeout)
 
     logger.info(f"Preload complete: {stats['cached']} cached, "
-                f"{stats['fetched']} fetched, {stats['missed']} pending API "
+                f"{stats['fetched']} fetched, {stats['missed']} missed "
                 f"({stats['elapsed_ms']}ms)")
     logger.info("=" * 60)
 
