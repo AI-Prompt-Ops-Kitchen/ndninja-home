@@ -1,0 +1,20 @@
+name: quicksort
+category: algorithms
+difficulty: medium
+description: Implement quicksort algorithm with proper partitioning
+budgeted_cost_usd: 0.05
+estimated_time_seconds: 120
+test_command: pytest test_quicksort.py -v
+success_criteria:
+  - All tests must pass
+  - Implementation must use quicksort partitioning
+  - Time complexity must be O(n log n) average case
+validation:
+  required_files:
+    - quicksort.py
+  test_file: test_quicksort.py
+  min_correctness_score: 80.0
+tags:
+  - sorting
+  - recursion
+  - divide-and-conquer

@@ -121,4 +121,4 @@ def test_comparison_report_generation():
     assert "45.2" in html  # Kimi time
     assert "38.7" in html  # Claude time
     assert "winner" in html.lower()
-    assert "✓" in html  # Winner checkmarks
+    assert "&#10003;" in html  # Winner checkmarks (HTML entity)

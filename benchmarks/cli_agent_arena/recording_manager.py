@@ -16,7 +16,10 @@ class RecordingManager:
         Args:
             output_dir: Directory to save recordings (default: recordings)
         """
-        self.output_dir = Path(output_dir)
+        path = Path(output_dir)
+        if not path.is_absolute():
+            path = Path(__file__).parent / path
+        self.output_dir = path
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
     def get_recording_path(self, agent: str, task: str, run_id: Optional[str] = None) -> str:

@@ -23,10 +23,12 @@ from benchmarks.cli_agent_arena.database import DatabaseClient
 
 def get_shared_tasks_base() -> Path:
     """Get the base path for shared-tasks directory"""
-    for base_path in [Path("benchmarks/shared-tasks"), Path("shared-tasks")]:
+    # Resolve relative to this file's location, not CWD
+    module_dir = Path(__file__).parent
+    for base_path in [module_dir.parent / "shared-tasks", Path("benchmarks/shared-tasks"), Path("shared-tasks")]:
         if base_path.exists():
             return base_path
-    return Path("benchmarks/shared-tasks")  # Default
+    return module_dir.parent / "shared-tasks"  # Default
 
 
 def list_tasks() -> List[str]:
