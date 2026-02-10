@@ -53,7 +53,7 @@ CHARACTER_IMAGE = ASSETS_DIR / "reference" / "ninja_pixar_user_example.mp4"  # W
 CHARACTER_IMAGE_STILL = ASSETS_DIR / "scenes" / "news_studio" / "ninja_concept.jpg"
 
 # Config
-DEFAULT_VOICE_ID = "pDrEFcc78kuc76ECGkU8"  # Neurodivergent Ninja - user's cloned voice
+DEFAULT_VOICE_ID = "aQspKon0UdKOuBZQQrEE"  # Neurodivergent Ninja Remix voice (use with eleven_v3)
 
 
 def get_api_keys():
