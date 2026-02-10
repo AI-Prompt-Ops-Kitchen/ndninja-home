@@ -92,3 +92,31 @@ class PromptVersion:
     def __post_init__(self):
         if self.created_at is None:
             self.created_at = datetime.now(timezone.utc)
+
+
+@dataclass
+class AutomationEvent:
+    """Event tracking for automation framework (production checks, action items, n8n failures)"""
+    event_type: str  # "production_check", "action_item_completed", "n8n_fallback_routed"
+    project_id: str  # project name or git repo
+    status: str      # "pending", "success", "failed", "warning"
+    evidence: Dict[str, Any]  # detailed results/logs
+    detected_from: str  # "skill", "hook", "manual"
+    created_at: Optional[datetime] = None
+    resolved_at: Optional[datetime] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = datetime.now(timezone.utc)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    def to_json(self) -> str:
+        data = self.to_dict()
+        if self.created_at:
+            data['created_at'] = self.created_at.isoformat()
+        if self.resolved_at:
+            data['resolved_at'] = self.resolved_at.isoformat()
+        return json.dumps(data)

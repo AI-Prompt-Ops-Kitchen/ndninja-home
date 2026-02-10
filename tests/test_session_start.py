@@ -157,7 +157,9 @@ class TestSessionStartDiscovery(unittest.TestCase):
         mock_db_class.return_value = mock_db
         mock_db.connect.return_value = False
 
-        result = self.discovery.get_relevant_tools(limit=5)
+        # Create discovery instance AFTER patch is applied
+        discovery = SessionStartDiscovery()
+        result = discovery.get_relevant_tools(limit=5)
 
         # Should return empty list on error
         self.assertEqual(result, [])
@@ -170,7 +172,9 @@ class TestSessionStartDiscovery(unittest.TestCase):
         mock_db_class.return_value = mock_db
         mock_db.connect.side_effect = Exception("Database error")
 
-        result = self.discovery.get_relevant_tools(limit=5)
+        # Create discovery instance AFTER patch is applied
+        discovery = SessionStartDiscovery()
+        result = discovery.get_relevant_tools(limit=5)
 
         # Should return empty list on exception
         self.assertEqual(result, [])
