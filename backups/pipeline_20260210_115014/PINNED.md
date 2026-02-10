@@ -38,10 +38,8 @@ Thanks for watching my video! Please like, follow and subscribe to help this cha
 ```
 
 ### Pipeline Backup
-- **Location:** `backups/pipeline_20260210_115014/`
+- **Location:** `backups/pipeline_20260207_103704/`
 - **Config Doc:** `PIPELINE_CONFIG.md`
-- **Captions:** DISABLED by default (use `--captions` to enable)
-- **Thumbnails:** Now include topic headline text + NN branding
 
 ## 🎨 NNNN Branding (Neurodivergent Ninja News Network)
 - **Official Folder:** `assets/branding/nnnn_official/`
