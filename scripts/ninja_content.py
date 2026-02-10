@@ -53,7 +53,47 @@ CHARACTER_IMAGE = ASSETS_DIR / "reference" / "ninja_pixar_user_example.mp4"  # W
 CHARACTER_IMAGE_STILL = ASSETS_DIR / "scenes" / "news_studio" / "ninja_concept.jpg"
 
 # Config
-DEFAULT_VOICE_ID = "pDrEFcc78kuc76ECGkU8"  # Neurodivergent Ninja - user's cloned voice
+DEFAULT_VOICE_ID = "aQspKon0UdKOuBZQQrEE"  # Neurodivergent Ninja Remix voice (use with eleven_v3)
+
+
+def extract_topic_from_script(script_text: str) -> str:
+    """Extract the actual topic/news from a script, skipping intro and outro."""
+    lines = script_text.strip().split('\n')
+    
+    # Skip intro patterns (first 1-2 sentences usually)
+    intro_patterns = [
+        "what's up", "hey ninja", "fellow ninja", "neurodivergent ninja here",
+        "back with another", "quick update", "let's dive", "welcome back"
+    ]
+    outro_patterns = [
+        "thanks for watching", "like, follow", "subscribe", "signing off",
+        "see you in", "next video", "don't forget to"
+    ]
+    
+    # Find the content section (skip intro, stop before outro)
+    content_sentences = []
+    for line in lines:
+        line_lower = line.lower()
+        # Skip intro lines
+        if any(p in line_lower for p in intro_patterns):
+            continue
+        # Stop at outro lines
+        if any(p in line_lower for p in outro_patterns):
+            break
+        if line.strip():
+            content_sentences.append(line.strip())
+    
+    # Get the first meaningful content sentence (the topic)
+    if content_sentences:
+        # Take first 1-2 sentences that describe the news
+        topic = ' '.join(content_sentences[:2])
+        # Limit length but keep it descriptive
+        if len(topic) > 150:
+            topic = topic[:150].rsplit(' ', 1)[0] + '...'
+        return topic
+    
+    # Fallback: use middle portion of script
+    return script_text[100:250] if len(script_text) > 250 else script_text
 
 
 def get_api_keys():
@@ -134,11 +174,11 @@ def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=
         },
         json={
             "text": script_text,
-            "model_id": "eleven_multilingual_v2",
+            "model_id": "eleven_v3",
             "voice_settings": {
-                "stability": 0.70,
+                "stability": 0.5,  # v3 requires 0.0 (Creative), 0.5 (Natural), or 1.0 (Robust)
                 "similarity_boost": 0.75,
-                "style": 0.4
+                "style": 0.5
             }
         }
     )
@@ -764,7 +804,7 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
     return draft_id
 
 
-def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard"):
+def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard"):
     """Run the full content pipeline.
     
     Args:
@@ -1000,18 +1040,23 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             combined = tmpdir / "combined.mp4"
             combine_video_audio(str(looped_video), str(audio_path), str(combined))
         
-        # 5. Burn captions
-        captioned = tmpdir / "captioned.mp4"
-        burn_captions(str(combined), script_text, str(captioned), audio_path=str(audio_path))
+        # 5. Burn captions (optional - skipped by default)
+        if no_captions:
+            print("📝 Skipping captions (--no-captions)")
+            video_for_broll = combined
+        else:
+            captioned = tmpdir / "captioned.mp4"
+            burn_captions(str(combined), script_text, str(captioned), audio_path=str(audio_path))
+            video_for_broll = captioned
         
         # Composite B-roll if generated
-        video_for_music = captioned
+        video_for_music = video_for_broll
         if broll_paths:
             from ninja_broll_compositor import compose_with_broll
             broll_composed = tmpdir / "with_broll.mp4"
             # Pass the base clip duration so compositor knows where loop seams are
             base_clip_dur = 4.0  # Matches veo_clip_duration set earlier
-            if compose_with_broll(str(captioned), broll_paths, str(broll_composed), 
+            if compose_with_broll(str(video_for_broll), broll_paths, str(broll_composed), 
                                   loop_clip_duration=base_clip_dur):
                 video_for_music = broll_composed
                 print("   ✅ B-roll inserted")
@@ -1047,13 +1092,17 @@ def main():
     mode.add_argument("--script-file", type=str, help="Use script from file")
     
     parser.add_argument("--image", type=str, help="Reference image for character", 
-                        default=str(ASSETS_DIR / "reference" / "ninja_news_anchor.jpg"))
+                        default=str(ASSETS_DIR / "reference" / "ninja_helmet_v4_hires.jpg"))
     parser.add_argument("--output", type=str, default="ninja_content", help="Output filename prefix")
     parser.add_argument("--category", type=str, default="tech", help="News category")
     parser.add_argument("--multiclip", action="store_true", 
                         help="Generate multiple varied clips for more natural movement (slower but better)")
     parser.add_argument("--no-music", action="store_true",
                         help="Skip adding background music")
+    parser.add_argument("--no-captions", action="store_true", default=True,
+                        help="Skip burning captions into video (default: True, use --captions to enable)")
+    parser.add_argument("--captions", action="store_true",
+                        help="Burn captions into video (disabled by default)")
     parser.add_argument("--thumbnail", action="store_true",
                         help="Also generate a thumbnail image")
     parser.add_argument("--thumb-style", default="excited",
@@ -1121,12 +1170,15 @@ def main():
     print("-" * 40 + "\n")
     
     # Run pipeline
+    # Captions are disabled by default; use --captions to enable
+    skip_captions = not args.captions
     output = run_pipeline(
         script_text, 
         ref_image, 
         args.output, 
         multiclip=args.multiclip, 
-        no_music=args.no_music, 
+        no_music=args.no_music,
+        no_captions=skip_captions,
         broll=args.broll, 
         capcut=args.capcut,
         lip_sync=not args.no_lip_sync and not args.kenburns and not args.motion,
@@ -1142,16 +1194,18 @@ def main():
         thumb_output = None
         if args.thumbnail:
             from ninja_thumbnail import generate_thumbnail
-            # Extract topic from script (first sentence after "Hey Ninjas!")
-            topic = script_text.split("!")[1].strip().split(".")[0] if "!" in script_text else script_text[:50]
+            # Extract actual topic from script (skip intro lines)
+            topic = extract_topic_from_script(script_text)
             thumb_output = str(Path(output).with_suffix('.thumb.png'))
             generate_thumbnail(topic, args.thumb_style, thumb_output)
         
         # Publish if requested
         if args.publish == "youtube":
             from youtube.youtube_upload import upload_video
-            # Build title and description
-            title = script_text.split("!")[1].strip().split(".")[0][:100] if "!" in script_text else "Ninja Tech Update"
+            # Build title and description using extracted topic
+            topic_for_title = extract_topic_from_script(script_text)
+            # Shorten for title (max 100 chars, first sentence)
+            title = topic_for_title.split('.')[0][:100] if '.' in topic_for_title else topic_for_title[:100]
             description = f"""🥷 {title}
 
 {script_text}

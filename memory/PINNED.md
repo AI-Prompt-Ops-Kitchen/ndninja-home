@@ -38,8 +38,10 @@ Thanks for watching my video! Please like, follow and subscribe to help this cha
 ```
 
 ### Pipeline Backup
-- **Location:** `backups/pipeline_20260207_103704/`
+- **Location:** `backups/pipeline_20260210_115014/`
 - **Config Doc:** `PIPELINE_CONFIG.md`
+- **Captions:** DISABLED by default (use `--captions` to enable)
+- **Thumbnails:** Now include topic headline text + NN branding
 
 ## 🎨 NNNN Branding (Neurodivergent Ninja News Network)
 - **Official Folder:** `assets/branding/nnnn_official/`
@@ -51,10 +53,20 @@ Thanks for watching my video! Please like, follow and subscribe to help this cha
 
 ## 🔒 Non-Negotiables
 - **Database:** PostgreSQL always
+- **Image Gen:** NEVER use DALL-E — it's trash. Use **Nano Banana Pro** (Google Gemini with "Thinking" model + "🍌Create images"). Best quality, 2K resolution, great text rendering.
 - **Don't dismiss info** the user just gave — if it doesn't fit assumptions, ASK
 - **Be resourceful** before asking questions
 - **Actions > words** — when you say you'll build something, DO IT
 - **THE GOLDEN RULE:** If you CAN do it, you SHOULD do it. No delegation when you have the tools.
+
+## 🔐 API Key Security (CRITICAL - Added 2026-02-07)
+- **NEVER hardcode API keys** in any file, even as "fallback defaults"
+- **NEVER commit .env files** or files containing keys
+- Always use `os.environ.get('KEY_NAME')` with NO default value
+- Pre-commit hook installed (`.git/hooks/pre-commit`) scans for key patterns
+- If you see a hardcoded key ANYWHERE → remove it IMMEDIATELY
+- **Backup files are dangerous** — scrub them before committing
+- Once a key is exposed on GitHub, it's burned FOREVER (Google auto-revokes)
 
 ## 🤖 AUTOMATION IS NON-NEGOTIABLE
 Due to ADHD + Autism, manual steps = failure points:
@@ -80,4 +92,6 @@ Due to ADHD + Autism, manual steps = failure points:
 
 ## 📌 Pinned Items
 <!-- Add items below using: - [YYYY-MM-DD] Item description -->
+
+- [2026-02-07] 🏠 **DREAM HOME PURCHASED!** $625k new construction, backs to pond, ~5 min from current home. Closing in 4-6 weeks.
 
