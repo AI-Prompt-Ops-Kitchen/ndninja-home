@@ -76,11 +76,11 @@ class CouncilResult:
 
 DEFAULT_MODELS = [
     ModelConfig(
-        name="claude-sonnet-4-5",
+        name="claude-opus-4-6",
         provider="anthropic",
-        model_id="claude-sonnet-4-5-20250929",
+        model_id="claude-opus-4-6",
         api_key_env="ANTHROPIC_API_KEY",
-        timeout=90.0,
+        timeout=120.0,
     ),
     ModelConfig(
         name="gpt-5.2",
