@@ -11,3 +11,14 @@ assets/music/*.mp3
 assets/backgrounds/*.png
 assets/scenes/
 .worktrees/
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment files
+.env
+
+# Docker
+.docker/

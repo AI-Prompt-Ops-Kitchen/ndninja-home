@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Nginx reverse proxy
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: server-landing-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - server-landing
+      - prompt-reverser
+    volumes:
+      - nginx-logs:/var/log/nginx
+    restart: unless-stopped
+
+  # Next.js frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: server-landing-frontend
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+    networks:
+      - server-landing
+    restart: unless-stopped
+
+  # FastAPI backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: server-landing-backend
+    environment:
+      - SERVICES_CONFIG=${SERVICES_CONFIG:-[]}
+    networks:
+      - server-landing
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+networks:
+  server-landing:
+    driver: bridge
+  prompt-reverser:
+    external: true
+
+volumes:
+  nginx-logs:

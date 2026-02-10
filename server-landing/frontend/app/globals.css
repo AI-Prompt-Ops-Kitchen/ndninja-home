@@ -1,0 +1,169 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* Stealth Protocol Design System - Modern Ninja Aesthetic */
+
+@theme inline {
+  /* Core Brand Colors - Tactical Stealth */
+  --color-void-black: #0a0a0a;
+  --color-shadow-black: #121212;
+  --color-deep-charcoal: #1a1a1a;
+  --color-charcoal: #2a2a2a;
+  --color-steel: #333333;
+  --color-slate: #4a4a4a;
+  --color-tactical-red: #991b1b;
+  --color-target-red: #dc2626;
+  --color-muted-gray: #666666;
+  --color-light-gray: #a0a0a0;
+  --color-ghost-gray: #cccccc;
+  --color-white: #f5f5f5;
+
+  /* Semantic Colors */
+  --color-background: var(--color-void-black);
+  --color-foreground: var(--color-ghost-gray);
+  --color-surface: var(--color-shadow-black);
+  --color-border: rgba(255, 255, 255, 0.05);
+
+  /* Status Colors */
+  --color-online: #10b981;
+  --color-offline: var(--color-muted-gray);
+  --color-error: var(--color-target-red);
+  --color-warning: #f59e0b;
+
+  /* Subtle Effects */
+  --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-elevated: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-deep: 0 8px 32px rgba(0, 0, 0, 0.8);
+  --glow-tactical: 0 0 12px rgba(153, 27, 27, 0.3);
+  --border-tactical: 1px solid rgba(153, 27, 27, 0.3);
+
+  /* Typography */
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+/* Light Mode (Ninja Day Theme) */
+[data-theme="light"] {
+  --color-background: #f0f0f5;
+  --color-foreground: #1a1a2e;
+  --color-surface: #ffffff;
+  --color-border: rgba(26, 26, 46, 0.1);
+  --color-online: #00cc00;
+  --color-offline: #999999;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body);
+  font-weight: 400;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Custom Scrollbar - Tactical Style */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-shadow-black);
+  border-left: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-steel);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate);
+}
+
+/* Selection Style */
+::selection {
+  background: rgba(153, 27, 27, 0.3);
+  color: var(--color-white);
+}
+
+/* Subtle Grid Overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.3;
+}
+
+/* Tactical Pulse Animation */
+@keyframes tacticalPulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide Up Animation */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Utility Classes */
+.tactical-border {
+  border: var(--border-tactical);
+}
+
+.tactical-glow {
+  box-shadow: var(--glow-tactical);
+}
+
+.shadow-tactical {
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Grid Background */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
