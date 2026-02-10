@@ -83,22 +83,24 @@ DEFAULT_MODELS = [
         timeout=90.0,
     ),
     ModelConfig(
-        name="gpt-4o",
+        name="gpt-5.2",
         provider="openai",
-        model_id="gpt-4o",
+        model_id="gpt-5.2",
         api_key_env="OPENAI_API_KEY",
+        timeout=90.0,
     ),
     ModelConfig(
-        name="sonar-pro",
+        name="sonar-reasoning-pro",
         provider="perplexity",
-        model_id="sonar-pro",
+        model_id="sonar-reasoning-pro",
         api_key_env="PERPLEXITY_API_KEY",
     ),
     ModelConfig(
-        name="gemini-2.0-flash",
+        name="gemini-3-pro",
         provider="gemini",
-        model_id="gemini-2.0-flash",
+        model_id="gemini-3-pro-preview",
         api_key_env="GEMINI_API_KEY",
+        timeout=90.0,
     ),
 ]
 
@@ -176,7 +178,8 @@ async def _query_openai(
         },
         json={
             "model": cfg.model_id,
-            "max_tokens": cfg.max_tokens,
+            # GPT-5.x requires max_completion_tokens instead of max_tokens
+            "max_completion_tokens": cfg.max_tokens,
             "messages": [{"role": "user", "content": prompt}],
         },
         timeout=cfg.timeout,
@@ -188,7 +191,11 @@ async def _query_openai(
     resp.raise_for_status()
 
     data = resp.json()
-    content = data["choices"][0]["message"]["content"]
+    choice = data["choices"][0]
+    content = choice.get("message", {}).get("content", "")
+    # GPT-5.2 thinking models may wrap output differently
+    if not content and "text" in choice:
+        content = choice["text"]
     usage = data.get("usage", {})
     return ModelResponse(
         model=cfg.name,
