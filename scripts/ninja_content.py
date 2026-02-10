@@ -56,6 +56,46 @@ CHARACTER_IMAGE_STILL = ASSETS_DIR / "scenes" / "news_studio" / "ninja_concept.j
 DEFAULT_VOICE_ID = "aQspKon0UdKOuBZQQrEE"  # Neurodivergent Ninja Remix voice (use with eleven_v3)
 
 
+def extract_topic_from_script(script_text: str) -> str:
+    """Extract the actual topic/news from a script, skipping intro and outro."""
+    lines = script_text.strip().split('\n')
+    
+    # Skip intro patterns (first 1-2 sentences usually)
+    intro_patterns = [
+        "what's up", "hey ninja", "fellow ninja", "neurodivergent ninja here",
+        "back with another", "quick update", "let's dive", "welcome back"
+    ]
+    outro_patterns = [
+        "thanks for watching", "like, follow", "subscribe", "signing off",
+        "see you in", "next video", "don't forget to"
+    ]
+    
+    # Find the content section (skip intro, stop before outro)
+    content_sentences = []
+    for line in lines:
+        line_lower = line.lower()
+        # Skip intro lines
+        if any(p in line_lower for p in intro_patterns):
+            continue
+        # Stop at outro lines
+        if any(p in line_lower for p in outro_patterns):
+            break
+        if line.strip():
+            content_sentences.append(line.strip())
+    
+    # Get the first meaningful content sentence (the topic)
+    if content_sentences:
+        # Take first 1-2 sentences that describe the news
+        topic = ' '.join(content_sentences[:2])
+        # Limit length but keep it descriptive
+        if len(topic) > 150:
+            topic = topic[:150].rsplit(' ', 1)[0] + '...'
+        return topic
+    
+    # Fallback: use middle portion of script
+    return script_text[100:250] if len(script_text) > 250 else script_text
+
+
 def get_api_keys():
     """Load API keys from environment or config files."""
     keys = {}
@@ -136,9 +176,9 @@ def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=
             "text": script_text,
             "model_id": "eleven_v3",
             "voice_settings": {
-                "stability": 0.70,
+                "stability": 0.5,  # v3 requires 0.0 (Creative), 0.5 (Natural), or 1.0 (Robust)
                 "similarity_boost": 0.75,
-                "style": 0.4
+                "style": 0.5
             }
         }
     )
@@ -1154,16 +1194,18 @@ def main():
         thumb_output = None
         if args.thumbnail:
             from ninja_thumbnail import generate_thumbnail
-            # Extract topic from script (first sentence after "Hey Ninjas!")
-            topic = script_text.split("!")[1].strip().split(".")[0] if "!" in script_text else script_text[:50]
+            # Extract actual topic from script (skip intro lines)
+            topic = extract_topic_from_script(script_text)
             thumb_output = str(Path(output).with_suffix('.thumb.png'))
             generate_thumbnail(topic, args.thumb_style, thumb_output)
         
         # Publish if requested
         if args.publish == "youtube":
             from youtube.youtube_upload import upload_video
-            # Build title and description
-            title = script_text.split("!")[1].strip().split(".")[0][:100] if "!" in script_text else "Ninja Tech Update"
+            # Build title and description using extracted topic
+            topic_for_title = extract_topic_from_script(script_text)
+            # Shorten for title (max 100 chars, first sentence)
+            title = topic_for_title.split('.')[0][:100] if '.' in topic_for_title else topic_for_title[:100]
             description = f"""🥷 {title}
 
 {script_text}
