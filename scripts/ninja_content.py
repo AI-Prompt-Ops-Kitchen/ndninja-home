@@ -134,7 +134,7 @@ def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=
         },
         json={
             "text": script_text,
-            "model_id": "eleven_multilingual_v2",
+            "model_id": "eleven_v3",
             "voice_settings": {
                 "stability": 0.70,
                 "similarity_boost": 0.75,
