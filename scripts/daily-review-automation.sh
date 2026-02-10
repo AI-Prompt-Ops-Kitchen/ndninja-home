@@ -7,9 +7,17 @@ set -e
 
 mkdir -p /home/ndninja/.logs
 
-# Load API keys from LLM Council .env file
+# Load API keys for LLM Council (cron doesn't inherit shell env)
+# Priority: project .env → user .env → bashrc grep
 if [ -f /home/ndninja/projects/llm-council/.env ]; then
   export $(grep -v '^#' /home/ndninja/projects/llm-council/.env | xargs)
+fi
+if [ -f /home/ndninja/.env ]; then
+  export $(grep -E 'API_KEY=' /home/ndninja/.env | grep -v '^#' | xargs)
+fi
+# Fallback: extract API key exports from bashrc (safe — only grabs export lines)
+if [ -z "$OPENAI_API_KEY" ] || [ -z "$GEMINI_API_KEY" ] || [ -z "$PERPLEXITY_API_KEY" ]; then
+  eval "$(grep -E '^export\s+\w+_API_KEY=' /home/ndninja/.bashrc 2>/dev/null || true)"
 fi
 
 # Run Python automation script (structured logger handles all log output)
