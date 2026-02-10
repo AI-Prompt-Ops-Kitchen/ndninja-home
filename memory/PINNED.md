@@ -56,6 +56,15 @@ Thanks for watching my video! Please like, follow and subscribe to help this cha
 - **Actions > words** — when you say you'll build something, DO IT
 - **THE GOLDEN RULE:** If you CAN do it, you SHOULD do it. No delegation when you have the tools.
 
+## 🔐 API Key Security (CRITICAL - Added 2026-02-07)
+- **NEVER hardcode API keys** in any file, even as "fallback defaults"
+- **NEVER commit .env files** or files containing keys
+- Always use `os.environ.get('KEY_NAME')` with NO default value
+- Pre-commit hook installed (`.git/hooks/pre-commit`) scans for key patterns
+- If you see a hardcoded key ANYWHERE → remove it IMMEDIATELY
+- **Backup files are dangerous** — scrub them before committing
+- Once a key is exposed on GitHub, it's burned FOREVER (Google auto-revokes)
+
 ## 🤖 AUTOMATION IS NON-NEGOTIABLE
 Due to ADHD + Autism, manual steps = failure points:
 - **No "open X and click Y"** — will forget or procrastinate
@@ -80,4 +89,6 @@ Due to ADHD + Autism, manual steps = failure points:
 
 ## 📌 Pinned Items
 <!-- Add items below using: - [YYYY-MM-DD] Item description -->
+
+- [2026-02-07] 🏠 **DREAM HOME PURCHASED!** $625k new construction, backs to pond, ~5 min from current home. Closing in 4-6 weeks.
 

@@ -764,7 +764,7 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
     return draft_id
 
 
-def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard"):
+def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard"):
     """Run the full content pipeline.
     
     Args:
@@ -1000,18 +1000,23 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             combined = tmpdir / "combined.mp4"
             combine_video_audio(str(looped_video), str(audio_path), str(combined))
         
-        # 5. Burn captions
-        captioned = tmpdir / "captioned.mp4"
-        burn_captions(str(combined), script_text, str(captioned), audio_path=str(audio_path))
+        # 5. Burn captions (optional - skipped by default)
+        if no_captions:
+            print("📝 Skipping captions (--no-captions)")
+            video_for_broll = combined
+        else:
+            captioned = tmpdir / "captioned.mp4"
+            burn_captions(str(combined), script_text, str(captioned), audio_path=str(audio_path))
+            video_for_broll = captioned
         
         # Composite B-roll if generated
-        video_for_music = captioned
+        video_for_music = video_for_broll
         if broll_paths:
             from ninja_broll_compositor import compose_with_broll
             broll_composed = tmpdir / "with_broll.mp4"
             # Pass the base clip duration so compositor knows where loop seams are
             base_clip_dur = 4.0  # Matches veo_clip_duration set earlier
-            if compose_with_broll(str(captioned), broll_paths, str(broll_composed), 
+            if compose_with_broll(str(video_for_broll), broll_paths, str(broll_composed), 
                                   loop_clip_duration=base_clip_dur):
                 video_for_music = broll_composed
                 print("   ✅ B-roll inserted")
@@ -1047,13 +1052,17 @@ def main():
     mode.add_argument("--script-file", type=str, help="Use script from file")
     
     parser.add_argument("--image", type=str, help="Reference image for character", 
-                        default=str(ASSETS_DIR / "reference" / "ninja_news_anchor.jpg"))
+                        default=str(ASSETS_DIR / "reference" / "ninja_helmet_v4_hires.jpg"))
     parser.add_argument("--output", type=str, default="ninja_content", help="Output filename prefix")
     parser.add_argument("--category", type=str, default="tech", help="News category")
     parser.add_argument("--multiclip", action="store_true", 
                         help="Generate multiple varied clips for more natural movement (slower but better)")
     parser.add_argument("--no-music", action="store_true",
                         help="Skip adding background music")
+    parser.add_argument("--no-captions", action="store_true", default=True,
+                        help="Skip burning captions into video (default: True, use --captions to enable)")
+    parser.add_argument("--captions", action="store_true",
+                        help="Burn captions into video (disabled by default)")
     parser.add_argument("--thumbnail", action="store_true",
                         help="Also generate a thumbnail image")
     parser.add_argument("--thumb-style", default="excited",
@@ -1121,12 +1130,15 @@ def main():
     print("-" * 40 + "\n")
     
     # Run pipeline
+    # Captions are disabled by default; use --captions to enable
+    skip_captions = not args.captions
     output = run_pipeline(
         script_text, 
         ref_image, 
         args.output, 
         multiclip=args.multiclip, 
-        no_music=args.no_music, 
+        no_music=args.no_music,
+        no_captions=skip_captions,
         broll=args.broll, 
         capcut=args.capcut,
         lip_sync=not args.no_lip_sync and not args.kenburns and not args.motion,

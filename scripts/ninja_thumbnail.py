@@ -75,6 +75,59 @@ def _detect_topic_icons(topic: str) -> str:
         return "Include a relevant symbolic icon or visual element that immediately communicates the topic at a glance"
 
 
+def _extract_headline(topic: str) -> str:
+    """Extract a short, punchy headline (3-5 words) from the topic for thumbnail text."""
+    topic_lower = topic.lower()
+    
+    # Common headline patterns based on keywords
+    headline_rules = [
+        # Version announcements
+        (["linux 7", "linux kernel 7"], "LINUX 7.0 IS HERE!"),
+        (["linux 6.19"], "LINUX 6.19 DROPS!"),
+        (["ios 18", "ios 19"], "NEW iOS UPDATE!"),
+        (["android 15", "android 16"], "ANDROID UPDATE!"),
+        (["windows 12"], "WINDOWS 12?!"),
+        # Gaming
+        (["playstation", "ps5", "ps6"], "PLAYSTATION NEWS!"),
+        (["xbox", "microsoft gaming"], "XBOX NEWS!"),
+        (["nintendo", "switch 2"], "NINTENDO NEWS!"),
+        (["state of play"], "STATE OF PLAY!"),
+        (["steam", "valve"], "STEAM NEWS!"),
+        # AI
+        (["chatgpt", "openai"], "CHATGPT UPDATE!"),
+        (["claude", "anthropic"], "CLAUDE NEWS!"),
+        (["gemini", "google ai"], "GOOGLE AI NEWS!"),
+        (["copilot"], "COPILOT UPDATE!"),
+        # Companies
+        (["apple", "iphone", "mac"], "APPLE NEWS!"),
+        (["tesla", "elon"], "TESLA NEWS!"),
+        (["google"], "GOOGLE NEWS!"),
+        (["microsoft"], "MICROSOFT NEWS!"),
+        (["meta", "facebook"], "META NEWS!"),
+        (["amazon", "aws"], "AMAZON NEWS!"),
+        # Security
+        (["hack", "breach", "vulnerability", "exploit"], "SECURITY ALERT!"),
+        (["malware", "virus", "ransomware"], "MALWARE WARNING!"),
+        # Business
+        (["billion", "acquisition", "bought", "sold"], "BIG MONEY MOVE!"),
+        (["layoff", "fired", "cut"], "LAYOFFS!"),
+        (["lawsuit", "sued", "court"], "LEGAL DRAMA!"),
+    ]
+    
+    for keywords, headline in headline_rules:
+        if any(kw in topic_lower for kw in keywords):
+            return headline
+    
+    # Fallback: Create headline from first few significant words
+    # Remove common filler words and take first 3-4 words
+    filler_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'this', 'that', 'with', 'for', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'of'}
+    words = [w for w in topic.split() if w.lower() not in filler_words][:4]
+    if words:
+        return ' '.join(words).upper() + '!'
+    
+    return "BREAKING NEWS!"
+
+
 def generate_thumbnail(topic: str, style: str = "engaging", output_path: str = None, reference_image: str = None):
     """Generate a thumbnail using Nano Banana Pro (Gemini image generation)."""
     
@@ -112,6 +165,10 @@ def generate_thumbnail(topic: str, style: str = "engaging", output_path: str = N
     # Auto-detect topic icons/visual elements from keywords
     topic_icons = _detect_topic_icons(topic)
     
+    # Extract a short punchy headline (3-5 words max) from the topic
+    # This will be displayed prominently on the thumbnail
+    headline = _extract_headline(topic)
+    
     # Build the thumbnail prompt
     prompt = f"""Create a YouTube thumbnail image with these exact specifications:
 
@@ -133,7 +190,11 @@ STYLE:
 - Dramatic lighting with blue accent rim lights
 - Slightly exaggerated expressions for thumbnail appeal
 
-TEXT: Do NOT include any text in the image - text will be added separately.
+TEXT ELEMENTS (IMPORTANT - include these in the image):
+- Large, bold headline text: "{headline}" - positioned prominently (top or left area), white or bright yellow text with black outline/shadow for readability
+- Small "NEURODIVERGENT NINJA" or ninja star logo/branding in corner (subtle but visible)
+- Text should be short, punchy, and scroll-stopping
+- Use bold sans-serif font style (like Impact or Bebas Neue aesthetic)
 
 Make it scroll-stopping and clickable!"""
 
