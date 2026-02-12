@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getPrompts, getPromptBySlug } from '@/lib/supabase/queries';
 
 // GET /api/v1/prompts — List prompts with search/filter/pagination
 export async function GET(request: NextRequest) {
@@ -9,21 +10,31 @@ export async function GET(request: NextRequest) {
   const sort = searchParams.get('sort') || 'popular';
   const page = parseInt(searchParams.get('page') || '1');
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50);
+  const slug = searchParams.get('slug') || '';
 
-  // TODO: Replace with actual Supabase query
-  // const supabase = await createClient();
-  // let query = supabase
-  //   .from('prompts')
-  //   .select('*, category:categories(*), author:users(id, display_name, avatar_url)')
-  //   .eq('status', 'published')
-  //   .eq('is_public', true);
+  // Single prompt by slug
+  if (slug) {
+    const prompt = await getPromptBySlug(slug);
+    if (!prompt) {
+      return NextResponse.json({ error: 'Prompt not found' }, { status: 404 });
+    }
+    return NextResponse.json({ data: prompt });
+  }
+
+  // List prompts
+  const { data, meta } = await getPrompts({
+    category: category || undefined,
+    search: query || undefined,
+    skillLevel: difficulty || undefined,
+    sort,
+    page,
+    limit,
+  });
 
   return NextResponse.json({
-    data: [],
+    data,
     meta: {
-      page,
-      limit,
-      total: 0,
+      ...meta,
       query,
       category,
       difficulty,
@@ -35,15 +46,11 @@ export async function GET(request: NextRequest) {
 // POST /api/v1/prompts — Create a new prompt
 export async function POST(request: NextRequest) {
   // TODO: Authenticate user
-  // const supabase = await createClient();
-  // const { data: { user } } = await supabase.auth.getUser();
-  // if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // TODO: Validate with Zod
+  // TODO: Insert into database
 
   try {
     const body = await request.json();
-
-    // TODO: Validate with Zod
-    // TODO: Insert into database
 
     return NextResponse.json(
       { message: 'Prompt created', data: body },
