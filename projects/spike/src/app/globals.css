@@ -1,0 +1,241 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0f0f1a;
+  --color-surface: #16162a;
+  --color-surface-raised: #1e1e38;
+
+  /* Calming gray scale — cool-toned */
+  --color-gray-950: #0a0a14;
+  --color-gray-900: #0f0f1a;
+  --color-gray-850: #14142a;
+  --color-gray-800: #1a1a36;
+  --color-gray-700: #2a2a4a;
+  --color-gray-600: #3d3d5c;
+  --color-gray-500: #5a5a7a;
+  --color-gray-400: #8080a0;
+  --color-gray-300: #a0a0c0;
+  --color-gray-200: #c0c0d8;
+  --color-gray-100: #e0e0f0;
+
+  /* Violet — Anxiety (calming, not alarming) */
+  --color-violet-600: #7c3aed;
+  --color-violet-500: #8b5cf6;
+  --color-violet-400: #a78bfa;
+  --color-violet-300: #c4b5fd;
+  --color-violet-200: #ddd6fe;
+  --color-violet-100: #ede9fe;
+  --color-violet-glow: rgba(139, 92, 246, 0.15);
+  --color-violet-glow-strong: rgba(139, 92, 246, 0.3);
+
+  /* Sky Blue — Sadness (soft, gentle) */
+  --color-sky-600: #0284c7;
+  --color-sky-500: #0ea5e9;
+  --color-sky-400: #38bdf8;
+  --color-sky-300: #7dd3fc;
+  --color-sky-200: #bae6fd;
+  --color-sky-100: #e0f2fe;
+  --color-sky-glow: rgba(14, 165, 233, 0.15);
+  --color-sky-glow-strong: rgba(14, 165, 233, 0.3);
+
+  /* Accent — success green (calming) */
+  --color-success: #34d399;
+  --color-success-dim: rgba(52, 211, 153, 0.15);
+
+  /* Shadows */
+  --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --shadow-glow-violet: 0 0 20px rgba(139, 92, 246, 0.2);
+  --shadow-glow-sky: 0 0 20px rgba(14, 165, 233, 0.2);
+
+  /* Typography */
+  --font-sans: var(--font-inter);
+
+  /* Animation */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Base styles */
+body {
+  background: var(--color-background);
+  color: var(--color-gray-100);
+}
+
+/* Safe area padding for iPhone notch/bottom bar */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Custom slider styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  width: 100%;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-gray-700);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-violet-500);
+  border: 3px solid var(--color-gray-900);
+  margin-top: -14px;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--color-gray-700);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-violet-500);
+  border: 3px solid var(--color-gray-900);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+  cursor: pointer;
+}
+
+/* Glass effect */
+.glass {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* ============================================
+   AuDHD-themed animations
+   - Breathing rhythms (grounding, not demanding)
+   - Stim-satisfying bounces
+   - Exhale/release motifs
+   - Predictable, never startling
+   ============================================ */
+
+/* Breathing pulse — 4s in, 4s out (box breathing rhythm) */
+@keyframes breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.03); opacity: 1; }
+}
+
+.animate-breathe {
+  animation: breathe 8s ease-in-out infinite;
+}
+
+/* Faster subtle breathe for smaller elements */
+@keyframes breathe-subtle {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-breathe-subtle {
+  animation: breathe-subtle 4s ease-in-out infinite;
+}
+
+/* Success: exhale ring — expands outward and fades (releasing the spike) */
+@keyframes exhale-ring {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  40% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+
+.animate-exhale-ring {
+  animation: exhale-ring 1.5s var(--ease-out-expo) forwards;
+}
+
+/* Success check: drops in like setting something down */
+@keyframes drop-in {
+  0% { transform: scale(0.3) translateY(-20px); opacity: 0; }
+  60% { transform: scale(1.05) translateY(2px); opacity: 1; }
+  80% { transform: scale(0.97) translateY(-1px); }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.animate-drop-in {
+  animation: drop-in 0.6s var(--ease-out-expo) forwards;
+}
+
+/* Stim bounce — satisfying micro-bounce on tap */
+@keyframes stim-bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(0.88); }
+  60% { transform: scale(1.08); }
+  80% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.animate-stim-bounce {
+  animation: stim-bounce 0.35s ease-out;
+}
+
+/* Breathing guide circle for timer — matches 4-7-8 breathing */
+@keyframes breathing-guide {
+  0% { transform: scale(0.7); opacity: 0.5; }
+  28.5% { transform: scale(1.15); opacity: 1; } /* 4s inhale */
+  78.5% { transform: scale(1.15); opacity: 1; } /* 7s hold */
+  100% { transform: scale(0.7); opacity: 0.5; } /* 8s exhale */
+}
+
+.animate-breathing-guide {
+  animation: breathing-guide 19s ease-in-out infinite;
+}
+
+/* Gentle float — like thoughts drifting */
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-float {
+  animation: gentle-float 3s ease-in-out infinite;
+}
+
+/* Pulse animation for timer dot */
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+/* Affirmation text fade in */
+@keyframes fade-up-in {
+  0% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-up {
+  animation: fade-up-in 0.8s ease-out forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+/* Hide scrollbar */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* PWA standalone — hide browser chrome */
+@media (display-mode: standalone) {
+  .pwa-hide {
+    display: none;
+  }
+}
