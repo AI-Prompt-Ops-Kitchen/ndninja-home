@@ -4,19 +4,19 @@
     {
       "name": "spline-3d-web",
       "domain": "3D/Web",
-      "level": "1-tomoe",
-      "description": "Browser-based 3D design tool for creating interactive web elements",
+      "level": "2-tomoe",
+      "description": "Browser-based 3D design tool for creating interactive web elements. Full Code API for programmatic control via React/Next.js/Vanilla JS.",
       "last_updated": "2026-02-17",
-      "keywords": ["3d", "web", "spline", "interactive", "animation", "embed", "three-dimensional", "antigravity", "website"],
-      "sources_count": 1,
+      "keywords": ["3d", "web", "spline", "interactive", "animation", "embed", "three-dimensional", "antigravity", "website", "react", "nextjs", "code-api", "webgl"],
+      "sources_count": 4,
       "can_do_from_cli": "partial"
     }
   ],
   "stats": {
     "total_scrolls": 1,
     "by_level": {
-      "1-tomoe": 1,
-      "2-tomoe": 0,
+      "1-tomoe": 0,
+      "2-tomoe": 1,
       "3-tomoe": 0,
       "mangekyo": 0
     }
