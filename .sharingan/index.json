@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "scrolls": [
+    {
+      "name": "spline-3d-web",
+      "domain": "3D/Web",
+      "level": "1-tomoe",
+      "description": "Browser-based 3D design tool for creating interactive web elements",
+      "last_updated": "2026-02-17",
+      "keywords": ["3d", "web", "spline", "interactive", "animation", "embed", "three-dimensional", "antigravity", "website"],
+      "sources_count": 1,
+      "can_do_from_cli": "partial"
+    }
+  ],
+  "stats": {
+    "total_scrolls": 1,
+    "by_level": {
+      "1-tomoe": 1,
+      "2-tomoe": 0,
+      "3-tomoe": 0,
+      "mangekyo": 0
+    }
+  }
+}
