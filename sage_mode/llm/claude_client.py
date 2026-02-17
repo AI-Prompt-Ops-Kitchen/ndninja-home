@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 
 # Default model configuration
-DEFAULT_MODEL = "claude-sonnet-4-20250514"
+DEFAULT_MODEL = "claude-sonnet-4-6"
 DEFAULT_MAX_RETRIES = 3
 
 
@@ -52,7 +52,7 @@ class ClaudeClient(LLMClient):
 
         Args:
             api_key: Anthropic API key. Falls back to ANTHROPIC_API_KEY env var.
-            model: Model to use (default: claude-sonnet-4-20250514)
+            model: Model to use (default: claude-sonnet-4-6)
             max_retries: Maximum retry attempts for transient failures
         """
         self.api_key = api_key or os.getenv("ANTHROPIC_API_KEY")

@@ -13,7 +13,7 @@ Usage:
         print(f"{r.model}: {r.content[:80]}")
 
     fmt = council_result_to_daily_review_format(result)
-    # {"individual_responses": {"claude-sonnet-4-5": "...", ...}}
+    # {"individual_responses": {"claude-sonnet-4-6": "...", ...}}
 """
 
 import asyncio

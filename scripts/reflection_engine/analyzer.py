@@ -160,7 +160,7 @@ If no actionable reflections can be derived from the signals, return:
 
                 client = anthropic.Anthropic(api_key=api_key)
                 message = client.messages.create(
-                    model="claude-sonnet-4-20250514",
+                    model="claude-sonnet-4-6",
                     max_tokens=4096,
                     messages=[{
                         "role": "user",
@@ -184,7 +184,7 @@ If no actionable reflections can be derived from the signals, return:
                         '-H', f'x-api-key: {api_key}',
                         '-H', 'anthropic-version: 2023-06-01',
                         '-d', json.dumps({
-                            'model': 'claude-sonnet-4-20250514',
+                            'model': 'claude-sonnet-4-6',
                             'max_tokens': 4096,
                             'messages': [{'role': 'user', 'content': open(prompt_file).read()}]
                         })

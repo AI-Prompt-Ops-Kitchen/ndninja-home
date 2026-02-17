@@ -29,7 +29,7 @@ class Config:
     CRAFT_MCP_URL = "https://mcp.craft.do/links/31NLayAJdLR/mcp"
 
     # Claude API Settings
-    CLAUDE_MODEL = "claude-sonnet-4-5"
+    CLAUDE_MODEL = "claude-sonnet-4-6"
     MAX_TOKENS = 8000
     TEMPERATURE = 0.7
 

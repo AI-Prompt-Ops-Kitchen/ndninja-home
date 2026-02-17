@@ -49,8 +49,8 @@ WORDS_PER_MINUTE = 155    # Average speaking rate for casual delivery
 MAX_WORDS = int(TARGET_DURATION_SEC / 60 * WORDS_PER_MINUTE)  # ~129 words
 
 # Standard intro/outro — baked into every video
-STANDARD_INTRO = "What's up my fellow ninjas!? This is Neurodivergent Ninja here and I'm back with another quick update video."
-STANDARD_OUTRO = "Thanks for watching my video! Please like, follow and subscribe to help this channel grow! This is Neurodivergent Ninja signing off. I'll see you in my next video!"
+STANDARD_INTRO = "What's up my fellow Ninjas, this is Neurodivergent Ninja here back with another video."
+STANDARD_OUTRO = "Thanks for watching! Hit that like and subscribe button — it really helps the channel grow. Peace out ninjas, see you next time!"
 
 # RSS Feeds by category
 RSS_FEEDS = {
@@ -324,7 +324,7 @@ def _generate_with_anthropic(prompt: str, story: Story, template_key: str,
                                api_key: str) -> Script:
     """Generate script using Anthropic Claude."""
     body = json.dumps({
-        "model": "claude-sonnet-4-20250514",
+        "model": "claude-sonnet-4-6",
         "max_tokens": 500,
         "messages": [{"role": "user", "content": prompt}],
     }).encode()
