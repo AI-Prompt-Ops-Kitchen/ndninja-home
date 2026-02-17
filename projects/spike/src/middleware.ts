@@ -28,9 +28,10 @@ export async function middleware(request: NextRequest) {
   // Refresh session — important for Server Components
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users to login (except auth routes)
+  // Redirect unauthenticated users to login (except auth routes and admin-login API)
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
-  if (!user && !isAuthRoute) {
+  const isAdminLogin = request.nextUrl.pathname.startsWith('/api/admin-login');
+  if (!user && !isAuthRoute && !isAdminLogin) {
     const url = request.nextUrl.clone();
     url.pathname = '/auth/login';
     return NextResponse.redirect(url);
