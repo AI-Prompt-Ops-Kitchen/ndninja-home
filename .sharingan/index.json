@@ -2,33 +2,6 @@
   "version": 1,
   "scrolls": [
     {
-      "name": "spline-3d-web",
-      "domain": "3D/Web",
-      "level": "2-tomoe",
-      "description": "Browser-based 3D design tool for creating interactive web elements. Full Code API for programmatic control via React/Next.js/Vanilla JS.",
-      "last_updated": "2026-02-18",
-      "keywords": [
-        "3d",
-        "web",
-        "spline",
-        "interactive",
-        "animation",
-        "embed",
-        "three-dimensional",
-        "antigravity",
-        "website",
-        "react",
-        "nextjs",
-        "code-api",
-        "webgl",
-        "netlify",
-        "21st-dev",
-        "fetch-sub"
-      ],
-      "sources_count": 5,
-      "can_do_from_cli": "partial"
-    },
-    {
       "name": "remotion-video-code",
       "domain": "Video/Code",
       "level": "2-tomoe",
@@ -94,14 +67,43 @@
       "sources_count": 367,
       "can_do_from_cli": true,
       "auto_generated": true
+    },
+    {
+      "name": "spline-3d-web",
+      "level": "3-tomoe",
+      "description": "Browser-based 3D design tool for creating interactive web elements. Full Code API for programmatic control via React/Next.js/Vanilla JS.",
+      "last_updated": "2026-02-19",
+      "keywords": [
+        "3d",
+        "web",
+        "spline",
+        "interactive",
+        "animation",
+        "embed",
+        "three-dimensional",
+        "antigravity",
+        "website",
+        "react",
+        "nextjs",
+        "code-api",
+        "webgl",
+        "netlify",
+        "21st-dev",
+        "fetch-sub"
+      ],
+      "sources_count": 8,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "remotion-video-code"
+      ]
     }
   ],
   "stats": {
     "total_scrolls": 4,
     "by_level": {
       "1-tomoe": 0,
-      "2-tomoe": 3,
-      "3-tomoe": 0,
+      "2-tomoe": 2,
+      "3-tomoe": 1,
       "mangekyo": 1
     }
   }

@@ -249,6 +249,47 @@ python3 extract_daily_review.py --dry-run  # Preview without writing
 
 Both write to `~/.logs/sharingan-digest.log`. On Sundays, both run (daily first at :00, weekly also at :00 — they're fast).
 
+### Autonomous Deepening Loop (Weekly, Sunday 4AM)
+
+**Scripts:** `/home/ndninja/skills/sharingan/deepen.py` + `autolearn.py`
+**Log:** `~/.logs/sharingan-autolearn.log`
+
+```bash
+python3 autolearn.py                   # Auto-pick weakest scroll, deepen it
+python3 autolearn.py --scroll <name>   # Deepen a specific scroll
+python3 autolearn.py --all             # Deepen all eligible scrolls
+python3 autolearn.py --dry-run         # Preview source discovery only
+python3 deepen.py <scroll-name>        # Single scroll deepening (used by autolearn)
+```
+
+**How it works:**
+1. Picks the weakest scroll (lowest level, oldest update)
+2. Claude analyzes gaps and generates search queries
+3. Searches GitHub (`gh search repos`) and YouTube (`yt-dlp ytsearch`)
+4. Claude picks the 2-3 most valuable new sources
+5. Ingests them via `extract_repo.py` / `extract_transcript.py`
+6. Analyzes cross-scroll connections in the vault
+7. Evaluates new mastery level
+8. Re-synthesizes the entire scroll with old + new material
+9. Backs up old scroll before overwriting
+
+**Level-up criteria (automated):**
+- 2+ sources → 2-Tomoe
+- 3+ sources → 3-Tomoe
+- 3+ sources + 3+ cross-links → Mangekyo-eligible (flagged, NOT auto-promoted)
+
+**Mangekyo gate:** Only the user can promote to Mangekyo. Say `/sharingan promote <scroll>` to confirm.
+
+**Cron:**
+```
+0 4 * * 0   python3 .../autolearn.py  >> ~/.logs/sharingan-autolearn.log 2>&1
+```
+
+**Sunday maintenance window:**
+- 3:00 AM — Daily observation log
+- 3:00 AM — Weekly chat history synthesis
+- 4:00 AM — Autonomous scroll deepening
+
 ---
 
 ## Training Dojo (Podcast Generation)

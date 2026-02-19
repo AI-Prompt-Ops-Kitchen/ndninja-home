@@ -1,8 +1,9 @@
+```markdown
 ---
 name: spline-3d-web
 domain: 3D/Web
-level: 2-tomoe
-description: Browser-based 3D design tool for creating interactive web elements. Embed 3D scenes directly in websites with mouse-reactive animations. Full Code API for programmatic control.
+level: 3-tomoe
+description: Browser-based 3D design tool for creating interactive web elements. Embed 3D scenes directly in websites with mouse-reactive animations and scroll-triggered sequences. Full Code API for programmatic control. Native Webflow integration for no-code interaction binding.
 sources:
   - type: youtube
     title: "AntiGravity + Spline Builds Insane 3D Websites (NEW Skill)"
@@ -31,19 +32,40 @@ sources:
     url: "https://spline.design/pricing"
     date: "2026-02"
     confidence: high
-last_updated: 2026-02-18
+  - type: youtube
+    title: "Create a 3D Scroll Animation for Beginners – Spline + Framer Tutorial"
+    url: "https://www.youtube.com/watch?v=j5sEe5NQtUU"
+    channel: "Spline"
+    date: "2026-02"
+    confidence: high
+  - type: youtube
+    title: "New Spline & Webflow Integration"
+    url: "https://www.youtube.com/watch?v=NhtNciucUOE"
+    channel: "Timothy Ricks"
+    date: "2026-02"
+    confidence: high
+  - type: youtube
+    title: "Expo in 100 Seconds"
+    url: "https://www.youtube.com/watch?v=vFW_TxKLyrE"
+    channel: "Fireship"
+    date: "2026-02"
+    confidence: high
+last_updated: 2026-02-19
 can_do_from_cli: partial
+mangekyo_eligible: false
 ---
 
 # Spline — 3D Design for the Web
 
 ## Mental Model
 
-Spline is a browser-based 3D design tool — think Figma but for 3D. You create or remix interactive 3D scenes and export them as embeddable web components. Assets respond to mouse movement, clicks, scroll, and keyboard — making websites feel premium.
+Spline is a browser-based 3D design tool — think Figma but for 3D. You create or remix interactive 3D scenes and export them as embeddable web components. Assets respond to mouse movement, clicks, **scroll position**, and keyboard — making websites feel premium and cinematic.
 
 **Key differentiator:** Everything runs in the browser. No Unity, no Blender. Design, animate, add physics/interactions, and export to web/iOS/Android from one tool.
 
 **Code API vs Real-time API:** The *Code API* (`@splinetool/runtime`) lets external code control scenes programmatically. The *Real-time API* is for connections created inside the Spline editor (webhooks, external data). They're separate systems.
+
+**Scroll animations:** Spline's state-based system + scroll event trigger enables **staggered, multi-object animations keyed to page scroll position** — leaf growth, camera dolly, rotations — all declaratively in the editor, no timeline coding required.
 
 ## Prerequisites
 
@@ -52,7 +74,7 @@ Spline is a browser-based 3D design tool — think Figma but for 3D. You create 
 | Spline account | Sign up at [spline.design](https://spline.design) | Yes — unlimited personal files, watermarked exports |
 | Modern browser | Chrome/Edge recommended (WebGL required) | Yes |
 | Node.js (for dev) | Required for `@splinetool/runtime` or `react-spline` | N/A |
-| AntiGravity (optional) | AI website builder at antigravity.ai | Free tier available |
+| Webflow (optional) | Native embed integration via Spline component | Webflow account required |
 
 ## Pricing Tiers (verified Feb 2026)
 
@@ -68,75 +90,70 @@ Spline is a browser-based 3D design tool — think Figma but for 3D. You create 
 
 ## Core Workflows
 
-### Workflow 1: Find and Remix a Community 3D Asset
+### Workflow 1: Scroll-Triggered 3D Animations
+
+**When to use:** Plant growth, character animation, camera pan — anything keyed to page scroll.
+
+**Setup:**
+1. In Spline, create **states** for each keyframe (e.g., leaf small, leaf grown)
+2. Select your object group → **Add Event** → **Scroll**
+3. Configure scroll type:
+   - **Steps mode:** Transition between states per mouse wheel tick
+   - **Page mode:** Animate based on entire page scroll position
+   - **Start From:** top/middle/bottom of viewport (when animation begins)
+   - **Start At:** pixel offset on page where animation begins
+   - **End After:** total pixels of scroll to complete animation
+4. Add **transitions** for each object — define state path (base → state 1 → state 2) and stagger timing for each
+5. **Pivot positioning:** Hold Cmd+Opt, click object, drag origin point so scaling/rotation feels natural (e.g., leaf grows from root, not center)
+6. Export and embed
+
+**Example:** 400px page scroll animates plant: leaf 1 grows (0-100px), leaf 2 (100-200px), leaf 3 (200-300px), leaf 4 (300-400px) — each with 0.2s stagger for visual flow.
+
+**Gotchas:**
+- Pivot point matters. A leaf centered will shrink toward its center; pivoted at the base will grow outward.
+- State transitions need explicit timing — copy/paste transitions and tweak each one's delay for stagger effect.
+- Preview in **Play Mode** before exporting; scroll behavior only shows in live export, not editor canvas.
+
+### Workflow 2: Webflow Native Integration (No-Code)
+
+**When to use:** You're building in Webflow and want 3D interactivity controlled by Webflow interactions (hover, scroll, element trigger).
+
+**Setup:**
+1. Export Spline scene: **Export** → **Code Export** → copy the `prod.spline.design` URL
+2. In Webflow, add **Spline component** (embed) and paste URL
+3. Set Spline element:
+   - `position: sticky` to keep it visible while scrolling past hero sections
+   - Place other sections with `margin-top: negative 100vh` to layer over it
+4. Create **interactions** in Webflow:
+   - **Page Load trigger:** Spline action (e.g., head bobbing rotation on loop)
+   - **Scroll In View trigger:** Spline action (e.g., character Y/Z position, full 360° rotation keyed to scroll %)
+   - **Hover trigger:** Spline action (e.g., cap rotation on button hover)
+5. Each Spline action references **object names from editor** (head, cap, body) — must be named in Spline for this to work
+
+**Example:** Webflow scroll trigger → pull character up 220px Y, push forward 210px Z, spin 6.5° Y — all in visual Webflow interaction builder, no JavaScript.
+
+**Advantage over Code API:** Fully visual interaction binding. No React/JavaScript needed. Webflow designers can wire 3D animations without touching code.
+
+**Gotchas:**
+- Webflow interaction Spline actions use **object name matching** — if Spline object is renamed, Webflow loses reference. Use consistent naming.
+- Rotation values in Webflow are in degrees, not radians. Negative values rotate CCW.
+- Only **Professional Spline plan** exports to Webflow integration. Free tier cannot be embedded this way.
+
+### Workflow 3: Remix Community Assets
 
 **When to use:** You need a 3D element but don't want to model from scratch.
 
 1. Go to **spline.design/community**
-2. Browse or search for assets (e.g., "robot", "particle", "abstract")
-3. Preview the asset — check if it has the interactivity you want
-4. Click **Remix** — duplicates it into your workspace as an editable copy
-5. Modify as needed — hide elements, change materials/colors
-6. Export (see Workflow 2)
+2. Browse or search for assets (e.g., "robot", "particle", "plant")
+3. Click **Remix** — duplicates into your workspace as an editable copy
+4. Modify: hide elements, change materials, adjust scale/position
+5. Export (see Workflow 2 / Scroll setup)
 
-**Licensing:** All community files are **CC0 1.0 Universal** (public domain) — no restrictions on use. (Verified from docs)
+**Licensing:** All community files are **CC0 1.0 Universal** (public domain) — no restrictions on use.
 
-**Gotchas:**
-- Free plan: unlimited personal files but exports have watermark.
-- **Free plan remix limit:** You can remix up to ~3 community assets at a time. Archive old remixes to free up slots. [SINGLE SOURCE — not confirmed in official docs]
-- Some assets have logos or text baked in — click the element and use the visibility toggle (eye icon) to hide unwanted layers.
-- Complex assets have deep node trees — toggle visibility rather than restructuring.
+### Workflow 4: Programmatic Control with Code API
 
-### Workflow 2: Export for Web Embedding
-
-**When to use:** Your Spline scene is ready to put on a website.
-
-1. In Spline editor, click **Export** (top right)
-2. Go to **Code Export** section
-3. Configure **Play Settings** (verified from docs):
-   - **BG Color** → hide for transparent background over dark/custom sites
-   - **Page Scroll** → Yes/No to allow website scrolling
-   - **Cursor** → Default or hidden
-   - **Orbit/Pan/Zoom** → lock or allow scene movement, soft orbit smoothing
-   - **Touch controls** → 1/2/3 finger orbit, pinch zoom
-   - **On Hover** → camera response with sensitivity/damping
-   - **Animated Turntable** → auto-rotation with speed/direction
-   - **Geometry/Image quality** → compression levels for performance
-   - **Scene preloading** → preload for faster initial render
-4. Choose export type:
-   - **Spline Viewer** (free) — `<spline-viewer>` web component
-   - **Code Export** (Pro plan) — 5 framework options: Vanilla JS, React, Next.js, Three.js, react-three-fiber
-5. Click **Update Code Export**
-6. Copy the `prod.spline.design` URL
-
-**Embed URL format:** `https://prod.spline.design/xxxxx/scene.splinecode`
-
-**Important:** Only `.splinecode` files work with the runtime/viewer. `.spline` files are editor-only.
-
-**Gotchas:**
-- If integrating into a dark site, ALWAYS hide the background color in play settings first.
-- The embed URL starts with `prod.spline.design` — this is what you paste into code.
-- Preview before integrating: use Spline's built-in preview, or use the Spline Viewer embed URL directly in a browser tab.
-
-### Workflow 3: Programmatic Control with Code API
-
-**When to use:** You need to control the 3D scene from your app code (animate on button click, read/set variables, respond to object interactions).
-
-**Vanilla JS:**
-```html
-<canvas id="canvas3d"></canvas>
-<script type="module">
-import { Application } from '@splinetool/runtime';
-
-const canvas = document.getElementById('canvas3d');
-const app = new Application(canvas);
-app.load('https://prod.spline.design/xxxxx/scene.splinecode')
-  .then(() => {
-    const cube = app.findObjectByName('Cube');
-    cube.position.x += 10;
-  });
-</script>
-```
+**When to use:** You need to control the 3D scene from external app code (animate on button click, read/set variables).
 
 **React / Next.js:**
 ```bash
@@ -160,64 +177,40 @@ import Spline from '@splinetool/react-spline/next';
 // Automatically renders a blurred placeholder server-side while loading
 ```
 
-**Available frameworks for Code Export (Pro plan):**
-| Framework | Package |
-|-----------|---------|
-| Vanilla JS | `@splinetool/runtime` |
-| React | `@splinetool/react-spline` |
-| Next.js | `@splinetool/react-spline/next` |
-| Three.js | `@splinetool/loader` |
-| react-three-fiber | `@splinetool/r3f-spline` |
+**Vanilla JS:**
+```javascript
+import { Application } from '@splinetool/runtime';
+const app = new Application(canvas);
+app.load('https://prod.spline.design/xxxxx/scene.splinecode').then(() => {
+  const cube = app.findObjectByName('Cube');
+  cube.position.x += 10;
+});
+```
+
+**Available frameworks:** Vanilla JS, React, Next.js, Three.js, react-three-fiber
 
 **Gotchas:**
 - Code API requires **Professional plan** ($25/mo).
-- Spline Viewer embed (free) does NOT expose the Code API — no `findObjectByName`, no `emitEvent`.
-- For React/Next.js: install both `@splinetool/react-spline` AND `@splinetool/runtime`.
+- Free tier `<spline-viewer>` embed does NOT expose `findObjectByName`, `emitEvent`.
+- Must install both `@splinetool/react-spline` AND `@splinetool/runtime`.
 
-### Workflow 4: Integrate with AI Website Builder (AntiGravity)
+### Workflow 5: Export for Web & Preview
 
-**When to use:** You want an AI agent to build a full website around your 3D scene.
+1. In Spline, click **Export** → **Code Export**
+2. Configure **Play Settings:**
+   - **BG Color** → hide for transparent background
+   - **Page Scroll** → Yes/No
+   - **Orbit/Pan/Zoom** → lock/allow movement
+   - **Touch controls** → 1/2/3 finger orbit, pinch zoom
+   - **Animated Turntable** → auto-rotation speed/direction
+   - **Geometry quality** → compression level
+3. Choose export type:
+   - **Spline Viewer** (free) — `<spline-viewer>` web component
+   - **Code Export** (Pro) — React, Next.js, Vanilla, Three.js, r3f
+4. Copy **`prod.spline.design` URL**
+5. **Preview directly:** Open URL in browser tab to test before integrating
 
-1. Create a website scaffold in AntiGravity by describing what you want
-2. Optionally provide design inspiration from [godly.website](https://godly.website) or [landbook.com](https://landbook.com)
-3. Paste your Spline embed URL and ask the agent to integrate it
-4. Iterate — adjust colors, layout, copy via natural language
-
-**Brand guidelines trick:** Screenshot an existing brand asset (poster, logo, template) → feed to AI → ask it to generate a `brand-guidelines.md` with color palettes, typography, identity rules. Use this as source of truth for consistent design across the whole site.
-
-**Spline Skill file:** A downloadable `skill.md` is available (linked in RoboNuggets video description) — drag it into AntiGravity/Claude Code/Codex workspace. It gives the AI agent full context on Spline integration (React, Vanilla JS, etc.) so it knows how to embed and control 3D assets immediately.
-
-**Gotchas:**
-- Give the AI a brand guidelines document for consistent output.
-- Works across AntiGravity, Claude Code, Codex, and other agentic coding platforms (confirmed in 2 separate demos).
-
-### Workflow 5: Preview Exported Asset Before Integrating
-
-**When to use:** You've exported a `.splinecode` URL and want to visually verify it before putting it in your site.
-
-1. Copy the `prod.spline.design` URL from the export panel
-2. Open the URL directly in a browser tab — it renders a live preview of the scene
-3. Verify: background hidden? Correct elements visible? Interactions working?
-4. Use Spline's **Draft** system to version exports — "Generate Draft" snapshots your scene, "Promote to Production" makes it the live URL
-
-**Note:** [FetchSub](https://fetchsub.com) was referenced in a tutorial as a preview tool, but it's actually a **watermark remover** — it strips the Spline logo from `.splinecode` files client-side. Use at your own discretion (CC0 community assets are free to use, but paid content should respect licensing).
-
-### Workflow 6: Add UI Components from 21st.dev
-
-**When to use:** You need polished UI sections (testimonials, contact forms, navbars) to complement your 3D landing page.
-
-1. Browse [21st.dev](https://21st.dev) for components (testimonials, cards, forms, etc.)
-2. Find one you like → click **Copy Prompt**
-3. Select your platform (Claude Code, etc.)
-4. Paste the prompt into your AI agent — it contains full install + integration instructions
-5. For contact forms, pair with **Formspree** (formspree.io) or **Web3Forms** (web3forms.com) — both have free tiers for routing form submissions to email
-
-### Workflow 7: Deploy to Production
-
-1. **Static sites:** Netlify (free, drag-and-drop or CLI deploy) → `*.netlify.app`
-   - AntiGravity can deploy directly via Netlify CLI if you ask it to
-2. **Next.js/React:** Vercel (free tier, `vercel deploy`)
-3. **Custom domain:** DNS settings per platform
+**Embed format:** `https://prod.spline.design/xxxxx/scene.splinecode` (must be `.splinecode`, not `.spline`)
 
 ## Code API Reference
 
@@ -225,115 +218,62 @@ import Spline from '@splinetool/react-spline/next';
 
 | Prop | Type | Description |
 |------|------|-------------|
-| `scene` | `string` | Scene URL (required) — must be `.splinecode` |
-| `onLoad` | `(spline) => void` | Fires when scene is fully loaded |
+| `scene` | `string` | Scene URL (required) |
+| `onLoad` | `(spline) => void` | Fires when fully loaded |
 | `renderOnDemand` | `boolean` | On-demand rendering (default: `true`) |
-| `className` | `string` | CSS classes for container |
-| `style` | `object` | Inline styles for container |
 
-### Event Handler Props
+### Event Handlers
 
 | Prop | Fires when... |
 |------|---------------|
-| `onSplineMouseDown` | Mouse button pressed on object |
-| `onSplineMouseUp` | Mouse button released on object |
-| `onSplineMouseHover` | Mouse enters object |
-| `onSplineKeyDown` | Key pressed while scene focused |
-| `onSplineKeyUp` | Key released while scene focused |
-| `onSplineStart` | Start event triggers |
-| `onSplineScroll` | Scroll event on scene |
-| `onSplineLookAt` | Look-at event triggers |
-| `onSplineFollow` | Follow event triggers |
+| `onSplineMouseDown`, `onSplineMouseUp`, `onSplineMouseHover` | Mouse interaction |
+| `onSplineKeyDown`, `onSplineKeyUp` | Keyboard interaction |
+| `onSplineStart`, `onSplineScroll`, `onSplineLookAt`, `onSplineFollow` | Animation/state events |
 
-Event callback receives `(e)` where `e.target.name` is the object name.
-
-### Application Methods (from `onLoad` callback)
+### Application Methods (from `onLoad`)
 
 | Method | Description |
 |--------|-------------|
-| `findObjectByName(name)` | Get scene object by name |
-| `findObjectById(uuid)` | Get scene object by UUID |
-| `emitEvent(eventName, nameOrUuid)` | Trigger an animation event |
-| `emitEventReverse(eventName, nameOrUuid)` | Trigger event in reverse |
-| `setZoom(zoom)` | Set initial camera zoom |
-| `setVariable(name, value)` | Set a single scene variable |
-| `setVariables(obj)` | Set multiple scene variables |
+| `findObjectByName(name)` | Get object by name |
+| `emitEvent(eventName, nameOrUuid)` | Trigger animation event |
+| `setVariable(name, value)` | Set scene variable |
+| `setZoom(zoom)` | Set camera zoom |
 
-### Emittable Event Types
+## Full Feature Set
 
-`mouseDown`, `mouseHover`, `mouseUp`, `keyDown`, `keyUp`, `start`, `lookAt`, `follow`
+**Design:** Parametric objects, booleans, extrusion, pen tool, sculpting, 3D paths, cloner motion, text
 
-### Lazy Loading Pattern
-```jsx
-const Spline = React.lazy(() => import('@splinetool/react-spline'));
+**Materials (18+ types):** Color, image, video, gradient, noise, Fresnel, glass, matcap, displacement, bump/roughness
 
-<Suspense fallback={<div>Loading 3D scene...</div>}>
-  <Spline scene="https://prod.spline.design/xxxxx/scene.splinecode" />
-</Suspense>
-```
+**Animation:** State-based system, **scroll events**, physics, timeline
 
-## Full Feature Set (from official docs)
+**Interactions:** 24+ event types (scroll, mouse, keyboard, collision, drag-drop, trigger areas, variable change, API triggers)
 
-**Design:** Parametric objects, booleans, extrusion, pen tool, shape blending, 3D sculpting, 3D paths, cloner motion, text
+**Export targets:** Web (viewer/code), iOS (Swift/SwiftUI), Android (Kotlin), visionOS, GLTF/GLB, USDZ, STL, video
 
-**Materials (18+ layer types):** Color, image, video, gradient, noise, Fresnel, rainbow, toon, outline, glass, matcap, displacement, pattern, depth/3D gradient, plus bump/roughness mapping
+**Integrations:** Figma, Framer, **Webflow** (native component), Notion, Shopify, Wix, Typedream, Tome
 
-**Lighting:** Directional, point, spot lights + soft shadows
-
-**Camera:** Post-processing effects, depth of field, fog
-
-**Animation:** State-based system, timeline, animatable properties, physics
-
-**Interactions:** 24+ event types (mouse, keyboard, scroll, collision, drag-drop, trigger areas, variable change, API triggers) and 16+ action types (sound, transitions, video, links, scene reset, camera switching, conditionals, object create/destroy)
-
-**AI Features (paid add-on):** AI 3D world generation ("Spell"), AI textures, AI style transfer
-
-**Export targets:** Web (viewer/code), iOS (Swift/SwiftUI), Android (Kotlin/APK/AAB), visionOS, GLTF/GLB, USDZ, STL, image, video
-
-**Integrations:** Figma, Framer, Webflow, Notion, Shopify, Wix, Wix Studio, Typedream, Tome, Toddle
-
-## Integration with Ninja Toolkit
-
-- **Prompt Toolkit (Next.js):** Add interactive 3D hero section using `@splinetool/react-spline/next` for SSR placeholder
-- **Glitch avatar:** Spline could generate 3D web components for a browser-based companion
-- **Content pipeline:** 3D thumbnails or interactive demo pages for YouTube video topics
+**AI Features (paid add-on):** 3D world generation, AI textures, style transfer
 
 ## Limitations & Gaps
 
-- **GUI required for creation:** Building/editing 3D scenes requires the Spline browser editor. Cannot be done from CLI.
-- **CLI-possible tasks:** Embedding exported scenes, Code API integration, deploying sites with embeds
-- **No local rendering:** Assets served from prod.spline.design CDN — requires internet
-- **Code API gated:** Full programmatic control requires Professional plan ($25/mo). Free tier only gets `<spline-viewer>` embeds.
-- **Performance:** Large scenes (>5MB) hurt mobile load times. No built-in LOD/progressive loading.
-- **Self-hosting possible:** Docs confirm you can "download the code exports and host them on your own server" (Pro plan). Not limited to Spline CDN.
-- **Hana Canvas:** 2D design feature (infinite canvas, vectors, auto-layout) — not deeply explored yet
-
-## Related Resources
-
-| Resource | URL | Purpose |
-|----------|-----|---------|
-| Spline Community | spline.design/community | Browse/remix 3D assets |
-| Spline Docs | docs.spline.design | Official documentation |
-| Spline Academy | academy.spline.design | Video tutorials |
-| react-spline GitHub | github.com/splinetool/react-spline | React/Next.js package |
-| @splinetool/runtime | npmjs.com/package/@splinetool/runtime | Vanilla JS runtime |
-| @splinetool/viewer | npmjs.com/package/@splinetool/viewer | Web component viewer |
-| Design Inspiration | godly.website | Landing page designs |
-| Design Inspiration | landbook.com | Searchable by niche |
-| Component Library | 21st.dev | UI components with AI-ready "Copy Prompt" |
-| Watermark Remover | fetchsub.com | Removes Spline watermark from .splinecode (client-side, free) |
-| Form Backend | formspree.io | Free form submission routing to email |
-| Form Backend | web3forms.com | Alternative free form endpoint |
+- **GUI required for creation:** Scenes cannot be built programmatically — only edited in browser. [SINGLE SOURCE — Spline docs don't explicitly forbid headless scene creation, but no API exists for it]
+- **CLI-only tasks:** Embedding exports, Code API integration, deploying sites
+- **No local-first rendering:** Assets served from prod.spline.design CDN — requires internet
+- **Code API gated:** Full programmatic control requires Professional plan. Free tier only gets `<spline-viewer>`
+- **Performance:** Large scenes (>5MB) impact mobile. No built-in LOD. [SINGLE SOURCE — inferred from Spline Academy best practices]
+- **Webflow interaction scope:** Spline actions in Webflow limited to predefined transforms (position, rotation). Custom event handlers require Code API + React
+- **Mobile app export:** Spline exports iOS/Android, but no Expo/React Native integration documented. For cross-platform mobile, use Code API in Expo/React Native separately
+- **Self-hosting:** Pro plan only. Docs confirm downloadable code exports can be self-hosted; Spline CDN URLs are not required
 
 ## Tips & Best Practices
 
-1. **Performance first:** Keep scenes under 3MB. Fewer polygons = faster load. Use lazy loading for below-fold scenes.
-2. **Hide backgrounds:** When embedding over custom backgrounds, always toggle off Spline background in play settings.
-3. **Next.js SSR:** Use `@splinetool/react-spline/next` import for automatic blurred placeholder during load.
-4. **Mobile fallback:** Consider a static image fallback for devices that can't handle WebGL.
-5. **Event naming:** Objects in Spline must be named (not "Object 1") for `findObjectByName` to be useful.
-6. **Brand consistency:** Feed your AI agent a brand guidelines markdown for consistent colors/typography around 3D embeds.
-7. **Free tier strategy:** Use `<spline-viewer>` web component for display-only scenes. Only upgrade to Pro when you need Code API (programmatic control).
-8. **Preview first:** Open your `prod.spline.design` URL directly in a browser tab before integrating — catches background color issues and missing elements early.
-9. **Mobile works:** Spline 3D assets are confirmed responsive on mobile — interactive touch works out of the box.
-10. **Spline Skill for AI agents:** Drop the Spline `skill.md` into your AI coding workspace for instant context — saves prompting time.
+1. **Scroll animation performance:** Keep scroll animations to <5MB. Preview in real browser before deploying — scrollbar behavior varies across devices
+2. **Pivot first:** Set object pivots *before* creating states. Pivot at base/root for growth animations; center for rotations
+3. **Staggered timing:** Copy/paste transitions and offset each by 0.1-0.2s for visual flow — lag between objects feels intentional
+4. **Webflow workflow:** Build 3D asset in Spline (Pro plan), export URL, drop into Webflow Spline component, bind all interactions in Webflow UI — zero code
+5. **Name objects:** All objects must be explicitly named in Spline editor for `findObjectByName` and Webflow integration to work
+6. **Next.js SSR:** Use `@splinetool/react-spline/next` for automatic blurred placeholder during load
+7. **Mobile fallback:** WebGL not guaranteed on older phones — consider static image fallback
+8. **Preview before integrate:** Open `prod.spline.design` URL directly in browser tab to catch issues (background color, missing elements)
+9. **Free tier strategy:** Use `
