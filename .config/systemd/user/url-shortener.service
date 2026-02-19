@@ -1,0 +1,11 @@
+[Unit]
+Description=NDN Local URL Shortener Server
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/ndninja/url-shortener.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

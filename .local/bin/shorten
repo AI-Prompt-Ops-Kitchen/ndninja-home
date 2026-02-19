@@ -1,5 +1,5 @@
 #!/bin/bash
-# shorten - Shorten a URL using is.gd, with v.gd fallback
+# shorten - URL shortener with local server for private IPs + is.gd/v.gd for public
 # Usage: shorten <url>
 
 URL="${1}"
@@ -9,22 +9,73 @@ if [ -z "$URL" ]; then
     exit 1
 fi
 
-# URL-encode the input using Python (available on this system)
+SHORTCUTS_FILE="$HOME/.url-shortcuts.json"
+TAILSCALE_IP="100.77.248.9"
+LOCAL_PORT="8999"
+
+# Detect private/local/Tailscale IPs (RFC1918 + localhost + Tailscale CGNAT 100.64-127.x)
+is_private_url() {
+    echo "$1" | grep -qE 'https?://(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.)'
+}
+
+# Generate a unique 5-char alphanumeric code not already in the shortcuts file
+unique_code() {
+    while true; do
+        CODE=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 5)
+        # Check it's not already taken
+        if ! python3 -c "
+import json, sys, os
+f = os.path.expanduser('~/.url-shortcuts.json')
+if not os.path.exists(f):
+    sys.exit(0)
+with open(f) as fp:
+    data = json.load(fp)
+sys.exit(0 if '$CODE' not in data else 1)
+" 2>/dev/null; then
+            continue
+        fi
+        echo "$CODE"
+        return
+    done
+}
+
+if is_private_url "$URL"; then
+    # Ensure shortcuts file exists
+    if [ ! -f "$SHORTCUTS_FILE" ]; then
+        echo '{}' > "$SHORTCUTS_FILE"
+    fi
+
+    CODE=$(unique_code)
+
+    # Save mapping
+    python3 -c "
+import json, sys, os
+f = os.path.expanduser('~/.url-shortcuts.json')
+with open(f) as fp:
+    data = json.load(fp)
+data[sys.argv[1]] = sys.argv[2]
+with open(f, 'w') as fp:
+    json.dump(data, fp, indent=2)
+" "$CODE" "$URL"
+
+    echo "http://${TAILSCALE_IP}:${LOCAL_PORT}/${CODE}"
+    exit 0
+fi
+
+# Public URL — try is.gd, then v.gd, then original
 ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$URL")
 
-# Try is.gd first
 RESULT=$(curl -sf "https://is.gd/create.php?format=simple&url=${ENCODED}")
 if [ $? -eq 0 ] && [ -n "$RESULT" ] && [[ "$RESULT" != Error* ]]; then
     echo "$RESULT"
     exit 0
 fi
 
-# Fallback: try v.gd
 RESULT=$(curl -sf "https://v.gd/create.php?format=simple&url=${ENCODED}")
 if [ $? -eq 0 ] && [ -n "$RESULT" ] && [[ "$RESULT" != Error* ]]; then
     echo "$RESULT"
     exit 0
 fi
 
-# Last resort: return original URL
+# Last resort
 echo "$URL"
