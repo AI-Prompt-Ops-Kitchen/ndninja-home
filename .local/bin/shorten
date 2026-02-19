@@ -1,0 +1,30 @@
+#!/bin/bash
+# shorten - Shorten a URL using is.gd, with v.gd fallback
+# Usage: shorten <url>
+
+URL="${1}"
+
+if [ -z "$URL" ]; then
+    echo "Usage: shorten <url>" >&2
+    exit 1
+fi
+
+# URL-encode the input using Python (available on this system)
+ENCODED=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1], safe=''))" "$URL")
+
+# Try is.gd first
+RESULT=$(curl -sf "https://is.gd/create.php?format=simple&url=${ENCODED}")
+if [ $? -eq 0 ] && [ -n "$RESULT" ] && [[ "$RESULT" != Error* ]]; then
+    echo "$RESULT"
+    exit 0
+fi
+
+# Fallback: try v.gd
+RESULT=$(curl -sf "https://v.gd/create.php?format=simple&url=${ENCODED}")
+if [ $? -eq 0 ] && [ -n "$RESULT" ] && [[ "$RESULT" != Error* ]]; then
+    echo "$RESULT"
+    exit 0
+fi
+
+# Last resort: return original URL
+echo "$URL"
