@@ -24,7 +24,9 @@ import {
   Workflow,
   Quote,
   CheckCircle,
+  Brain,
 } from 'lucide-react';
+import { WaitlistForm } from '@/components/WaitlistForm';
 
 const STATS = [
   { label: 'Battle-tested Prompts', value: 200, suffix: '+', icon: Sparkles },
@@ -90,7 +92,7 @@ export default function LandingPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
               </span>
-              Now in public beta — 200+ prompts and growing
+              Beta launching soon — join the waitlist
             </motion.div>
           </FadeIn>
 
@@ -113,18 +115,14 @@ export default function LandingPage() {
             </p>
           </FadeIn>
 
-          {/* CTA Buttons */}
+          {/* CTA — Waitlist */}
           <FadeIn delay={0.3}>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/browse">
-                <Button variant="glow" size="lg" className="text-base px-8">
-                  Browse Prompts <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
-              <Link href="/auth/signup">
-                <Button variant="secondary" size="lg" className="text-base px-8">
-                  Create Free Account
-                </Button>
+            <div className="mx-auto max-w-md">
+              <WaitlistForm source="hero" />
+            </div>
+            <div className="mt-4">
+              <Link href="/browse" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors">
+                Or browse without signing up <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           </FadeIn>
@@ -256,6 +254,54 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ============ NEURODIVERGENT / POWER USER CALLOUT ============ */}
+      <section className="border-t border-gray-800/50">
+        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <FadeIn direction="left">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-purple-600/10 border border-purple-600/20 px-4 py-1.5 text-sm text-purple-400 mb-6">
+                  <Brain className="h-4 w-4" />
+                  Built for Power Users &amp; Neurodivergent Creators
+                </div>
+                <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6 leading-tight">
+                  Stop staring at a blank prompt box
+                </h2>
+                <p className="text-gray-400 leading-relaxed mb-6">
+                  If you&apos;re ADHD, autistic, or just someone who thinks differently — you know the tax. The cognitive load of translating your brilliant idea into a prompt that actually works. The executive function drain of starting from scratch every time.
+                </p>
+                <p className="text-gray-400 leading-relaxed mb-8">
+                  PromptKit is a library of <span className="text-white font-medium">structured, tested templates</span> that do the scaffolding for you. Fill in the variables, copy, paste, done. No more blank page paralysis.
+                </p>
+                <div className="space-y-3">
+                  {[
+                    'Templates reduce "starting from scratch" cognitive load',
+                    'Variable placeholders keep you focused on what matters',
+                    'Prompt DNA shows exactly why a prompt works',
+                    'Collections let you build your own toolkit over time',
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-3">
+                      <CheckCircle className="h-4 w-4 text-purple-400 shrink-0" />
+                      <span className="text-sm text-gray-300">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </FadeIn>
+
+            <FadeIn direction="right" delay={0.1}>
+              <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8">
+                <h3 className="text-lg font-semibold text-white mb-2">Join the beta waitlist</h3>
+                <p className="text-sm text-gray-400 mb-6">
+                  Early access coming soon. Be first in line — and help shape the features that matter most.
+                </p>
+                <WaitlistForm source="nd-section" />
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
       {/* ============ TESTIMONIALS ============ */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <FadeIn>
@@ -356,10 +402,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ============ FINAL CTA ============ */}
+      {/* ============ FINAL CTA — WAITLIST ============ */}
       <section className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <FadeIn>
-          <div className="relative rounded-3xl border border-gray-800 overflow-hidden">
+          <div className="relative rounded-3xl border border-indigo-600/30 overflow-hidden">
             {/* Background */}
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/15 via-gray-900 to-purple-600/15" />
             <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
@@ -375,20 +421,19 @@ export default function LandingPage() {
               </motion.div>
 
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-                Ready to level up your prompts?
+                Be among the first 200
               </h2>
               <p className="text-gray-400 max-w-md mx-auto mb-8 text-lg">
-                Join thousands of professionals using PromptKit to get better results from AI — starting today.
+                Beta opens when we hit 200 waitlist signups. Early members get free Pro for life and direct input on features.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/auth/signup">
-                  <Button variant="glow" size="lg" className="text-base px-8">
-                    Start Free — No Credit Card <ArrowRight className="h-4 w-4 ml-1" />
-                  </Button>
-                </Link>
+              <div className="mx-auto max-w-sm">
+                <WaitlistForm source="final-cta" />
               </div>
-              <p className="text-xs text-gray-600 mt-4">
-                Free forever plan available. Upgrade anytime.
+              <p className="text-xs text-gray-600 mt-6">
+                No spam. Just a heads-up when we launch.{' '}
+                <Link href="/browse" className="text-indigo-500 hover:text-indigo-400 transition-colors">
+                  Browse the library now →
+                </Link>
               </p>
             </div>
           </div>
