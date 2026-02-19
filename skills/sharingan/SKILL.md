@@ -14,12 +14,19 @@ A self-learning system for Claude Code. Study a topic from multiple sources, syn
 /sharingan recall <keyword>       # Search scrolls for relevant knowledge
 /sharingan vault                  # Browse all learned skills
 /sharingan deepen <scroll-name>   # Add more sources to existing scroll
+/sharingan train <scroll-name>    # Generate training podcast from scroll
 ```
 
 Natural language also works:
 - "Learn how Spline works from this video"
 - "Study the Supabase docs on RLS"
 - "Copy this technique" + paste a URL
+- "Study this repo" + GitHub URL → triggers deep-read pipeline
+
+**Source auto-detection from URL:**
+- `youtube.com` / `youtu.be` → YouTube transcript pipeline
+- `github.com/owner/repo` → GitHub deep-read pipeline (`extract_repo.py`)
+- anything else → WebFetch docs pipeline
 
 ## Learning Pipeline
 
@@ -44,7 +51,29 @@ Then clean the VTT:
 
 **Documentation:** Use WebFetch to crawl docs pages. Follow links 1-2 levels deep for comprehensive coverage.
 
-**GitHub Repos:** Clone or browse key files — README, src/ structure, examples/, API surface.
+**GitHub Repos (Deep Read):**
+```bash
+python3 /home/ndninja/skills/sharingan/extract_repo.py <github_url> [output_dir]
+# Default output_dir: /tmp/sharingan
+# Output: /tmp/sharingan/repo_knowledge.json
+```
+
+The extractor:
+1. Fetches repo metadata via `gh api` (description, language, stars, topics)
+2. Shallow-clones the repo (`git clone --depth 1`) — fast, no history bloat
+3. Walks the full file tree and selects files by priority tier:
+   - **Tier 10** — Root docs: README, CHANGELOG, ARCHITECTURE, DESIGN
+   - **Tier 20** — Package config: pyproject.toml, package.json, Cargo.toml
+   - **Tier 30** — Entry points: `__init__.py`, `index.ts`, `main.py`
+   - **Tier 40** — `docs/` directory markdown
+   - **Tier 50** — `examples/` and `demo/` (reveal intended usage)
+   - **Tier 60** — Test files (show API usage patterns)
+   - **Tier 70** — Source files (deeper = lower priority)
+4. Reads up to 60 files / 500KB total (files >60KB are head-truncated)
+5. Deletes the clone after extraction
+6. Outputs `repo_knowledge.json` with metadata + all selected file contents
+
+**After extraction**, load `repo_knowledge.json` and run Phase 2 (Perceive) + Phase 3 (Encode) to synthesize the scroll. The `file_tree` key gives you the full structural overview even for files not read.
 
 ### Phase 2: Perceive (Analyze)
 Extract structured knowledge from raw content:
@@ -174,6 +203,98 @@ When the user asks about something, check the vault index first:
 - "This workflow is documented but I can't verify the GUI steps from CLI"
 - "This info is from Feb 2026 and may be outdated"
 - Never claim mastery you don't have. A 1-Tomoe scroll is honest about being shallow.
+
+## Automated Digest Pipelines
+
+### Chat History Digest (Weekly, Sunday 3AM)
+
+**Script:** `/home/ndninja/skills/sharingan/extract_chat_history.py`
+**Scroll:** `workflow-insights` (Mangekyo — living document, prepends each week)
+
+```bash
+python3 extract_chat_history.py            # Run now (default: 7 days)
+python3 extract_chat_history.py --days 14  # Wider window
+python3 extract_chat_history.py --dry-run  # Preview without writing
+```
+
+- Reads `~/.claude/history.jsonl`, filters noise (slash commands, short entries, secrets)
+- Sends week's messages to Claude haiku for structured synthesis
+- Extracts: Technical Decisions, Problems Solved, Tools Built, Recurring Patterns, Gotchas, Active Projects
+- API key auto-loaded from PostgreSQL vault (`NDN_SHARINGAN` entry) — no manual setup needed
+- Falls back to keyword summary if API unavailable
+- Sensitive content (API keys, passwords, tokens) filtered BEFORE sending to API or writing to scroll
+- Idempotent: re-running replaces the current week's entry, never duplicates
+
+### Daily Observation Log (Daily, 3AM)
+
+**Script:** `/home/ndninja/skills/sharingan/extract_daily_review.py`
+**Scroll:** `daily-observations` (running log, caps at 90 entries / ~3 months)
+
+```bash
+python3 extract_daily_review.py            # Run now
+python3 extract_daily_review.py --dry-run  # Preview without writing
+```
+
+- Reads last 24h of chat history + `~/.logs/daily-review.log`
+- No Claude API calls (cost-free daily run)
+- Extracts: active projects, topic keywords, representative message samples, daily-review events
+- Grows richer as the daily-review service matures
+- Idempotent: re-running today replaces today's entry
+
+**Cron schedule:**
+```
+0 3 * * *   python3 .../extract_daily_review.py  >> ~/.logs/sharingan-digest.log 2>&1
+0 3 * * 0   python3 .../extract_chat_history.py  >> ~/.logs/sharingan-digest.log 2>&1
+```
+
+Both write to `~/.logs/sharingan-digest.log`. On Sundays, both run (daily first at :00, weekly also at :00 — they're fast).
+
+---
+
+## Training Dojo (Podcast Generation)
+
+Convert scrolls into Sensei/Student conversation podcasts for passive learning — ADHD-friendly audio you can listen to while walking, driving, or cooking.
+
+**Script:** `/home/ndninja/skills/sharingan/train.py`
+
+### Usage
+
+```bash
+python3 train.py spline-3d-web                    # Full podcast (free edge TTS)
+python3 train.py spline-3d-web --transcript-only   # Preview conversation text only
+python3 train.py spline-3d-web --tts elevenlabs    # Premium voices (needs API key)
+python3 train.py spline-3d-web --llm anthropic/claude-sonnet-4-6  # Custom LLM
+```
+
+### Output Structure
+
+```
+/home/ndninja/.sharingan/training/
+└── <scroll-name>/
+    ├── podcast.mp3       # Audio file
+    ├── transcript.txt    # Conversation text
+    └── metadata.json     # Generation config, timing, scroll level
+```
+
+### Sensei/Student Format
+
+- **Sensei** — Experienced teacher. Clear, direct, uses analogies. Never condescending.
+- **Student** — Curious developer. Asks sharp "why" questions. Challenges assumptions.
+
+The conversation depth auto-calibrates to the scroll's mastery level:
+- **1-Tomoe:** Intro-level — defines terms, covers basics
+- **2-Tomoe:** Intermediate — practical workflows, gotchas, when to use what
+- **3-Tomoe:** Advanced — edge cases, architecture decisions, performance
+- **Mangekyo:** Cross-domain — connects to related topics, explores concept transfer
+
+30-40% of the conversation focuses on limitations, gaps, and "what could go wrong" — because that's where real learning happens.
+
+### Requirements
+
+- `podcastfy` (pip install podcastfy)
+- `ffmpeg` (for audio processing)
+- `ANTHROPIC_API_KEY` env var (for LLM conversation generation)
+- For premium TTS: `ELEVENLABS_API_KEY` or `OPENAI_API_KEY`
 
 ## Integration with Ninja Toolkit
 

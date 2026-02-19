@@ -42,13 +42,17 @@ def extract(url: str, output_dir: str = "/tmp/sharingan") -> dict:
     ]
     subprocess.run(sub_cmd, capture_output=True, text=True)
 
-    # Find the VTT file
+    # Find the VTT file — prefer the one matching this video's title
     vtt_files = list(out.glob("*.vtt"))
     if not vtt_files:
         print("ERROR: No subtitle file found", file=sys.stderr)
         return {"error": "No subtitles available"}
 
-    vtt_path = vtt_files[-1]
+    # Match by safe_title prefix to avoid grabbing leftover VTTs from previous runs
+    matching = [f for f in vtt_files if f.name.startswith(safe_title)]
+    vtt_path = matching[0] if matching else vtt_files[-1]
+    if not matching:
+        print(f"WARNING: No VTT matched title '{safe_title}', using {vtt_path.name}", file=sys.stderr)
 
     # Clean VTT to plain text
     with open(vtt_path, "r") as f:

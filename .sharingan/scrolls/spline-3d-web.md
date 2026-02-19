@@ -20,12 +20,18 @@ sources:
     url: "https://github.com/splinetool/react-spline"
     date: "2026-02"
     confidence: high
+  - type: youtube
+    title: "Build Beautiful Websites with AI Agents + Spline 3D (Full Walkthrough)"
+    url: "https://youtu.be/R9c_JQrEtu8"
+    channel: "RoboNuggets"
+    date: "2026-02"
+    confidence: medium
   - type: web
     title: "Spline Pricing Page"
     url: "https://spline.design/pricing"
     date: "2026-02"
     confidence: high
-last_updated: 2026-02-17
+last_updated: 2026-02-18
 can_do_from_cli: partial
 ---
 
@@ -73,9 +79,12 @@ Spline is a browser-based 3D design tool — think Figma but for 3D. You create 
 5. Modify as needed — hide elements, change materials/colors
 6. Export (see Workflow 2)
 
+**Licensing:** All community files are **CC0 1.0 Universal** (public domain) — no restrictions on use. (Verified from docs)
+
 **Gotchas:**
 - Free plan: unlimited personal files but exports have watermark.
-- Some assets have logos or text baked in — hide unwanted layers in the editor.
+- **Free plan remix limit:** You can remix up to ~3 community assets at a time. Archive old remixes to free up slots. [SINGLE SOURCE — not confirmed in official docs]
+- Some assets have logos or text baked in — click the element and use the visibility toggle (eye icon) to hide unwanted layers.
 - Complex assets have deep node trees — toggle visibility rather than restructuring.
 
 ### Workflow 2: Export for Web Embedding
@@ -84,12 +93,19 @@ Spline is a browser-based 3D design tool — think Figma but for 3D. You create 
 
 1. In Spline editor, click **Export** (top right)
 2. Go to **Code Export** section
-3. Configure **Play Settings**:
-   - **Hide background color** if integrating over a dark/custom background
-   - Adjust animation/interaction settings
+3. Configure **Play Settings** (verified from docs):
+   - **BG Color** → hide for transparent background over dark/custom sites
+   - **Page Scroll** → Yes/No to allow website scrolling
+   - **Cursor** → Default or hidden
+   - **Orbit/Pan/Zoom** → lock or allow scene movement, soft orbit smoothing
+   - **Touch controls** → 1/2/3 finger orbit, pinch zoom
+   - **On Hover** → camera response with sensitivity/damping
+   - **Animated Turntable** → auto-rotation with speed/direction
+   - **Geometry/Image quality** → compression levels for performance
+   - **Scene preloading** → preload for faster initial render
 4. Choose export type:
    - **Spline Viewer** (free) — `<spline-viewer>` web component
-   - **Code Export** (Pro plan) — React/Vanilla JS with full Code API access
+   - **Code Export** (Pro plan) — 5 framework options: Vanilla JS, React, Next.js, Three.js, react-three-fiber
 5. Click **Update Code Export**
 6. Copy the `prod.spline.design` URL
 
@@ -100,7 +116,7 @@ Spline is a browser-based 3D design tool — think Figma but for 3D. You create 
 **Gotchas:**
 - If integrating into a dark site, ALWAYS hide the background color in play settings first.
 - The embed URL starts with `prod.spline.design` — this is what you paste into code.
-- Preview before integrating: paste the URL into [fetch.sub](https://fetch.sub) to check the exported asset.
+- Preview before integrating: use Spline's built-in preview, or use the Spline Viewer embed URL directly in a browser tab.
 
 ### Workflow 3: Programmatic Control with Code API
 
@@ -144,10 +160,19 @@ import Spline from '@splinetool/react-spline/next';
 // Automatically renders a blurred placeholder server-side while loading
 ```
 
+**Available frameworks for Code Export (Pro plan):**
+| Framework | Package |
+|-----------|---------|
+| Vanilla JS | `@splinetool/runtime` |
+| React | `@splinetool/react-spline` |
+| Next.js | `@splinetool/react-spline/next` |
+| Three.js | `@splinetool/loader` |
+| react-three-fiber | `@splinetool/r3f-spline` |
+
 **Gotchas:**
 - Code API requires **Professional plan** ($25/mo).
 - Spline Viewer embed (free) does NOT expose the Code API — no `findObjectByName`, no `emitEvent`.
-- Always install both `@splinetool/react-spline` AND `@splinetool/runtime`.
+- For React/Next.js: install both `@splinetool/react-spline` AND `@splinetool/runtime`.
 
 ### Workflow 4: Integrate with AI Website Builder (AntiGravity)
 
@@ -158,13 +183,39 @@ import Spline from '@splinetool/react-spline/next';
 3. Paste your Spline embed URL and ask the agent to integrate it
 4. Iterate — adjust colors, layout, copy via natural language
 
+**Brand guidelines trick:** Screenshot an existing brand asset (poster, logo, template) → feed to AI → ask it to generate a `brand-guidelines.md` with color palettes, typography, identity rules. Use this as source of truth for consistent design across the whole site.
+
+**Spline Skill file:** A downloadable `skill.md` is available (linked in RoboNuggets video description) — drag it into AntiGravity/Claude Code/Codex workspace. It gives the AI agent full context on Spline integration (React, Vanilla JS, etc.) so it knows how to embed and control 3D assets immediately.
+
 **Gotchas:**
 - Give the AI a brand guidelines document for consistent output.
-- [SINGLE SOURCE] This workflow was demonstrated with AntiGravity specifically; adaptable to Claude Code, Cursor, or other AI coding tools.
+- Works across AntiGravity, Claude Code, Codex, and other agentic coding platforms (confirmed in 2 separate demos).
 
-### Workflow 5: Deploy to Production
+### Workflow 5: Preview Exported Asset Before Integrating
+
+**When to use:** You've exported a `.splinecode` URL and want to visually verify it before putting it in your site.
+
+1. Copy the `prod.spline.design` URL from the export panel
+2. Open the URL directly in a browser tab — it renders a live preview of the scene
+3. Verify: background hidden? Correct elements visible? Interactions working?
+4. Use Spline's **Draft** system to version exports — "Generate Draft" snapshots your scene, "Promote to Production" makes it the live URL
+
+**Note:** [FetchSub](https://fetchsub.com) was referenced in a tutorial as a preview tool, but it's actually a **watermark remover** — it strips the Spline logo from `.splinecode` files client-side. Use at your own discretion (CC0 community assets are free to use, but paid content should respect licensing).
+
+### Workflow 6: Add UI Components from 21st.dev
+
+**When to use:** You need polished UI sections (testimonials, contact forms, navbars) to complement your 3D landing page.
+
+1. Browse [21st.dev](https://21st.dev) for components (testimonials, cards, forms, etc.)
+2. Find one you like → click **Copy Prompt**
+3. Select your platform (Claude Code, etc.)
+4. Paste the prompt into your AI agent — it contains full install + integration instructions
+5. For contact forms, pair with **Formspree** (formspree.io) or **Web3Forms** (web3forms.com) — both have free tiers for routing form submissions to email
+
+### Workflow 7: Deploy to Production
 
 1. **Static sites:** Netlify (free, drag-and-drop or CLI deploy) → `*.netlify.app`
+   - AntiGravity can deploy directly via Netlify CLI if you ask it to
 2. **Next.js/React:** Vercel (free tier, `vercel deploy`)
 3. **Custom domain:** DNS settings per platform
 
@@ -254,7 +305,7 @@ const Spline = React.lazy(() => import('@splinetool/react-spline'));
 - **No local rendering:** Assets served from prod.spline.design CDN — requires internet
 - **Code API gated:** Full programmatic control requires Professional plan ($25/mo). Free tier only gets `<spline-viewer>` embeds.
 - **Performance:** Large scenes (>5MB) hurt mobile load times. No built-in LOD/progressive loading.
-- **No local .splinecode hosting:** Files must be hosted on Spline's CDN (or self-hosted with workarounds)
+- **Self-hosting possible:** Docs confirm you can "download the code exports and host them on your own server" (Pro plan). Not limited to Spline CDN.
 - **Hana Canvas:** 2D design feature (infinite canvas, vectors, auto-layout) — not deeply explored yet
 
 ## Related Resources
@@ -269,7 +320,10 @@ const Spline = React.lazy(() => import('@splinetool/react-spline'));
 | @splinetool/viewer | npmjs.com/package/@splinetool/viewer | Web component viewer |
 | Design Inspiration | godly.website | Landing page designs |
 | Design Inspiration | landbook.com | Searchable by niche |
-| Component Library | 21st.dev | UI components with AI-ready prompts |
+| Component Library | 21st.dev | UI components with AI-ready "Copy Prompt" |
+| Watermark Remover | fetchsub.com | Removes Spline watermark from .splinecode (client-side, free) |
+| Form Backend | formspree.io | Free form submission routing to email |
+| Form Backend | web3forms.com | Alternative free form endpoint |
 
 ## Tips & Best Practices
 
@@ -280,3 +334,6 @@ const Spline = React.lazy(() => import('@splinetool/react-spline'));
 5. **Event naming:** Objects in Spline must be named (not "Object 1") for `findObjectByName` to be useful.
 6. **Brand consistency:** Feed your AI agent a brand guidelines markdown for consistent colors/typography around 3D embeds.
 7. **Free tier strategy:** Use `<spline-viewer>` web component for display-only scenes. Only upgrade to Pro when you need Code API (programmatic control).
+8. **Preview first:** Open your `prod.spline.design` URL directly in a browser tab before integrating — catches background color issues and missing elements early.
+9. **Mobile works:** Spline 3D assets are confirmed responsive on mobile — interactive touch works out of the box.
+10. **Spline Skill for AI agents:** Drop the Spline `skill.md` into your AI coding workspace for instant context — saves prompting time.
