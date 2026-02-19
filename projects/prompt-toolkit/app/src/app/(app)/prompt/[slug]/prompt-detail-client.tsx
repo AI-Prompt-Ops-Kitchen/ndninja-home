@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +23,9 @@ import {
   Zap,
   MessageSquare,
   Star,
+  Save,
+  RotateCcw,
+  Hash,
 } from 'lucide-react';
 import type { PromptDetailData, PromptCardData } from '@/types/ui';
 
@@ -31,9 +34,49 @@ interface PromptDetailClientProps {
   related: PromptCardData[];
 }
 
+// Approximate token count: ~4 characters per token (good enough for display)
+function estimateTokens(text: string): number {
+  return Math.max(1, Math.ceil(text.trim().length / 4));
+}
+
+const STORAGE_PREFIX = 'prompt-customizer-';
+
 export function PromptDetailClient({ prompt, related }: PromptDetailClientProps) {
+  const storageKey = `${STORAGE_PREFIX}${prompt.slug}`;
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const [isFavorited, setIsFavorited] = useState(false);
+  const [savedNotice, setSavedNotice] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
+
+  // Load saved customization on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        setVariableValues(JSON.parse(saved));
+        setHasSaved(true);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, [storageKey]);
+
+  const handleSaveCustomization = useCallback(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(variableValues));
+      setHasSaved(true);
+      setSavedNotice(true);
+      setTimeout(() => setSavedNotice(false), 2000);
+    } catch {
+      // localStorage may be unavailable
+    }
+  }, [storageKey, variableValues]);
+
+  const handleClearCustomization = useCallback(() => {
+    setVariableValues({});
+    localStorage.removeItem(storageKey);
+    setHasSaved(false);
+  }, [storageKey]);
 
   const escapeHtml = (str: string): string =>
     str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -41,6 +84,9 @@ export function PromptDetailClient({ prompt, related }: PromptDetailClientProps)
   const filledPrompt = prompt.content.replace(/\[(\w+)\]/g, (match, key) =>
     variableValues[key] || match
   );
+
+  const charCount = filledPrompt.length;
+  const tokenCount = estimateTokens(filledPrompt);
 
   const highlightContent = (content: string) => {
     // Escape HTML first to prevent XSS, then insert safe <span> tags
@@ -150,10 +196,35 @@ export function PromptDetailClient({ prompt, related }: PromptDetailClientProps)
             <FadeIn delay={0.15}>
               <Card glow>
                 <CardContent className="p-5">
-                  <h2 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-indigo-400" />
-                    Try It — Fill in Variables
-                  </h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-indigo-400" />
+                      Try It — Fill in Variables
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      {hasSaved && (
+                        <button
+                          onClick={handleClearCustomization}
+                          className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-300 transition-colors"
+                          title="Clear saved customization"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                          Reset
+                        </button>
+                      )}
+                      <button
+                        onClick={handleSaveCustomization}
+                        className={`flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg transition-all ${
+                          savedNotice
+                            ? 'bg-green-600/20 text-green-400 border border-green-600/30'
+                            : 'bg-indigo-600/20 text-indigo-400 border border-indigo-600/30 hover:bg-indigo-600/30'
+                        }`}
+                      >
+                        <Save className="h-3 w-3" />
+                        {savedNotice ? 'Saved!' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
                   <div className="space-y-4">
                     {prompt.variables.map((v) => (
                       <div key={v.name}>
@@ -206,7 +277,15 @@ export function PromptDetailClient({ prompt, related }: PromptDetailClientProps)
                     <MessageSquare className="h-4 w-4 text-gray-400" />
                     Main Prompt
                   </h2>
-                  <CopyButton text={filledPrompt} label="Copy" size="sm" variant="ghost" />
+                  <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-1 text-xs text-gray-500" title="Estimated token count (1 token ≈ 4 characters)">
+                      <Hash className="h-3 w-3" />
+                      <span className="tabular-nums">{tokenCount.toLocaleString()} tokens</span>
+                      <span className="text-gray-700">·</span>
+                      <span className="tabular-nums">{charCount.toLocaleString()} chars</span>
+                    </span>
+                    <CopyButton text={filledPrompt} label="Copy" size="sm" variant="ghost" />
+                  </div>
                 </div>
                 <pre
                   className="whitespace-pre-wrap text-sm text-gray-300 bg-gray-950 rounded-lg p-4 border border-gray-800 font-mono leading-relaxed overflow-x-auto"
