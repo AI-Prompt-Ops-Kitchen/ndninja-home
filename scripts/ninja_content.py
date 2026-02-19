@@ -96,6 +96,316 @@ def extract_topic_from_script(script_text: str) -> str:
     return script_text[100:250] if len(script_text) > 250 else script_text
 
 
+def identify_broll_moments(script_text, audio_duration, num_moments=3, clip_duration=4.0):
+    """Use Gemini Flash to identify hype moments in the script for B-roll insertion.
+
+    Returns: [{"timestamp": 12.5, "duration": 4.0, "topic": "Nioh 3"}, ...]
+    """
+    print(f"   🧠 Identifying {num_moments} B-roll moments in script...")
+
+    min_gap = 8.0       # Minimum seconds between cuts
+    pad = 3.0            # No cuts in first/last 3s
+    usable = audio_duration - 2 * pad
+
+    if usable < min_gap:
+        print("   ⚠️ Audio too short for B-roll")
+        return []
+
+    # Clamp num_moments to what fits
+    max_possible = max(1, int(usable / min_gap))
+    num_moments = min(num_moments, max_possible)
+
+    try:
+        from google import genai
+        from google.genai import types
+
+        project = os.environ.get('GOOGLE_CLOUD_PROJECT', 'gen-lang-client-0601509945')
+        location = os.environ.get('GOOGLE_CLOUD_LOCATION', 'us-central1')
+        client = genai.Client(vertexai=True, project=project, location=location)
+
+        prompt = f"""Analyze this video script and identify the {num_moments} most visually exciting moments —
+the sentences where game footage or action shots would have the most impact.
+
+Script:
+{script_text}
+
+For each moment, return a JSON array of objects with:
+- "sentence": the exact sentence or phrase from the script
+- "topic": the game or subject name (1-4 words, e.g. "Nioh 3", "Avowed")
+- "position": what fraction through the script this sentence appears (0.0 to 1.0)
+
+Rules:
+- Pick moments that describe ACTION or VISUALS (trailers, gameplay, reveals)
+- Avoid intro/outro lines
+- Spread them out across the script
+- Return ONLY valid JSON array, no other text
+
+JSON:"""
+
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                max_output_tokens=500,
+            )
+        )
+
+        # Parse LLM response
+        import re
+        text = response.text.strip()
+        # Extract JSON array from response
+        match = re.search(r'\[.*\]', text, re.DOTALL)
+        if match:
+            raw_moments = json.loads(match.group())
+        else:
+            raise ValueError("No JSON array in response")
+
+        # Convert position fractions to timestamps
+        moments = []
+        for m in raw_moments[:num_moments]:
+            pos = float(m.get("position", 0.5))
+            ts = pad + pos * usable
+            moments.append({
+                "timestamp": round(ts, 2),
+                "duration": clip_duration,
+                "topic": m.get("topic", ""),
+                "sentence": m.get("sentence", ""),
+            })
+
+        # Enforce min_gap: remove moments too close together
+        moments.sort(key=lambda x: x["timestamp"])
+        filtered = []
+        for m in moments:
+            if not filtered or (m["timestamp"] - filtered[-1]["timestamp"]) >= min_gap:
+                # Also ensure B-roll doesn't extend past end
+                if m["timestamp"] + m["duration"] <= audio_duration - 1.0:
+                    filtered.append(m)
+
+        if filtered:
+            print(f"   ✅ Found {len(filtered)} moments: {[f'{m['topic']}@{m['timestamp']:.1f}s' for m in filtered]}")
+            return filtered
+
+    except Exception as e:
+        print(f"   ⚠️ LLM moment detection failed ({e}), using even distribution...")
+
+    # Fallback: evenly distribute cuts
+    interval = usable / (num_moments + 1)
+    moments = []
+    for i in range(num_moments):
+        ts = pad + interval * (i + 1)
+        if ts + clip_duration <= audio_duration - 1.0:
+            moments.append({
+                "timestamp": round(ts, 2),
+                "duration": clip_duration,
+                "topic": "",
+                "sentence": "",
+            })
+
+    print(f"   📍 Fallback: {len(moments)} evenly spaced moments")
+    return moments
+
+
+def resolve_broll_clips(moments, broll_dir=None, broll_map=None):
+    """Find video files for each moment's topic.
+
+    Priority: explicit broll_map → scan broll_dir filenames → BROLL_MAP from longform → skip
+    Adds 'clip_path' to each moment dict. Skips moments with no match.
+    """
+    print("   🔍 Resolving B-roll clips...")
+
+    # Build lookup from explicit map (e.g. {"nioh": "nioh3.mp4"})
+    explicit_map = {}
+    if broll_map:
+        for entry in broll_map:
+            if ':' in entry:
+                key, val = entry.split(':', 1)
+                explicit_map[key.strip().lower()] = val.strip()
+
+    # Try to import BROLL_MAP from longform as fallback
+    longform_map = {}
+    try:
+        from ninja_longform import BROLL_MAP
+        longform_map = {k.lower(): v for k, v in BROLL_MAP.items()}
+    except ImportError:
+        pass
+
+    # Scan broll_dir for available files
+    dir_files = {}
+    if broll_dir and Path(broll_dir).is_dir():
+        for f in Path(broll_dir).iterdir():
+            if f.suffix.lower() in ('.mp4', '.mov', '.webm'):
+                dir_files[f.stem.lower()] = str(f)
+
+    for m in moments:
+        topic = m.get("topic", "").lower()
+        if not topic:
+            continue
+
+        # 1. Explicit map
+        for key, filename in explicit_map.items():
+            if key in topic or topic in key:
+                path = Path(filename) if Path(filename).is_absolute() else Path(broll_dir or '.') / filename
+                if path.exists():
+                    m["clip_path"] = str(path)
+                    break
+
+        if "clip_path" in m:
+            continue
+
+        # 2. Scan broll_dir filenames
+        for stem, filepath in dir_files.items():
+            # Fuzzy: check if topic words appear in filename or vice versa
+            topic_words = topic.split()
+            if any(w in stem for w in topic_words) or any(stem_part in topic for stem_part in stem.split('_')):
+                m["clip_path"] = filepath
+                break
+
+        if "clip_path" in m:
+            continue
+
+        # 3. Longform BROLL_MAP
+        for key, filename in longform_map.items():
+            if any(w in key for w in topic.split()) or any(w in topic for w in key.split()):
+                path = Path(broll_dir or '.') / filename if broll_dir else Path(filename)
+                if path.exists():
+                    m["clip_path"] = str(path)
+                    break
+
+    resolved = [m for m in moments if "clip_path" in m]
+    print(f"   ✅ Resolved {len(resolved)}/{len(moments)} clips: {[m['topic'] for m in resolved]}")
+    return moments
+
+
+def assemble_with_broll(avatar_video, moments, output_path, crossfade=0.15):
+    """Cut avatar video at B-roll timestamps and splice in B-roll clips.
+
+    Audio plays continuously from the original avatar video over everything.
+    B-roll replaces avatar frames (doesn't add time).
+    """
+    print(f"🎬 Assembling video with {len(moments)} B-roll cutaways...")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir = Path(tmpdir)
+
+        # 1. Extract audio from avatar video (plays continuously over everything)
+        audio_file = tmpdir / "audio.wav"
+        subprocess.run([
+            "ffmpeg", "-y", "-i", avatar_video,
+            "-vn", "-acodec", "pcm_s16le", "-ar", "44100", "-ac", "2",
+            str(audio_file)
+        ], capture_output=True)
+
+        # Get avatar video dimensions and fps
+        probe = subprocess.run([
+            "ffprobe", "-v", "quiet", "-select_streams", "v:0",
+            "-show_entries", "stream=width,height,r_frame_rate",
+            "-of", "csv=p=0", avatar_video
+        ], capture_output=True, text=True)
+        parts = probe.stdout.strip().split(',')
+        width, height = int(parts[0]), int(parts[1])
+
+        # 2. Build segment list: avatar → broll → avatar → broll → avatar
+        segments = []
+        prev_end = 0.0
+
+        for i, m in enumerate(moments):
+            ts = m["timestamp"]
+            dur = m["duration"]
+            clip_path = m["clip_path"]
+
+            # Avatar segment before this B-roll
+            if ts > prev_end:
+                seg_file = tmpdir / f"avatar_{i}.mp4"
+                subprocess.run([
+                    "ffmpeg", "-y", "-i", avatar_video,
+                    "-ss", str(prev_end),
+                    "-t", str(ts - prev_end),
+                    "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+                    "-an", str(seg_file)
+                ], capture_output=True)
+                if seg_file.exists() and seg_file.stat().st_size > 0:
+                    segments.append(str(seg_file))
+
+            # B-roll segment (scaled to match avatar dimensions)
+            broll_file = tmpdir / f"broll_{i}.mp4"
+            subprocess.run([
+                "ffmpeg", "-y", "-i", clip_path,
+                "-t", str(dur),
+                "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:-1:-1,fps=30",
+                "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+                "-an", str(broll_file)
+            ], capture_output=True)
+            if broll_file.exists() and broll_file.stat().st_size > 0:
+                segments.append(str(broll_file))
+
+            prev_end = ts + dur
+
+        # Final avatar segment after last B-roll
+        avatar_dur = float(subprocess.run([
+            "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+            "-of", "csv=p=0", avatar_video
+        ], capture_output=True, text=True).stdout.strip())
+
+        if prev_end < avatar_dur:
+            final_seg = tmpdir / "avatar_final.mp4"
+            subprocess.run([
+                "ffmpeg", "-y", "-i", avatar_video,
+                "-ss", str(prev_end),
+                "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+                "-an", str(final_seg)
+            ], capture_output=True)
+            if final_seg.exists() and final_seg.stat().st_size > 0:
+                segments.append(str(final_seg))
+
+        if not segments:
+            print("   ❌ No segments created")
+            return False
+
+        # 3. Write concat list
+        concat_file = tmpdir / "concat.txt"
+        with open(concat_file, "w") as f:
+            for seg in segments:
+                f.write(f"file '{seg}'\n")
+
+        # 4. Concatenate video segments (video only)
+        video_only = tmpdir / "video_only.mp4"
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-f", "concat", "-safe", "0",
+            "-i", str(concat_file),
+            "-c:v", "libx264", "-crf", "18", "-preset", "fast",
+            "-an", str(video_only)
+        ], capture_output=True)
+
+        if not video_only.exists():
+            print("   ❌ Video concatenation failed")
+            return False
+
+        # 5. Mux original continuous audio back on
+        subprocess.run([
+            "ffmpeg", "-y",
+            "-i", str(video_only),
+            "-i", str(audio_file),
+            "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k",
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-shortest",
+            output_path
+        ], capture_output=True)
+
+        if Path(output_path).exists():
+            final_dur = float(subprocess.run([
+                "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                "-of", "csv=p=0", output_path
+            ], capture_output=True, text=True).stdout.strip())
+            print(f"   ✅ Assembled: {output_path} ({final_dur:.1f}s)")
+            return True
+
+        print("   ❌ Final mux failed")
+        return False
+
+
 def get_api_keys():
     """Load API keys from environment or config files."""
     keys = {}
@@ -157,15 +467,88 @@ def generate_script(story_index=None, topic=None, auto=False):
     return None
 
 
-def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=0.5):
-    """Generate TTS audio using ElevenLabs with optional padding."""
-    print("🎙️ Generating voice audio...")
-    
+def inject_expressive_tags(script_text):
+    """Inject ElevenLabs v3 audio tags into script for natural expressive delivery.
+
+    Audio tags are the primary expressiveness mechanism for eleven_v3.
+    Tags like [excited], [laughs], [whispering] are interpreted as performance
+    directions — they're not spoken aloud.
+
+    Adds tags at key points:
+    - Intro gets [excited] for energy
+    - Hype/reveal moments get [excited]
+    - Sign-offs get [excited] for warm energy
+    - Surprise/shock moments get [gasps]
+
+    Skips injection if tags are already present in the script.
+    """
+    # Don't double-tag if user already added tags
+    known_tags = {"[excited]", "[laughs]", "[whispers]", "[whispering]", "[sighs]",
+                  "[slow]", "[gasps]", "[calm]", "[sad]", "[angry]", "[curious]",
+                  "[nervous]", "[sarcastic]", "[pause]"}
+    if any(tag in script_text.lower() for tag in known_tags):
+        return script_text
+
+    lines = script_text.strip().split('\n')
+    tagged_lines = []
+
+    for i, line in enumerate(lines):
+        lower = line.lower().strip()
+        if not lower:
+            tagged_lines.append(line)
+            continue
+
+        # Intro line — add excited energy
+        if any(p in lower for p in ["what's up", "hey ninja", "fellow ninja", "back with another"]):
+            tagged_lines.append(f"[excited] {line.strip()}")
+        # Outro / sign-off — warm send-off
+        elif any(p in lower for p in ["thanks for watching", "peace out", "see you next"]):
+            tagged_lines.append(f"[excited] {line.strip()}")
+        # Hype / reveal moments
+        elif any(p in lower for p in ["just dropped", "just announced", "game changer",
+                                       "huge news", "breaking", "finally", "revealed",
+                                       "number one", "the winner"]):
+            tagged_lines.append(f"[excited] {line.strip()}")
+        else:
+            tagged_lines.append(line)
+
+    return '\n'.join(tagged_lines)
+
+
+def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=0.5,
+                 voice_style="expressive"):
+    """Generate TTS audio using ElevenLabs with Expressive Mode support.
+
+    Args:
+        voice_style: Expressiveness preset:
+            "expressive" (default) - High energy, emotional range (style=0.8, stability=0.3)
+            "natural"   - Balanced delivery (style=0.5, stability=0.5)
+            "calm"      - Steady, controlled (style=0.3, stability=0.7)
+    """
+    # Voice style presets for eleven_v3
+    # NOTE: v3 only accepts stability 0.0 / 0.5 / 1.0 and does NOT support 'style' param
+    # Expressiveness is driven by audio tags ([excited], [laughs], etc.) not settings knobs
+    # Higher similarity_boost preserves voice identity when using Creative stability
+    VOICE_STYLES = {
+        "expressive": {"stability": 0.0, "similarity_boost": 0.85},
+        "natural":    {"stability": 0.5, "similarity_boost": 0.80},
+        "calm":       {"stability": 1.0, "similarity_boost": 0.75},
+    }
+    voice_settings = VOICE_STYLES.get(voice_style, VOICE_STYLES["expressive"])
+
+    print(f"🎙️ Generating voice audio (style: {voice_style})...")
+    print(f"   Settings: stability={voice_settings['stability']}, similarity_boost={voice_settings['similarity_boost']}")
+
+    # Inject expressive audio tags for emotional delivery
+    tagged_text = inject_expressive_tags(script_text)
+    if tagged_text != script_text:
+        print("   🎭 Injected expressive audio tags")
+
     keys = get_api_keys()
     if not keys['elevenlabs']:
         print("   ❌ ElevenLabs API key not found")
         return None
-    
+
     response = requests.post(
         f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
         headers={
@@ -173,13 +556,9 @@ def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=
             "Content-Type": "application/json"
         },
         json={
-            "text": script_text,
+            "text": tagged_text,
             "model_id": "eleven_v3",
-            "voice_settings": {
-                "stability": 0.5,  # v3 requires 0.0 (Creative), 0.5 (Natural), or 1.0 (Robust)
-                "similarity_boost": 0.75,
-                "style": 0.5
-            }
+            "voice_settings": voice_settings
         }
     )
     
@@ -261,11 +640,25 @@ def generate_kling_avatar_video(image_path, audio_path, output_path, model="stan
     """
     print("🎬 Generating lip-synced video with Kling Avatar v2...")
     
-    # Get fal.ai API key from keyring
-    fal_key = keyring.get_password("fal_ai", "api_key")
+    # Get fal.ai API key from environment or keyring
+    fal_key = os.environ.get('FAL_AI_API_KEY')
     if not fal_key:
-        print("   ❌ fal.ai API key not found in keyring")
-        print("   Run: keyring set fal_ai api_key")
+        # Try .env file
+        env_file = Path("/home/ndninja/projects/content-automation/.env")
+        if env_file.exists():
+            with open(env_file) as f:
+                for line in f:
+                    if line.startswith('FAL_AI_API_KEY='):
+                        fal_key = line.strip().split('=', 1)[1].strip('"\'')
+                        break
+    if not fal_key:
+        try:
+            fal_key = keyring.get_password("fal_ai", "api_key")
+        except:
+            pass
+    if not fal_key:
+        print("   ❌ fal.ai API key not found")
+        print("   Set FAL_AI_API_KEY environment variable or add to .env")
         return None
     
     os.environ["FAL_KEY"] = fal_key
@@ -804,7 +1197,7 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
     return draft_id
 
 
-def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard"):
+def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard", broll_dir=None, broll_map=None, broll_count=3, broll_duration=4.0, voice_style="expressive"):
     """Run the full content pipeline.
     
     Args:
@@ -829,7 +1222,7 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
         
         # 1. Generate TTS
         audio_path = tmpdir / "voice.mp3"
-        if not generate_tts(script_text, str(audio_path)):
+        if not generate_tts(script_text, str(audio_path), voice_style=voice_style):
             return None
         
         audio_duration = get_audio_duration(str(audio_path))
@@ -859,7 +1252,23 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
                 # Lip-sync video already has audio baked in!
                 # Skip straight to captions
                 combined = lip_sync_video
-        
+
+                # B-roll cutaways for lip-sync mode
+                if broll:
+                    print("\n🎬 Adding B-roll cutaways to lip-sync video...")
+                    moments = identify_broll_moments(script_text, audio_duration, broll_count, broll_duration)
+                    moments = resolve_broll_clips(moments, broll_dir, broll_map)
+                    valid = [m for m in moments if 'clip_path' in m]
+                    if valid:
+                        broll_out = tmpdir / "with_broll.mp4"
+                        if assemble_with_broll(str(combined), valid, str(broll_out)):
+                            combined = broll_out
+                            print(f"   ✅ Inserted {len(valid)} B-roll cutaways")
+                        else:
+                            print("   ⚠️ B-roll assembly failed, using avatar-only video")
+                    else:
+                        print("   ⚠️ No B-roll clips found, using avatar-only video")
+
         if kenburns:
             # === KEN BURNS MODE: Static image with slow zoom/pan ===
             # For masked characters where lip-sync doesn't work
@@ -1114,7 +1523,15 @@ def main():
                         choices=["private", "unlisted", "public"],
                         help="Privacy status for published video")
     parser.add_argument("--broll", action="store_true",
-                        help="Generate and insert B-roll cutaways to hide loop points")
+                        help="Insert B-roll cutaways (works in lip-sync and Veo modes)")
+    parser.add_argument("--broll-dir", type=str, default=None,
+                        help="Directory containing B-roll clips (e.g. ~/output/feb_games/broll/)")
+    parser.add_argument("--broll-map", nargs="+", default=None,
+                        help="Explicit keyword:file.mp4 mappings (repeatable, e.g. nioh:nioh3.mp4)")
+    parser.add_argument("--broll-count", type=int, default=3,
+                        help="Number of B-roll cutaways (default: 3)")
+    parser.add_argument("--broll-duration", type=float, default=4.0,
+                        help="Duration per B-roll clip in seconds (default: 4.0)")
     parser.add_argument("--capcut", action="store_true",
                         help="Output as CapCut draft for manual editing (requires CapCut API server)")
     parser.add_argument("--no-lip-sync", action="store_true",
@@ -1126,6 +1543,9 @@ def main():
     parser.add_argument("--kling-model", default="standard",
                         choices=["standard", "pro"],
                         help="Kling Avatar quality: standard ($0.056/sec) or pro ($0.115/sec)")
+    parser.add_argument("--voice-style", default="expressive",
+                        choices=["expressive", "natural", "calm"],
+                        help="ElevenLabs voice expressiveness: expressive (high energy), natural (balanced), calm (steady)")
     
     args = parser.parse_args()
     
@@ -1173,18 +1593,23 @@ def main():
     # Captions are disabled by default; use --captions to enable
     skip_captions = not args.captions
     output = run_pipeline(
-        script_text, 
-        ref_image, 
-        args.output, 
-        multiclip=args.multiclip, 
+        script_text,
+        ref_image,
+        args.output,
+        multiclip=args.multiclip,
         no_music=args.no_music,
         no_captions=skip_captions,
-        broll=args.broll, 
+        broll=args.broll,
         capcut=args.capcut,
         lip_sync=not args.no_lip_sync and not args.kenburns and not args.motion,
         kenburns=args.kenburns,
         motion=args.motion,
-        kling_model=args.kling_model
+        kling_model=args.kling_model,
+        broll_dir=args.broll_dir,
+        broll_map=args.broll_map,
+        broll_count=args.broll_count,
+        broll_duration=args.broll_duration,
+        voice_style=args.voice_style,
     )
     
     if output:

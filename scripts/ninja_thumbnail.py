@@ -152,12 +152,13 @@ def generate_thumbnail(topic: str, style: str = "engaging", output_path: str = N
         print(f"   📸 Using reference: {reference_image}")
     
     # Style variations for the ninja character
+    # NOTE: Digital goggles with LED eyes are REQUIRED — expressions come from the goggle eyes
     style_prompts = {
-        "engaging": "looking directly at viewer with interested expression, one hand gesturing toward the topic",
-        "shocked": "eyes wide with surprise, hands up in amazement, dramatic reaction",
-        "thinking": "hand on chin, contemplative expression, looking slightly upward",
-        "pointing": "confidently pointing at the main subject, determined expression",
-        "excited": "energetic pose, both hands animated, enthusiastic expression",
+        "engaging": "looking directly at viewer, digital goggle eyes showing curious/interested expression, one hand gesturing toward the topic",
+        "shocked": "digital goggle eyes wide with shock/surprise expression, hands up in amazement, dramatic reaction",
+        "thinking": "hand on chin, digital goggle eyes showing contemplative/squinting expression, looking slightly upward",
+        "pointing": "confidently pointing at the main subject, digital goggle eyes showing determined expression",
+        "excited": "energetic pose, both hands animated, digital goggle eyes showing excited/happy expression with upward curved LED eyes",
     }
     
     ninja_pose = style_prompts.get(style, style_prompts["engaging"])
@@ -172,9 +173,11 @@ def generate_thumbnail(topic: str, style: str = "engaging", output_path: str = N
     # Build the thumbnail prompt
     prompt = f"""Create a YouTube thumbnail image with these exact specifications:
 
-SUBJECT: A 3D Pixar-style animated ninja character - cute but cool, expressive large blue eyes, black hood and mask covering lower face, black tactical outfit with gray armor plating and blue LED accents, katana on back. Pixar/Disney animation style with subsurface skin scattering and soft rounded features. {ninja_pose}
+SUBJECT: A 3D Pixar-style animated ninja character - cute but cool, wearing DIGITAL GOGGLES/VISOR over eyes with glowing LED digital eyes visible through the goggles (the goggles ARE the character's eyes - no human eyes visible), black hood and mask covering lower face, black tactical outfit with gray armor plating and blue LED accents, katana on back. Pixar/Disney animation style with soft rounded features. {ninja_pose}
 
-COMPOSITION: 
+CRITICAL: The ninja MUST wear digital goggles/visor - this is the character's signature look. The goggle lenses show expressive digital/LED eyes that convey emotion. No human eyes - only digital goggle eyes.
+
+COMPOSITION:
 - Character on the right side (1/3 of frame)
 - Left 2/3 shows a visual representation of: {topic}
 - {topic_icons}
@@ -183,8 +186,8 @@ COMPOSITION:
 
 STYLE:
 - 3D Pixar/Disney animation style (like The Incredibles or Big Hero 6)
-- Soft, appealing character design with large expressive eyes
-- 16:9 aspect ratio (YouTube thumbnail)
+- Soft, appealing character design with expressive digital goggle eyes
+- 9:16 vertical aspect ratio (YouTube Shorts thumbnail)
 - Clean, uncluttered composition
 - Tech/gaming YouTube aesthetic
 - Dramatic lighting with blue accent rim lights
@@ -211,10 +214,13 @@ Make it scroll-stopping and clickable!"""
             contents.append(prompt)
         
         response = client.models.generate_content(
-            model="gemini-2.5-flash-image",  # Nano Banana - Gemini image generation
+            model="gemini-3-pro-image-preview",  # Nano Banana Pro — best quality image gen
             contents=contents,
             config=types.GenerateContentConfig(
                 response_modalities=["image", "text"],
+                image_config=types.ImageConfig(
+                    aspectRatio="9:16",
+                ),
             )
         )
         
