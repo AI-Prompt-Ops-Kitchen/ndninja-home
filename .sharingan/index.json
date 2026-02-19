@@ -155,6 +155,22 @@
       "related_scrolls": ["tauri-v2-overlay"]
     },
     {
+      "name": "supabase-rls",
+      "domain": "Backend/Security",
+      "level": "3-tomoe",
+      "description": "Supabase Row Level Security — enabling, writing policies (public/owner/private patterns), testing with SET ROLE anon, views gotcha, and validated design for 10-table SaaS schema.",
+      "last_updated": "2026-02-19",
+      "keywords": [
+        "supabase", "rls", "row-level-security", "postgresql", "policy",
+        "auth.uid", "anon", "authenticated", "insert", "select", "update",
+        "delete", "security-definer", "security-invoker", "postgrest",
+        "migration", "waitlist", "prompt-toolkit", "saas", "nextjs"
+      ],
+      "sources_count": 3,
+      "can_do_from_cli": true,
+      "related_scrolls": ["fastapi-realtime-spa"]
+    },
+    {
       "name": "daily-observations",
       "domain": "Meta/Workflow",
       "level": "2-tomoe",
@@ -175,11 +191,11 @@
     }
   ],
   "stats": {
-    "total_scrolls": 8,
+    "total_scrolls": 9,
     "by_level": {
       "1-tomoe": 0,
       "2-tomoe": 6,
-      "3-tomoe": 1,
+      "3-tomoe": 2,
       "mangekyo": 1
     }
   }
