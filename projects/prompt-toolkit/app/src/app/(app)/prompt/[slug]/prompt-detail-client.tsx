@@ -35,12 +35,17 @@ export function PromptDetailClient({ prompt, related }: PromptDetailClientProps)
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const [isFavorited, setIsFavorited] = useState(false);
 
+  const escapeHtml = (str: string): string =>
+    str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
   const filledPrompt = prompt.content.replace(/\[(\w+)\]/g, (match, key) =>
     variableValues[key] || match
   );
 
   const highlightContent = (content: string) => {
-    return content.replace(
+    // Escape HTML first to prevent XSS, then insert safe <span> tags
+    const escaped = escapeHtml(content);
+    return escaped.replace(
       /\[(\w+)\]/g,
       '<span class="template-var">[$1]</span>'
     );
