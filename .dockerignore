@@ -106,6 +106,13 @@ migrations/versions/*.pyc
 *.zip
 *.tar.gz
 *.rar
+*.mp4
+*.mp3
+*.wav
+*.jpg
+*.jpeg
+*.png
+*.mov
 
 # CI/CD
 .github/
@@ -119,3 +126,36 @@ scripts/
 server-landing/
 tools_db/
 benchmarks/
+
+# Non-Sage-Mode directories (home dir is build context)
+assets/
+output/
+uploads/
+projects/
+skills/
+snap/
+clawd/
+zemog/
+public/
+.claude/
+.sharingan/
+.clawdbot/
+.clawdbot-zemog/
+.cache/
+.local/
+.cargo/
+.rustup/
+.bun/
+.npm/
+.npm-global/
+.config/
+.ssh/
+.beads/
+.opencode/
+.gemini/
+.u2net/
+sage_mode/docker-compose.swarm.yml
+sage_mode/swarm-deploy.sh
+kage-bunshin-ansible/
+claude-config-sync/
+project-hummingbird/

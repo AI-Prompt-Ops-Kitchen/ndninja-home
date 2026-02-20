@@ -1,0 +1,248 @@
+# Docker Compose Swarm Stack for Sage Mode
+# Deploy: docker stack deploy -c docker-compose.swarm.yml sage_mode
+#
+# Pre-requisites:
+#   1. Local registry running on srv1 (standalone container on port 5000)
+#   2. Images built and pushed via swarm-deploy.sh
+#   3. Node labels: role=manager (srv1), role=worker (srv2)
+#   4. .env file sourced before deploying
+
+services:
+  # PostgreSQL — pinned to srv1 (more RAM, volume locality)
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sage_mode}
+      POSTGRES_USER: ${POSTGRES_USER:-sage_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sage_user} -d ${POSTGRES_DB:-sage_mode}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - sage_network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 512M
+      restart_policy:
+        condition: any
+
+  # Redis — pinned to srv1
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - sage_network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+        condition: any
+
+  # Database migrations — run once, retry on failure
+  migrations:
+    image: 192.168.68.80:5000/sage-mode-backend:latest
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sage_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sage_mode}
+      PYTHONPATH: /app
+    command: ["sh", "-c", "echo 'Waiting for postgres...' && sleep 15 && alembic -c sage_mode/alembic.ini upgrade head"]
+    networks:
+      - sage_network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == manager
+      restart_policy:
+        condition: on-failure
+        delay: 10s
+        max_attempts: 5
+
+  # FastAPI Backend — pinned to srv1
+  fastapi:
+    image: 192.168.68.80:5000/sage-mode-backend:latest
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sage_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sage_mode}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY required}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-7}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost}
+      LOG_FORMAT: json
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PYTHONPATH: /app
+      ENV: production
+    command: ["uvicorn", "sage_mode.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+    networks:
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 1G
+      restart_policy:
+        condition: any
+
+  # Celery Workers — spread across BOTH nodes
+  celery_worker:
+    image: 192.168.68.80:5000/sage-mode-backend:latest
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sage_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sage_mode}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LOG_FORMAT: json
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PYTHONPATH: /app
+      ENV: production
+    command: ["celery", "-A", "sage_mode.celery_app", "worker", "-l", "info", "-c", "4"]
+    stop_grace_period: 30s
+    networks:
+      - sage_network
+    deploy:
+      replicas: 4
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: continue
+        order: start-first
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 512M
+      restart_policy:
+        condition: any
+        delay: 5s
+
+  # Celery Beat Scheduler — exactly 1, pinned to srv1
+  celery_beat:
+    image: 192.168.68.80:5000/sage-mode-backend:latest
+    healthcheck:
+      test: ["CMD-SHELL", "true"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-sage_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sage_mode}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      LOG_FORMAT: json
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      PYTHONPATH: /app
+      ENV: production
+    command: ["celery", "-A", "sage_mode.celery_app", "beat", "-l", "info"]
+    networks:
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+        condition: any
+
+  # React Frontend (nginx serving static build)
+  frontend:
+    image: 192.168.68.80:5000/sage-mode-frontend:latest
+    networks:
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 128M
+      restart_policy:
+        condition: any
+
+  # Nginx reverse proxy — ingress, pinned to srv1
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    configs:
+      - source: nginx_conf
+        target: /etc/nginx/nginx.conf
+    secrets:
+      - source: ssl_cert
+        target: /etc/nginx/ssl/cert.pem
+      - source: ssl_key
+        target: /etc/nginx/ssl/key.pem
+    networks:
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 64M
+      restart_policy:
+        condition: any
+
+# Swarm configs
+configs:
+  nginx_conf:
+    file: ../nginx/nginx.prod.conf
+
+# Swarm secrets (SSL certs)
+secrets:
+  ssl_cert:
+    file: ../nginx/ssl/cert.pem
+  ssl_key:
+    file: ../nginx/ssl/key.pem
+
+# Named volumes
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Overlay network for cross-node communication
+networks:
+  sage_network:
+    driver: overlay
+    attachable: true
