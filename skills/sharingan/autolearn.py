@@ -20,8 +20,9 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-SKILL_DIR  = Path(__file__).parent
-INDEX_FILE = Path.home() / ".sharingan" / "index.json"
+import os as _os
+SKILL_DIR  = Path(_os.environ.get("SKILL_DIR", Path(__file__).parent))
+INDEX_FILE = Path(_os.environ.get("INDEX_FILE", Path.home() / ".sharingan" / "index.json"))
 
 # Scrolls that should never be auto-deepened
 SKIP_SCROLLS = {"workflow-insights", "daily-observations"}

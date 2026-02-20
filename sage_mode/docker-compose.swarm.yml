@@ -127,8 +127,19 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       PYTHONPATH: /app
       ENV: production
-    command: ["celery", "-A", "sage_mode.celery_app", "worker", "-l", "info", "-c", "4"]
+      # Sharingan env-var overrides (container paths)
+      SHARINGAN_SCRIPT_DIR: /app/sharingan
+      SCROLL_DIR: /data/sharingan/scrolls
+      INDEX_FILE: /data/sharingan/index.json
+      HISTORY_FILE: /data/history.jsonl
+      SHARINGAN_LOG_DIR: /data/logs
+    command: ["celery", "-A", "sage_mode.celery_app", "worker", "-l", "info", "-c", "4", "-Q", "agents,orchestration,sharingan"]
     stop_grace_period: 30s
+    volumes:
+      - /home/ndninja/skills/sharingan:/app/sharingan:ro
+      - /home/ndninja/.sharingan:/data/sharingan
+      - /home/ndninja/.claude/history.jsonl:/data/history.jsonl:ro
+      - /home/ndninja/.logs:/data/logs
     networks:
       - sage_network
     deploy:

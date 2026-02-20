@@ -21,10 +21,11 @@ from collections import Counter
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
-HISTORY_FILE     = Path.home() / ".claude" / "history.jsonl"
-DAILY_REVIEW_LOG = Path.home() / ".logs" / "daily-review.log"
-SCROLL_DIR       = Path.home() / ".sharingan" / "scrolls"
-INDEX_FILE       = Path.home() / ".sharingan" / "index.json"
+import os as _os
+HISTORY_FILE     = Path(_os.environ.get("HISTORY_FILE", Path.home() / ".claude" / "history.jsonl"))
+DAILY_REVIEW_LOG = Path(_os.environ.get("DAILY_REVIEW_LOG", Path.home() / ".logs" / "daily-review.log"))
+SCROLL_DIR       = Path(_os.environ.get("SCROLL_DIR", Path.home() / ".sharingan" / "scrolls"))
+INDEX_FILE       = Path(_os.environ.get("INDEX_FILE", Path.home() / ".sharingan" / "index.json"))
 SCROLL_NAME      = "daily-observations"
 SCROLL_PATH      = SCROLL_DIR / f"{SCROLL_NAME}.md"
 MAX_DAILY_ENTRIES = 90  # Keep ~3 months of daily entries

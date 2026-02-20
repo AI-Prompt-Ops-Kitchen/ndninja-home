@@ -23,10 +23,10 @@ from datetime import datetime
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 
-SKILL_DIR    = Path(__file__).parent
-SCROLL_DIR   = Path.home() / ".sharingan" / "scrolls"
-INDEX_FILE   = Path.home() / ".sharingan" / "index.json"
-TRAINING_DIR = Path.home() / ".sharingan" / "training"
+SKILL_DIR    = Path(os.environ.get("SKILL_DIR", Path(__file__).parent))
+SCROLL_DIR   = Path(os.environ.get("SCROLL_DIR", Path.home() / ".sharingan" / "scrolls"))
+INDEX_FILE   = Path(os.environ.get("INDEX_FILE", Path.home() / ".sharingan" / "index.json"))
+TRAINING_DIR = Path(os.environ.get("TRAINING_DIR", Path.home() / ".sharingan" / "training"))
 
 LEVEL_ORDER   = ["1-tomoe", "2-tomoe", "3-tomoe", "mangekyo-eligible", "mangekyo"]
 AUTO_SCROLLS  = {"workflow-insights", "daily-observations"}  # Skip auto-generated

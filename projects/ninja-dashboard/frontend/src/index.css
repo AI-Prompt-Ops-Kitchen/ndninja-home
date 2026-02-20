@@ -1,0 +1,144 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background:     #0a0a12;
+  --color-surface:        #111120;
+  --color-surface-raised: #18182e;
+
+  /* Ninja cyan accent */
+  --color-cyan-400: #22d3ee;
+  --color-cyan-500: #06b6d4;
+  --color-cyan-600: #0891b2;
+
+  /* Status colors */
+  --color-success:  #4ade80;
+  --color-warning:  #fbbf24;
+  --color-error:    #f87171;
+
+  /* Gray scale */
+  --color-gray-900: #111827;
+  --color-gray-800: #1f2937;
+  --color-gray-700: #374151;
+  --color-gray-600: #4b5563;
+  --color-gray-500: #6b7280;
+  --color-gray-400: #9ca3af;
+  --color-gray-300: #d1d5db;
+  --color-gray-200: #e5e7eb;
+  --color-gray-100: #f3f4f6;
+
+  /* Animation timing */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Reset Vite defaults */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: var(--color-background);
+  color: #e2e8f0;
+  font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Simple pulse animations (used by ReviewQueue header dot etc.)
+   ────────────────────────────────────────────────────────────────────────── */
+
+@keyframes pulse-ready {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+  70%       { box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+}
+.animate-pulse-ready { animation: pulse-ready 2s ease-out infinite; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   🎑 Mangekyo Sharingan status animations
+   Central dot = iris/pupil. Three box-shadow orbs = the 3 tomoe.
+   Orbit radius: 7px from center. 120° spacing:
+     top → (0, -7px)  lower-right → (6px, 4px)  lower-left → (-6px, 4px)
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* 🟡 GENERATING — tomoe chase each other clockwise (bright → mid → trail) */
+@keyframes mangekyo-spin {
+  0%   { box-shadow:  0 -7px 2px 0 #fbbf24, 6px 4px 2px 0 #fbbf2466, -6px 4px 2px 0 #fbbf2422; }
+  33%  { box-shadow:  6px 4px 2px 0 #fbbf24, -6px 4px 2px 0 #fbbf2466,  0 -7px 2px 0 #fbbf2422; }
+  66%  { box-shadow: -6px 4px 2px 0 #fbbf24,  0 -7px 2px 0 #fbbf2466,  6px 4px 2px 0 #fbbf2422; }
+  100% { box-shadow:  0 -7px 2px 0 #fbbf24,  6px 4px 2px 0 #fbbf2466, -6px 4px 2px 0 #fbbf2422; }
+}
+.animate-mangekyo-spin { animation: mangekyo-spin 1.2s ease-in-out infinite; }
+
+/* 🔵 SCRIPT READY — tomoe breathe into existence (Sharingan awakening) */
+@keyframes mangekyo-awakening {
+  0%, 100% { box-shadow:  0 -6px 2px 0 #22d3ee33, 5px 3px 2px 0 #22d3ee33, -5px 3px 2px 0 #22d3ee33; }
+  50%       { box-shadow:  0 -7px 2px 0 #22d3ee,   6px 4px 2px 0 #22d3ee,   -6px 4px 2px 0 #22d3ee;   }
+}
+.animate-mangekyo-awakening { animation: mangekyo-awakening 2s ease-in-out infinite; }
+
+/* 🟢 READY FOR REVIEW — tomoe locked in + outer ring expands (Mangekyo unlocked) */
+@keyframes mangekyo-ready-ring {
+  0%, 100% {
+    box-shadow: 0 -7px 2px 0 #4ade80, 6px 4px 2px 0 #4ade80, -6px 4px 2px 0 #4ade80,
+                0 0 0 3px rgba(74, 222, 128, 0.3);
+  }
+  50% {
+    box-shadow: 0 -7px 2px 0 #4ade80, 6px 4px 2px 0 #4ade80, -6px 4px 2px 0 #4ade80,
+                0 0 0 8px rgba(74, 222, 128, 0);
+  }
+}
+.animate-mangekyo-ready { animation: mangekyo-ready-ring 2s ease-out infinite; }
+
+/* 🔴 ERROR — Amaterasu: tomoe flicker and distort (cursed flame) */
+@keyframes mangekyo-amaterasu {
+  0%, 100% {
+    box-shadow: 0 -7px 2px 0 #f87171,   6px 4px 2px 0 #f87171,   -6px 4px 2px 0 #f87171;
+    opacity: 1;
+  }
+  25% {
+    box-shadow: 0 -7px 4px 0 #f8717133, 6px 4px 1px 0 #f87171cc, -6px 4px 3px 0 #f8717166;
+    opacity: 0.65;
+  }
+  75% {
+    box-shadow: 0 -7px 1px 0 #f87171cc, 6px 4px 4px 0 #f8717133, -6px 4px 2px 0 #f87171bb;
+    opacity: 0.85;
+  }
+}
+.animate-mangekyo-amaterasu { animation: mangekyo-amaterasu 0.9s ease-in-out infinite; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Card slide-in (for framer-motion as CSS fallback)
+   ────────────────────────────────────────────────────────────────────────── */
+@keyframes slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-in {
+  animation: slide-in 0.25s var(--ease-out-expo) both;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Upload drop zone
+   ────────────────────────────────────────────────────────────────────────── */
+@keyframes border-dance {
+  0%   { background-position: 0% 0%, 100% 0%, 100% 100%, 0% 100%; }
+  100% { background-position: 100% 0%, 100% 100%, 0% 100%, 0% 0%; }
+}
+
+/* Scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #374151 transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+
+/* Safe area for iPhone */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}

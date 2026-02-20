@@ -131,7 +131,7 @@ services:
     ports:
       - "9187:9187"
     environment:
-      DATA_SOURCE_NAME: "postgresql://sage_user:ZQLY4SwZJTBI1fRxGatVp5hEhdXjVN3f@sage_mode_postgres:5432/sage_mode?sslmode=disable"
+      DATA_SOURCE_NAME: ${PG_EXPORTER_DSN:?PG_EXPORTER_DSN required}
     networks:
       - infra_network
       - sage_network

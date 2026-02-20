@@ -1,0 +1,125 @@
+# NDN Services — Swarm stack for Dojo + Preview + Upload + Content Worker
+# Deploy: docker stack deploy -c docker-compose.ndn-services.yml ndn_services
+
+services:
+  # The Dojo — Content Pipeline Dashboard (FastAPI + React)
+  dojo:
+    image: 192.168.68.80:5000/ndn-dojo:latest
+    ports:
+      - "8090:8090"
+    environment:
+      OUTPUT_DIR: /data/output
+      BROLL_DIR: /data/output/broll
+      UPLOADS_DIR: /data/uploads
+      CONTENT_SCRIPT: /data/scripts/ninja_content.py
+      CELERY_BROKER_URL: redis://sage_mode_redis:6379/0
+      PYTHONPATH: /app:/data/scripts
+      DOJO_DATABASE_URL: ${DOJO_DATABASE_URL:?DOJO_DATABASE_URL required}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /home/ndninja/output:/data/output
+      - /home/ndninja/uploads:/data/uploads
+      - /home/ndninja/scripts:/data/scripts:ro
+    networks:
+      - ndn_network
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 512M
+      restart_policy:
+        condition: any
+
+  # Preview Server — mobile video review via Tailscale
+  preview:
+    image: 192.168.68.80:5000/ndn-preview-upload:latest
+    ports:
+      - "8081:8081"
+    environment:
+      OUTPUT_DIR: /data/output
+      TRAINING_DIR: /data/training
+    command: ["python3", "preview_server.py"]
+    volumes:
+      - /home/ndninja/output:/data/output:ro
+      - /home/ndninja/.sharingan/training:/data/training:ro
+    networks:
+      - ndn_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 128M
+      restart_policy:
+        condition: any
+
+  # Upload Server — mobile file drop
+  upload:
+    image: 192.168.68.80:5000/ndn-preview-upload:latest
+    ports:
+      - "8082:8082"
+    environment:
+      UPLOADS_DIR: /data/uploads
+    command: ["python3", "upload_server.py"]
+    volumes:
+      - /home/ndninja/uploads:/data/uploads
+    networks:
+      - ndn_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 128M
+      restart_policy:
+        condition: any
+
+  # Content Worker — Celery worker for video generation
+  content_worker:
+    image: 192.168.68.80:5000/ndn-content-worker:latest
+    environment:
+      CELERY_BROKER_URL: redis://sage_mode_redis:6379/0
+      CELERY_RESULT_BACKEND: redis://sage_mode_redis:6379/0
+      OUTPUT_DIR: /data/output
+      BROLL_DIR: /data/output/broll
+      CONTENT_SCRIPT: /app/scripts/ninja_content.py
+      FAL_KEY: ${FAL_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-gen-lang-client-0601509945}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+    volumes:
+      - /home/ndninja/scripts:/app/scripts:ro
+      - /home/ndninja/assets:/app/assets:ro
+      - /home/ndninja/output:/data/output
+    networks:
+      - ndn_network
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
+      restart_policy:
+        condition: any
+
+networks:
+  ndn_network:
+    driver: overlay
+    attachable: true
+  sage_network:
+    external: true
+    name: sage_mode_sage_network

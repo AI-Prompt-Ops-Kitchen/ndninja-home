@@ -18,9 +18,9 @@ import argparse
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
-HISTORY_FILE  = Path.home() / ".claude" / "history.jsonl"
-SCROLL_DIR    = Path.home() / ".sharingan" / "scrolls"
-INDEX_FILE    = Path.home() / ".sharingan" / "index.json"
+HISTORY_FILE  = Path(os.environ.get("HISTORY_FILE", Path.home() / ".claude" / "history.jsonl"))
+SCROLL_DIR    = Path(os.environ.get("SCROLL_DIR", Path.home() / ".sharingan" / "scrolls"))
+INDEX_FILE    = Path(os.environ.get("INDEX_FILE", Path.home() / ".sharingan" / "index.json"))
 SCROLL_NAME   = "workflow-insights"
 SCROLL_PATH   = SCROLL_DIR / f"{SCROLL_NAME}.md"
 
