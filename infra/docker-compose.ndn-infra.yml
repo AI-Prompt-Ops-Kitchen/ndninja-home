@@ -1,0 +1,169 @@
+# NDN Infrastructure — Swarm stack for n8n + monitoring
+# Deploy: docker stack deploy -c docker-compose.ndn-infra.yml ndn_infra
+
+services:
+  # n8n — workflow automation
+  n8n:
+    image: n8nio/n8n:latest
+    ports:
+      - "5678:5678"
+    environment:
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n_postgres
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n
+      DB_POSTGRESDB_PASSWORD: ${N8N_DB_PASSWORD}
+      N8N_RUNNERS_AUTH_TOKEN: ${N8N_RUNNERS_AUTH_TOKEN:-}
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - infra_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 512M
+      restart_policy:
+        condition: any
+
+  # n8n PostgreSQL
+  n8n_postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n
+      POSTGRES_PASSWORD: ${N8N_DB_PASSWORD}
+    volumes:
+      - n8n_postgres_data:/var/lib/postgresql/data
+    networks:
+      - infra_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+        condition: any
+
+  # VictoriaMetrics — lightweight time-series DB
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "8428:8428"
+    command:
+      - "--storageDataPath=/storage"
+      - "--retentionPeriod=90d"
+      - "--httpListenAddr=:8428"
+      - "--promscrape.config=/etc/vm/scrape.yml"
+    volumes:
+      - vm_data:/storage
+    configs:
+      - source: vm_scrape
+        target: /etc/vm/scrape.yml
+    networks:
+      - infra_network
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+        condition: any
+
+  # Grafana — dashboards
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "http://100.77.248.9:3001"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - infra_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 256M
+      restart_policy:
+        condition: any
+
+  # node_exporter — host metrics (global: runs on every Swarm node)
+  node_exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    command:
+      - "--path.rootfs=/host"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - infra_network
+    deploy:
+      mode: global
+      resources:
+        limits:
+          memory: 64M
+      restart_policy:
+        condition: any
+
+  # postgres_exporter — PostgreSQL metrics from sage_mode postgres
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    ports:
+      - "9187:9187"
+    environment:
+      DATA_SOURCE_NAME: "postgresql://sage_user:ZQLY4SwZJTBI1fRxGatVp5hEhdXjVN3f@sage_mode_postgres:5432/sage_mode?sslmode=disable"
+    networks:
+      - infra_network
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 64M
+      restart_policy:
+        condition: any
+
+configs:
+  vm_scrape:
+    file: ./vm-scrape.yml
+
+volumes:
+  n8n_data:
+    driver: local
+  n8n_postgres_data:
+    driver: local
+  vm_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  infra_network:
+    driver: overlay
+    attachable: true
+  sage_network:
+    external: true
+    name: sage_mode_sage_network
