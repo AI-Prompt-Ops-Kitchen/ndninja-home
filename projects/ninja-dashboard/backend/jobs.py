@@ -16,7 +16,7 @@ psycopg2.extras.register_uuid()
 
 DATABASE_URL = os.environ.get(
     "DOJO_DATABASE_URL",
-    "postgresql://postgres:postgres@localhost/dojo",
+    "postgresql://dojo_user:zhjmOmF-YzlqEzMGtHsOCJyiWoMUR0Fk@localhost/dojo",
 )
 
 # Valid status transitions — enforced on every transition() call

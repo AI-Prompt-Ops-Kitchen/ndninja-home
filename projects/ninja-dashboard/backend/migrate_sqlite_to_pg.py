@@ -8,7 +8,7 @@ import sqlite3
 import psycopg2
 
 SQLITE_PATH = os.path.expanduser("~/projects/ninja-dashboard/backend/jobs.db")
-PG_URL = os.environ.get("DOJO_DATABASE_URL", "postgresql://postgres:postgres@localhost/dojo")
+PG_URL = os.environ.get("DOJO_DATABASE_URL", "postgresql://dojo_user:zhjmOmF-YzlqEzMGtHsOCJyiWoMUR0Fk@localhost/dojo")
 
 COLUMNS = [
     "id", "type", "status", "created_at", "updated_at", "script_text",

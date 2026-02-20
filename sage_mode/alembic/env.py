@@ -20,7 +20,7 @@ config = context.config
 # Set sqlalchemy.url from environment variable
 database_url = os.getenv(
     "DATABASE_URL",
-    "postgresql://sage_user:sage_password@localhost/sage_mode"
+    "postgresql://sage_user:ZQLY4SwZJTBI1fRxGatVp5hEhdXjVN3f@localhost/sage_mode"
 )
 config.set_main_option("sqlalchemy.url", database_url)
 

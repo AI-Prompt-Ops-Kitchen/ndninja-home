@@ -4,7 +4,7 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://sage_user:sage_password@localhost/sage_mode"
+    "postgresql://sage_user:ZQLY4SwZJTBI1fRxGatVp5hEhdXjVN3f@localhost/sage_mode"
 )
 
 engine = create_engine(DATABASE_URL, echo=False, pool_pre_ping=True)

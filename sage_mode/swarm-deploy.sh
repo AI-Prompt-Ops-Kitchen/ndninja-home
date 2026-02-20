@@ -15,10 +15,14 @@ echo ""
 
 # ── 1. Ensure local registry is running ──────────────────────────────────
 if ! docker ps --format '{{.Ports}}' | grep -q '5000->5000'; then
-    echo ">> Starting local registry..."
-    docker service ls --filter name="${STACK_NAME}_registry" --quiet 2>/dev/null | grep -q . || \
-        docker run -d -p 5000:5000 --name sage-registry --restart always \
-            -v sage_registry_data:/var/lib/registry registry:2
+    echo ">> Starting local registry (with auth)..."
+    docker run -d -p 5000:5000 --name sage-registry --restart always \
+        -v "$HOME/registry/auth:/auth" \
+        -v registry_data:/var/lib/registry \
+        -e "REGISTRY_AUTH=htpasswd" \
+        -e "REGISTRY_AUTH_HTPASSWD_REALM=NDN Registry" \
+        -e "REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd" \
+        registry:2
     echo ">> Registry running on :5000"
 else
     echo ">> Registry already running"
@@ -61,6 +65,7 @@ if [ -f "$ENV_FILE" ]; then
 fi
 
 docker stack deploy \
+    --with-registry-auth \
     -c "$SCRIPT_DIR/docker-compose.swarm.yml" \
     "$STACK_NAME"
 
