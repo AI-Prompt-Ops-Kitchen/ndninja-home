@@ -1,0 +1,47 @@
+[
+  {
+    "name": "dojo_job_tracker",
+    "event_type": "dojo.*",
+    "action": {
+      "type": "log",
+      "message": "[Dojo] {event_type} — job={payload.job_id} status={payload.status}"
+    }
+  },
+  {
+    "name": "dojo_failure_alert",
+    "event_type": "dojo.job_failed",
+    "cooldown_seconds": 60,
+    "action": {
+      "type": "emit",
+      "event_type": "notification.pipeline_failure",
+      "source": "rasengan",
+      "payload_template": {
+        "job_id": "{payload.job_id}",
+        "error": "{payload.error}",
+        "severity": "high"
+      }
+    }
+  },
+  {
+    "name": "dojo_upload_success",
+    "event_type": "dojo.video_uploaded",
+    "action": {
+      "type": "emit",
+      "event_type": "notification.video_live",
+      "source": "rasengan",
+      "payload_template": {
+        "job_id": "{payload.job_id}",
+        "video_id": "{payload.video_id}",
+        "title": "{payload.title}"
+      }
+    }
+  },
+  {
+    "name": "dojo_job_completed",
+    "event_type": "dojo.job_completed",
+    "action": {
+      "type": "log",
+      "message": "Video ready for review — job={payload.job_id} title={payload.title}"
+    }
+  }
+]
