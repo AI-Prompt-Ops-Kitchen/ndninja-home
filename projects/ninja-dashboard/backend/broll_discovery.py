@@ -36,13 +36,18 @@ PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
 # ---------------------------------------------------------------------------
 
 async def _extract_keywords_gemini(script_text: str, count: int) -> list[dict]:
-    """Use Gemini Flash via Vertex AI to extract visual keywords from script."""
+    """Use Gemini Flash via API key to extract visual keywords from script."""
     from google import genai
     from google.genai import types
 
-    project = os.environ.get("GOOGLE_CLOUD_PROJECT", "gen-lang-client-0601509945")
-    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
-    client = genai.Client(vertexai=True, project=project, location=location)
+    api_key = os.environ.get("GOOGLE_API_KEY", "")
+    if api_key:
+        client = genai.Client(api_key=api_key)
+    else:
+        # Fallback to Vertex AI if no API key (requires ADC)
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT", "gen-lang-client-0601509945")
+        location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+        client = genai.Client(vertexai=True, project=project, location=location)
 
     prompt = f"""Analyze this video script and identify the {count} most visually exciting moments —
 the sentences where game footage or action shots would have the most impact.
