@@ -144,6 +144,9 @@ services:
       - sage_network
     deploy:
       replicas: 4
+      placement:
+        constraints:
+          - node.labels.role == manager
       update_config:
         parallelism: 1
         delay: 10s
