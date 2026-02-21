@@ -69,8 +69,12 @@ def generate_video(self, script_text: str, job_id: str, broll_count: int = 3, br
         if not output_path:
             output_path = _find_newest_mp4(output_prefix)
 
-        if output_path and Path(output_path).exists():
-            return {"output_path": output_path}
+        if output_path:
+            # Normalize: resolve symlinks and remap to /data/output for volume mount
+            resolved = Path(output_path).resolve()
+            canonical = str(resolved).replace("/app/output/", "/data/output/")
+            if Path(canonical).exists():
+                return {"output_path": canonical}
 
         return {"error": "Pipeline completed but output file not found"}
 
