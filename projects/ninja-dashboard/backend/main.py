@@ -32,6 +32,15 @@ from broll_db import (
 )
 from broll_discovery import clip_youtube, download_clip, run_discovery
 
+# Rasengan event emitter (fire-and-forget, never blocks)
+def _rasengan_emit(event_type: str, payload: dict | None = None) -> None:
+    try:
+        import httpx
+        url = os.environ.get("RASENGAN_URL", "http://rasengan:8050")
+        httpx.post(f"{url}/events", json={"event_type": event_type, "source": "dojo", "payload": payload or {}}, timeout=2.0)
+    except Exception:
+        pass
+
 UPLOADS_DIR = Path(os.environ.get("UPLOADS_DIR", Path.home() / "uploads"))
 UPLOADS_DIR.mkdir(exist_ok=True)
 BROLL_DIR.mkdir(parents=True, exist_ok=True)
@@ -162,6 +171,7 @@ async def api_submit_article(payload: dict) -> dict:
 
     job = await asyncio.to_thread(create_job, url, text, target_length_sec, broll_count, broll_duration)
     await ws_manager.broadcast("job_created", job)
+    asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_created", {"job_id": job["id"]})
 
     # Scriptgen runs in the background — UI will receive WS update when done
     asyncio.create_task(_run_scriptgen(job["id"], url, text, target_length_sec))
@@ -532,11 +542,73 @@ async def _run_pipeline_task(job_id: str, script_text: str) -> None:
                 transition, job_id, "error", error_msg=(error_msg or "Unknown error")[:800],
             )
         await ws_manager.broadcast("job_updated", job)
+        if job and job.get("status") == "ready_for_review":
+            asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_completed", {"job_id": job_id})
+        elif job and job.get("status") == "error":
+            asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_failed", {"job_id": job_id, "error": (job.get("error_msg") or "")[:200]})
     except Exception as exc:
         job = await asyncio.to_thread(
             update_job, job_id, status="error", error_msg=str(exc)[:800],
         )
         await ws_manager.broadcast("job_updated", job)
+        asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_failed", {"job_id": job_id, "error": str(exc)[:200]})
+
+
+# ---------------------------------------------------------------------------
+# Preflight health check
+# ---------------------------------------------------------------------------
+
+def _get_celery():
+    """Lazy Celery app import to avoid hard dependency when broker is down."""
+    from celery import Celery
+    broker = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
+    return Celery(broker=broker)
+
+
+@app.get("/api/preflight")
+async def api_preflight() -> dict:
+    checks = {}
+
+    # Content script exists
+    from pipeline import CONTENT_SCRIPT
+    checks["content_script"] = CONTENT_SCRIPT.exists()
+
+    # Output dir writable
+    try:
+        test_file = OUTPUT_DIR / ".preflight_test"
+        test_file.write_text("ok")
+        test_file.unlink()
+        checks["output_writable"] = True
+    except Exception:
+        checks["output_writable"] = False
+
+    # Celery worker alive
+    try:
+        cel = _get_celery()
+        result = cel.control.inspect(timeout=3.0).active_queues()
+        checks["celery_worker"] = bool(result)
+    except Exception:
+        checks["celery_worker"] = False
+
+    # B-roll clips count
+    try:
+        broll_clips = list(BROLL_DIR.glob("*.mp4"))
+        checks["broll_clips"] = len(broll_clips)
+    except Exception:
+        checks["broll_clips"] = 0
+
+    # Avatar check (soft — Dojo may not mount assets)
+    avatar = Path("/app/assets/reference/ninja_helmet_v4_hires.jpg")
+    checks["avatar"] = avatar.exists()
+
+    # all_ok excludes avatar (soft check)
+    all_ok = all([
+        checks["content_script"],
+        checks["output_writable"],
+        checks["celery_worker"],
+    ])
+
+    return {"ok": all_ok, "checks": checks}
 
 
 # ---------------------------------------------------------------------------

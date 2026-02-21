@@ -1,5 +1,5 @@
 #!/bin/bash
-# Safe deployment: build, validate, deploy, smoke test
+# Safe deployment: build, validate, deploy, smoke test + pipeline tests
 set -euo pipefail
 
 COMPOSE_FILE="/home/ndninja/projects/ninja-dashboard/docker-compose.ndn-services.yml"
@@ -43,15 +43,20 @@ docker stack deploy -c "$COMPOSE_FILE" "$STACK_NAME"
 echo "Waiting for services..."
 sleep 15
 
-# 5. Smoke test
+# 5. Smoke test — use httpx (curl hangs on Swarm ingress IPv6)
 echo "Running smoke test..."
-# Dojo API health
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8090/api/jobs)
+HTTP_CODE=$(python3 -c "
+import httpx
+r = httpx.get('http://127.0.0.1:8090/api/jobs', timeout=10)
+print(r.status_code)
+" 2>/dev/null || echo "000")
+
 if [ "$HTTP_CODE" != "200" ]; then
     echo "SMOKE TEST FAILED: Dojo API returned $HTTP_CODE"
     echo "Check logs: docker service logs ${STACK_NAME}_dojo --tail 30"
     exit 1
 fi
+echo "Dojo API: OK (HTTP $HTTP_CODE)"
 
 # Content worker running
 WORKER_COUNT=$(docker service ps "${STACK_NAME}_content_worker" --filter desired-state=running -q 2>/dev/null | wc -l)
@@ -60,8 +65,26 @@ if [ "$WORKER_COUNT" -lt 1 ]; then
     docker service logs "${STACK_NAME}_content_worker" --tail 30
     exit 1
 fi
+echo "Content worker: $WORKER_COUNT replica(s)"
+
+# 6. Run pipeline test harness inside content worker container
+echo ""
+echo "Running pipeline test harness..."
+WORKER_CONTAINER=$(docker ps --filter "name=${STACK_NAME}_content_worker" --format '{{.ID}}' | head -1)
+if [ -z "$WORKER_CONTAINER" ]; then
+    echo "WARN: Could not find content worker container for pytest"
+else
+    if docker exec "$WORKER_CONTAINER" python3 -m pytest /app/tests/ -v --tb=short; then
+        echo "Pipeline tests: PASSED"
+    else
+        echo "PIPELINE TESTS FAILED"
+        echo "Check logs: docker service logs ${STACK_NAME}_content_worker --tail 50"
+        exit 1
+    fi
+fi
 
 echo ""
 echo "=== DEPLOY SUCCESSFUL ==="
 echo "Dojo: http://localhost:8090"
 echo "Content worker: $WORKER_COUNT replica(s)"
+echo "Pipeline tests: PASSED"

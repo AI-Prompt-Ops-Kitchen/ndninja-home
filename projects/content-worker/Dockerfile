@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN ln -s /data/output /app/output
 
 COPY celery_app.py tasks.py ./
+COPY tests/ ./tests/
 
 # Preflight + entrypoint for fail-fast boot validation
 COPY preflight.sh entrypoint.sh /app/
