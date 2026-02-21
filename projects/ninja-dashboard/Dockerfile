@@ -14,7 +14,7 @@ RUN npm run build
 # Output lands in /src/backend/static/
 
 # Stage 2: Python backend + static frontend
-FROM python:3.11-slim
+FROM python:3.13-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq-dev gcc curl ffmpeg \
