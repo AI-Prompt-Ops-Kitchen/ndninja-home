@@ -105,4 +105,22 @@ export const api = {
   brollPreviewUrl(candidateId: string): string {
     return `${BASE}/api/broll-wingman/preview/${candidateId}`;
   },
+
+  async clipYoutube(payload: {
+    url: string;
+    start: string;
+    end: string;
+    filename?: string;
+  }): Promise<{ filename: string; path: string; size_mb: number }> {
+    const r = await fetch(`${BASE}/api/broll/clip-youtube`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      const text = await r.text();
+      throw new Error(text || `clipYoutube: ${r.status}`);
+    }
+    return r.json();
+  },
 };

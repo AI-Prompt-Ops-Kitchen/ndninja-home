@@ -71,6 +71,81 @@ function BrollLibrary({ refreshTrigger }: { refreshTrigger: number }) {
   );
 }
 
+// ── YouTube Clip Form ────────────────────────────────────────────────────────
+function YoutubeClipForm({ onClipped }: { onClipped: () => void }) {
+  const [url, setUrl] = useState('');
+  const [start, setStart] = useState('');
+  const [end, setEnd] = useState('');
+  const [clipping, setClipping] = useState(false);
+  const [result, setResult] = useState<{ filename: string; size_mb: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleClip() {
+    if (!url || !start || !end) return;
+    setClipping(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await api.clipYoutube({ url, start, end });
+      setResult(res);
+      setUrl('');
+      setStart('');
+      setEnd('');
+      onClipped();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setClipping(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-purple-900/50 bg-[#12121f] p-3 flex flex-col gap-2">
+      <p className="text-xs font-semibold text-purple-400 uppercase tracking-wider">
+        Clip from YouTube
+      </p>
+      <input
+        type="text"
+        placeholder="YouTube URL"
+        value={url}
+        onChange={e => setUrl(e.target.value)}
+        className="w-full rounded-lg bg-[#18182e] border border-gray-700 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-purple-500 focus:outline-none"
+      />
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Start (0:11)"
+          value={start}
+          onChange={e => setStart(e.target.value)}
+          className="flex-1 rounded-lg bg-[#18182e] border border-gray-700 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-purple-500 focus:outline-none"
+        />
+        <input
+          type="text"
+          placeholder="End (0:23)"
+          value={end}
+          onChange={e => setEnd(e.target.value)}
+          className="flex-1 rounded-lg bg-[#18182e] border border-gray-700 px-3 py-1.5 text-sm text-gray-200 placeholder-gray-600 focus:border-purple-500 focus:outline-none"
+        />
+      </div>
+      <button
+        onClick={handleClip}
+        disabled={clipping || !url || !start || !end}
+        className="w-full rounded-lg bg-purple-600 hover:bg-purple-500 disabled:bg-gray-700 disabled:text-gray-500 text-white text-sm font-medium py-1.5 transition-colors"
+      >
+        {clipping ? 'Clipping...' : 'Clip'}
+      </button>
+      {error && (
+        <p className="text-xs text-red-400 bg-red-400/10 rounded-lg px-3 py-1.5">{error}</p>
+      )}
+      {result && (
+        <p className="text-xs text-green-400 bg-green-400/10 rounded-lg px-3 py-1.5">
+          Clipped {result.filename} ({result.size_mb}MB)
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Main UploadZone ────────────────────────────────────────────────────────────
 export function UploadZone() {
   const [mode, setMode] = useState<UploadMode>('general');
@@ -156,6 +231,9 @@ export function UploadZone() {
 
       {/* B-roll library list */}
       {isBroll && <BrollLibrary refreshTrigger={brollRefresh} />}
+
+      {/* YouTube clip form */}
+      {isBroll && <YoutubeClipForm onClipped={() => setBrollRefresh(n => n + 1)} />}
 
       {/* Drop zone */}
       <div

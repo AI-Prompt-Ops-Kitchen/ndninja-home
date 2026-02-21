@@ -29,7 +29,7 @@ from broll_db import (
     update_session,
     update_slot,
 )
-from broll_discovery import download_clip, run_discovery
+from broll_discovery import clip_youtube, download_clip, run_discovery
 
 UPLOADS_DIR = Path(os.environ.get("UPLOADS_DIR", Path.home() / "uploads"))
 UPLOADS_DIR.mkdir(exist_ok=True)
@@ -274,6 +274,23 @@ async def api_upload_broll(file: UploadFile = File(...)) -> dict:
         while chunk := await file.read(64 * 1024):
             await f.write(chunk)
     return {"filename": safe_name, "path": str(dest)}
+
+
+@app.post("/api/broll/clip-youtube")
+async def api_clip_youtube(payload: dict) -> dict:
+    url = payload.get("url")
+    start = payload.get("start")
+    end = payload.get("end")
+    filename = payload.get("filename") or None
+
+    if not url or not start or not end:
+        raise HTTPException(400, "url, start, and end are required")
+
+    try:
+        result = await clip_youtube(url, start, end, filename)
+        return result
+    except Exception as e:
+        raise HTTPException(500, str(e)[:500])
 
 
 @app.delete("/api/jobs/{job_id}")

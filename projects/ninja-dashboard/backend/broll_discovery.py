@@ -25,7 +25,7 @@ from broll_db import (
     update_slot,
 )
 
-BROLL_DIR = Path.home() / "output" / "broll"
+BROLL_DIR = Path(os.environ.get("BROLL_DIR", Path.home() / "output" / "broll"))
 BROLL_DIR.mkdir(parents=True, exist_ok=True)
 
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "")
@@ -397,6 +397,95 @@ async def _download_youtube(url: str, output_path: Path) -> Optional[str]:
         tmp_path.unlink()
 
     return str(output_path) if output_path.exists() else None
+
+
+# ---------------------------------------------------------------------------
+# Manual YouTube clip — paste URL + time range
+# ---------------------------------------------------------------------------
+
+async def clip_youtube(url: str, start: str, end: str, filename: Optional[str] = None) -> dict:
+    """Download a YouTube video and trim to a specific time range.
+
+    Args:
+        url: YouTube video URL
+        start: Start time (e.g. "0:11", "1:30")
+        end: End time (e.g. "0:23", "2:00")
+        filename: Optional output filename (without extension). Auto-generated from title if omitted.
+
+    Returns:
+        dict with filename, path, size_mb
+    """
+    # Get video info for auto-naming
+    if not filename:
+        info_cmd = [
+            "yt-dlp", "--print", "%(title)s", "--no-warnings", "--quiet", url,
+        ]
+        proc = await asyncio.create_subprocess_exec(
+            *info_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=15)
+        title = stdout.decode().strip() or "clip"
+        slug = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")[:60]
+        # Include time range in filename
+        t_start = start.replace(":", "m") + "s"
+        t_end = end.replace(":", "m") + "s"
+        filename = f"{slug}_{t_start}_{t_end}"
+
+    output_path = BROLL_DIR / f"{filename}.mp4"
+    tmp_path = BROLL_DIR / f"{filename}.tmp.mp4"
+
+    # Download full video
+    dl_cmd = [
+        "yt-dlp", url,
+        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+        "--no-playlist",
+        "--no-warnings",
+        "--quiet",
+        "-o", str(tmp_path),
+    ]
+
+    proc = await asyncio.create_subprocess_exec(
+        *dl_cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await asyncio.wait_for(proc.communicate(), timeout=300)
+
+    if not tmp_path.exists():
+        raise RuntimeError(f"yt-dlp download failed: {stderr.decode()[:300]}")
+
+    # Trim with ffmpeg
+    trim_cmd = [
+        "ffmpeg", "-y",
+        "-ss", start,
+        "-to", end,
+        "-i", str(tmp_path),
+        "-c", "copy",
+        str(output_path),
+    ]
+
+    proc = await asyncio.create_subprocess_exec(
+        *trim_cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await asyncio.wait_for(proc.communicate(), timeout=60)
+
+    # Clean up temp
+    if tmp_path.exists():
+        tmp_path.unlink()
+
+    if not output_path.exists():
+        raise RuntimeError(f"ffmpeg trim failed: {stderr.decode()[:300]}")
+
+    size_mb = round(output_path.stat().st_size / 1_048_576, 2)
+    return {
+        "filename": output_path.name,
+        "path": str(output_path),
+        "size_mb": size_mb,
+    }
 
 
 # ---------------------------------------------------------------------------
