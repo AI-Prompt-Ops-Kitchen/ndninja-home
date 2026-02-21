@@ -95,7 +95,7 @@ export const api = {
   },
 
   downloadUrl(outputPath: string): string {
-    return `${BASE}/api/video/${encodeURIComponent(basename(outputPath))}/download`;
+    return `${BASE}/api/download/${encodeURIComponent(basename(outputPath))}`;
   },
 
   // B-roll Wingman

@@ -261,15 +261,15 @@ async def api_retry_job(job_id: str) -> dict:
     return job
 
 
-@app.get("/api/video/{filename:path}")
-async def api_stream_video(filename: str, request: Request):
-    return await serve_video(filename, request)
-
-
-@app.get("/api/video/{filename:path}/download")
+@app.get("/api/download/{filename:path}")
 async def api_download_video(filename: str):
     from media import serve_video_download
     return await serve_video_download(filename)
+
+
+@app.get("/api/video/{filename:path}")
+async def api_stream_video(filename: str, request: Request):
+    return await serve_video(filename, request)
 
 
 @app.get("/api/thumb/{filename:path}")
