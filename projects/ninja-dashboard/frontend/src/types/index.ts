@@ -76,3 +76,21 @@ export interface BrollSession {
   created_at: string;
   updated_at: string;
 }
+
+// Thumbnail Studio types
+export interface ThumbnailItem {
+  filename: string;
+  size_kb: number;
+  created_at: string;
+  path: string;
+}
+
+export interface ThumbnailGeneration {
+  id: string;
+  status: 'queued' | 'generating' | 'ready' | 'error';
+  topic: string;
+  style: string;
+  aspect_ratio: string;
+  filename?: string;
+  error?: string;
+}

@@ -3,6 +3,7 @@ import { useJobs } from './hooks/useJobs';
 import { ScriptWorkshop } from './components/ScriptWorkshop';
 import { ReviewQueue } from './components/ReviewQueue';
 import { UploadZone } from './components/UploadZone';
+import { ThumbnailStudio } from './components/ThumbnailStudio';
 import { JobsPanel } from './components/JobsPanel';
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
         {/* Left column */}
         <div className="flex flex-col gap-6">
           <ScriptWorkshop jobs={jobs} currentJobId={currentJobId} onCurrentJobChange={setCurrentJobId} />
+          <ThumbnailStudio jobs={jobs} />
           <UploadZone />
         </div>
 

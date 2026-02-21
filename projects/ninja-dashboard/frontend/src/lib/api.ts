@@ -1,4 +1,4 @@
-import type { Job, BrollSession } from '../types';
+import type { Job, BrollSession, ThumbnailItem } from '../types';
 import { basename } from './utils';
 
 const BASE = '';
@@ -159,5 +159,66 @@ export const api = {
       throw new Error(text || `clipYoutube: ${r.status}`);
     }
     return r.json();
+  },
+
+  // Thumbnail Studio
+  async generateThumbnail(payload: {
+    topic: string;
+    style?: string;
+    aspect_ratio?: string;
+    headline?: string;
+  }): Promise<{ id: string; status: string }> {
+    const r = await fetch(`${BASE}/api/thumbnail-studio/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error(`generateThumbnail: ${r.status}`);
+    return r.json();
+  },
+
+  async generateThumbnailFromImage(
+    formData: FormData,
+  ): Promise<{ id: string; status: string }> {
+    const r = await fetch(`${BASE}/api/thumbnail-studio/generate-from-image`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!r.ok) throw new Error(`generateThumbnailFromImage: ${r.status}`);
+    return r.json();
+  },
+
+  async getThumbnailGallery(): Promise<ThumbnailItem[]> {
+    const r = await fetch(`${BASE}/api/thumbnail-studio/gallery`);
+    if (!r.ok) throw new Error(`getThumbnailGallery: ${r.status}`);
+    return r.json();
+  },
+
+  async deleteThumbnail(filename: string): Promise<void> {
+    const r = await fetch(
+      `${BASE}/api/thumbnail-studio/${encodeURIComponent(filename)}`,
+      { method: 'DELETE' },
+    );
+    if (!r.ok) throw new Error(`deleteThumbnail: ${r.status}`);
+  },
+
+  async attachThumbnailToJob(filename: string, jobId: string): Promise<void> {
+    const r = await fetch(
+      `${BASE}/api/thumbnail-studio/attach/${encodeURIComponent(filename)}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId }),
+      },
+    );
+    if (!r.ok) throw new Error(`attachThumbnailToJob: ${r.status}`);
+  },
+
+  thumbnailImageUrl(filename: string): string {
+    return `${BASE}/api/thumbnail-studio/image/${encodeURIComponent(filename)}`;
+  },
+
+  thumbnailDownloadUrl(filename: string): string {
+    return `${BASE}/api/thumbnail-studio/download/${encodeURIComponent(filename)}`;
   },
 };
