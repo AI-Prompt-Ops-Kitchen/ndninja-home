@@ -162,4 +162,4 @@ def _find_newest_mp4(hint_prefix: str) -> Optional[str]:
     for mp4 in mp4s[:5]:
         if mp4.stem.startswith(hint_prefix.replace(".mp4", "")):
             return str(mp4)
-    return str(mp4s[0])
+    return None
