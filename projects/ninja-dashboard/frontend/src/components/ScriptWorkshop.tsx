@@ -327,21 +327,21 @@ function ScriptPreview({ job, onGenerateVideo }: { job: Job; onGenerateVideo: ()
 // ── Main ScriptWorkshop component ─────────────────────────────────────────────
 interface Props {
   jobs: Job[];
+  currentJobId: string | null;
+  onCurrentJobChange: (id: string | null) => void;
 }
 
-export function ScriptWorkshop({ jobs }: Props) {
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
-
+export function ScriptWorkshop({ jobs, currentJobId, onCurrentJobChange }: Props) {
   const currentJob = currentJobId ? jobs.find(j => j.id === currentJobId) ?? null : null;
 
   function handleJobCreated(id: string) {
-    setCurrentJobId(id);
+    onCurrentJobChange(id);
   }
 
   function handleGenerateVideo() {
     // Script approved → video generation kicked off
     // Job panel will track it. Reset workshop after a brief moment.
-    setTimeout(() => setCurrentJobId(null), 2000);
+    setTimeout(() => onCurrentJobChange(null), 2000);
   }
 
   // Determine what to show
@@ -359,7 +359,7 @@ export function ScriptWorkshop({ jobs }: Props) {
         </h2>
         {currentJob && !showForm && (
           <button
-            onClick={() => setCurrentJobId(null)}
+            onClick={() => onCurrentJobChange(null)}
             className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
           >
             + New
@@ -414,7 +414,7 @@ export function ScriptWorkshop({ jobs }: Props) {
             <p className="text-sm text-yellow-400">Generating video…</p>
             <p className="text-xs text-gray-600">Kling Avatar is running (~5 min). Track in Jobs Panel.</p>
             <button
-              onClick={() => setCurrentJobId(null)}
+              onClick={() => onCurrentJobChange(null)}
               className="text-xs text-cyan-400 hover:underline mt-2"
             >
               + Start another script
@@ -431,7 +431,7 @@ export function ScriptWorkshop({ jobs }: Props) {
                 {currentJob.error_msg}
               </p>
             )}
-            <Button variant="secondary" size="sm" onClick={() => setCurrentJobId(null)}>
+            <Button variant="secondary" size="sm" onClick={() => onCurrentJobChange(null)}>
               Try again
             </Button>
           </motion.div>

@@ -15,6 +15,8 @@ async function deleteJob(id: string) {
 interface Props {
   jobs: Job[];
   loading: boolean;
+  currentJobId: string | null;
+  onSelectJob: (id: string) => void;
 }
 
 function jobTitle(job: Job): string {
@@ -27,7 +29,7 @@ function jobTitle(job: Job): string {
   return 'New job';
 }
 
-export function JobsPanel({ jobs, loading }: Props) {
+export function JobsPanel({ jobs, loading, currentJobId, onSelectJob }: Props) {
   const [deleting, setDeleting] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
@@ -70,7 +72,15 @@ export function JobsPanel({ jobs, loading }: Props) {
                 exit={{ opacity: 0, scale: 0.97 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="rounded-xl bg-[#18182e] border border-white/5 px-3 py-2.5 flex items-start gap-3">
+                <div
+                  onClick={() => onSelectJob(job.id)}
+                  className={[
+                    'rounded-xl bg-[#18182e] border px-3 py-2.5 flex items-start gap-3 cursor-pointer transition-colors',
+                    currentJobId === job.id
+                      ? 'border-cyan-500/50 bg-cyan-400/5'
+                      : 'border-white/5 hover:border-white/10',
+                  ].join(' ')}
+                >
                   <StatusDot status={job.status} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-200 truncate">{jobTitle(job)}</p>

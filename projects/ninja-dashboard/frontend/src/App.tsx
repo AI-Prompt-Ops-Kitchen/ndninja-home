@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useJobs } from './hooks/useJobs';
 import { ScriptWorkshop } from './components/ScriptWorkshop';
 import { ReviewQueue } from './components/ReviewQueue';
@@ -6,6 +7,7 @@ import { JobsPanel } from './components/JobsPanel';
 
 function App() {
   const { jobs, loading } = useJobs();
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null);
 
   const activeCount = jobs.filter(
     j => !['approved', 'discarded'].includes(j.status),
@@ -41,14 +43,14 @@ function App() {
       <main className="max-w-6xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left column */}
         <div className="flex flex-col gap-6">
-          <ScriptWorkshop jobs={jobs} />
+          <ScriptWorkshop jobs={jobs} currentJobId={currentJobId} onCurrentJobChange={setCurrentJobId} />
           <UploadZone />
         </div>
 
         {/* Right column */}
         <div className="flex flex-col gap-6">
           <ReviewQueue jobs={jobs} />
-          <JobsPanel jobs={jobs} loading={loading} />
+          <JobsPanel jobs={jobs} loading={loading} currentJobId={currentJobId} onSelectJob={setCurrentJobId} />
         </div>
       </main>
     </div>
