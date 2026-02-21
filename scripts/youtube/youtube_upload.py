@@ -49,21 +49,32 @@ def upload_video(video_path, title, description="", tags=None, thumbnail_path=No
         }
     }
     
-    # Upload video
+    # Upload video (5MB chunks for reliability on large files)
     print(f"   📤 Uploading video...")
-    media = MediaFileUpload(video_path, mimetype='video/mp4', resumable=True)
-    
+    media = MediaFileUpload(video_path, mimetype='video/mp4', resumable=True,
+                            chunksize=5 * 1024 * 1024)
+
     request = youtube.videos().insert(
         part=','.join(body.keys()),
         body=body,
         media_body=media
     )
-    
+
     response = None
+    retries = 0
     while response is None:
-        status, response = request.next_chunk()
-        if status:
-            print(f"   📊 Progress: {int(status.progress() * 100)}%")
+        try:
+            status, response = request.next_chunk()
+            if status:
+                print(f"   📊 Progress: {int(status.progress() * 100)}%")
+            retries = 0
+        except Exception as e:
+            retries += 1
+            if retries > 5:
+                raise
+            print(f"   ⚠️ Chunk upload error (retry {retries}/5): {e}")
+            import time
+            time.sleep(2 ** retries)
     
     video_id = response['id']
     print(f"   ✅ Video uploaded: https://youtube.com/watch?v={video_id}")

@@ -96,9 +96,9 @@ DEFAULT_MODELS = [
         api_key_env="PERPLEXITY_API_KEY",
     ),
     ModelConfig(
-        name="gemini-3-pro",
+        name="gemini-3.1-pro",
         provider="gemini",
-        model_id="gemini-3-pro-preview",
+        model_id="gemini-3.1-pro-preview",
         api_key_env="GEMINI_API_KEY",
         timeout=90.0,
     ),

@@ -30,7 +30,7 @@ sources:
     url: "https://docs.kie.ai"
     date: "2026-02"
     confidence: high
-last_updated: 2026-02-18
+last_updated: 2026-02-20
 can_do_from_cli: true
 ---
 
@@ -193,9 +193,34 @@ Tools provided: `generate_speech`, `generate_sound_effect`, `generate_music`, `g
 
 GitHub: [stephengpope/remotion-media-mcp](https://github.com/stephengpope/remotion-media-mcp)
 
+## Validated: Benchmark Chart Pattern (Feb 2026)
+
+Built and rendered a working animated benchmark comparison chart for a Gemini 3.1 Pro video:
+- **Component:** `BenchmarkChart.tsx` in `~/projects/remotion-video/src/`
+- **Output:** `~/output/gemini31_benchmark_chart.mp4` — 7s, 600KB, 1080×1920 portrait
+- **Render time:** ~4 seconds locally (8x concurrency, headless Chrome)
+- **Zero API cost** — pure React → frames → MP4, no external services needed
+
+**Key animation patterns used:**
+```tsx
+// Staggered bar entry (each row starts 18 frames after previous)
+const startFrame = 40 + index * 18;
+const progress = spring({ frame: frame - startFrame, fps, config: { damping: 80, stiffness: 100 } });
+
+// Count-up number tied to spring progress
+const displayed = Math.round(interpolate(progress, [0, 1], [0, targetValue]));
+
+// Glowing bar fill
+background: `linear-gradient(90deg, ${CYAN}cc, ${CYAN})`;
+boxShadow: `0 0 16px ${CYAN}66`;
+```
+
+**Reuse pattern:** Drop the rendered MP4 into `~/output/broll/` and it becomes Dojo B-roll for any AI benchmark video. No Kling needed, no wait time.
+
 ## Integration with Ninja Toolkit
 
 - **Content pipeline:** Use Remotion for intros/outros, lower thirds, title cards, animated stats — things that don't need avatar. Combine with Kling avatar clips in FFmpeg.
+- **Benchmark charts:** Render animated bar charts for AI model comparisons. Fast (4s), free, reusable. Add to broll/ for any stats-heavy video.
 - **Thumbnail pipeline:** Kie.ai includes Nano Banana Pro (which we already use for thumbnails) at potentially lower rates.
 - **TTS cost savings:** Kie.ai ElevenLabs proxy is ~5x cheaper than direct. Could replace our current ElevenLabs API key for TTS in the content pipeline.
 - **Shorts pipeline:** Generate 60-second motion graphic shorts entirely from prompts — no avatar needed for some topics.

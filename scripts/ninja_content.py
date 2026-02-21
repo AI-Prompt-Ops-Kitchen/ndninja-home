@@ -190,6 +190,8 @@ JSON:"""
         print(f"   ⚠️ LLM moment detection failed ({e}), using even distribution...")
 
     # Fallback: evenly distribute cuts
+    # Use generic topics so resolve_broll_clips can still assign clips via fuzzy match
+    fallback_topics = ["gameplay", "action", "combat", "game"]
     interval = usable / (num_moments + 1)
     moments = []
     for i in range(num_moments):
@@ -198,7 +200,7 @@ JSON:"""
             moments.append({
                 "timestamp": round(ts, 2),
                 "duration": clip_duration,
-                "topic": "",
+                "topic": fallback_topics[i % len(fallback_topics)],
                 "sentence": "",
             })
 
@@ -273,6 +275,18 @@ def resolve_broll_clips(moments, broll_dir=None, broll_map=None):
                     break
 
     resolved = [m for m in moments if "clip_path" in m]
+
+    # Last resort: round-robin assign available clips to any unmatched moments
+    if len(resolved) < len(moments) and dir_files:
+        all_clips = list(dir_files.values())
+        clip_idx = 0
+        for m in moments:
+            if "clip_path" not in m:
+                m["clip_path"] = all_clips[clip_idx % len(all_clips)]
+                clip_idx += 1
+        resolved = [m for m in moments if "clip_path" in m]
+        print(f"   🔄 Round-robin assigned remaining: {len(resolved)}/{len(moments)} total")
+
     print(f"   ✅ Resolved {len(resolved)}/{len(moments)} clips: {[m['topic'] for m in resolved]}")
     return moments
 
@@ -1378,15 +1392,16 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
             looped_video = tmpdir / "looped_video.mp4"
             loop_video_to_duration(str(raw_video), audio_duration, str(looped_video))
         
-        # 6. B-roll cutaways (generate early if capcut mode needs them)
+        # 6. Veo B-roll cutaways — only for non-lip-sync mode (Veo looping background)
+        # In lip-sync mode, file-based B-roll was already assembled above via assemble_with_broll
         broll_paths = []
-        if broll:
+        if broll and not lip_sync:
             from ninja_broll_veo import generate_broll_clips  # Veo-generated video B-roll
-            
+
             print("\n🎬 Generating B-roll cutaways...")
             broll_dir = tmpdir / "broll"
             broll_clips = generate_broll_clips(script_text, str(broll_dir), num_clips=4)
-            
+
             if broll_clips:
                 broll_paths = [c["path"] for c in broll_clips if "path" in c]
         
@@ -1442,7 +1457,9 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
         # Normal mode: burn captions and composite
         # 4. Combine video + audio (skip if lip-sync, kenburns, or motion already has audio)
         if lip_sync:
-            combined = lip_sync_video  # Kling Avatar output already has synced audio
+            # combined is already set above in the lip_sync block — either lip_sync_video
+            # (no B-roll) or broll_out (B-roll assembled). Do NOT overwrite it here.
+            pass
         elif kenburns or motion:
             pass  # combined already set with audio in their respective blocks
         else:

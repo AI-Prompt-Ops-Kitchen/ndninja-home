@@ -82,7 +82,7 @@
       "name": "fastapi-realtime-spa",
       "domain": "Full-Stack/Dashboard",
       "level": "2-tomoe",
-      "description": "FastAPI + WebSocket broadcast + React 19 + Tailwind v4 — complete pattern for private real-time dashboards. Validated through The Dojo build.",
+      "description": "FastAPI + WebSocket broadcast + React 19 + Tailwind v4 \u2014 complete pattern for private real-time dashboards. Validated through The Dojo build.",
       "last_updated": "2026-02-19",
       "keywords": [
         "fastapi",
@@ -106,76 +106,253 @@
       ],
       "sources_count": 1,
       "can_do_from_cli": true,
-      "related_scrolls": ["remotion-video-code"]
+      "related_scrolls": [
+        "remotion-video-code"
+      ]
     },
     {
       "name": "fal-ai-image-gen",
       "domain": "Image/Character Art",
       "level": "2-tomoe",
-      "description": "fal.ai image generation for consistent character poses — Flux model comparison, LoRA training, and why kontext is wrong for pose variation.",
+      "description": "fal.ai image generation for consistent character poses \u2014 Flux model comparison, LoRA training, and why kontext is wrong for pose variation.",
       "last_updated": "2026-02-19",
       "keywords": [
-        "fal", "fal-ai", "flux", "image-generation", "lora", "character",
-        "poses", "kontext", "consistency", "glitch", "sprite", "pixar",
-        "flux-dev", "flux-pro", "flux-2-flex", "guidance-scale", "training"
+        "fal",
+        "fal-ai",
+        "flux",
+        "image-generation",
+        "lora",
+        "character",
+        "poses",
+        "kontext",
+        "consistency",
+        "glitch",
+        "sprite",
+        "pixar",
+        "flux-dev",
+        "flux-pro",
+        "flux-2-flex",
+        "guidance-scale",
+        "training"
       ],
       "sources_count": 3,
       "can_do_from_cli": true,
-      "related_scrolls": ["css-sprite-animation"]
+      "related_scrolls": [
+        "css-sprite-animation"
+      ]
     },
     {
       "name": "tauri-v2-overlay",
       "domain": "Desktop/Glitch",
       "level": "2-tomoe",
-      "description": "Tauri v2 for transparent always-on-top Linux desktop overlay — config, system tray, Rust commands, Python sidecar, WebSocket IPC, and Linux X11/Wayland gotchas.",
+      "description": "Tauri v2 for transparent always-on-top Linux desktop overlay \u2014 config, system tray, Rust commands, Python sidecar, WebSocket IPC, and Linux X11/Wayland gotchas.",
       "last_updated": "2026-02-19",
       "keywords": [
-        "tauri", "desktop", "overlay", "transparent", "always-on-top",
-        "rust", "websocket", "sidecar", "python", "system-tray",
-        "linux", "x11", "wayland", "glitch", "ipc", "invoke", "events",
-        "window", "decorations", "skip-taskbar"
+        "tauri",
+        "desktop",
+        "overlay",
+        "transparent",
+        "always-on-top",
+        "rust",
+        "websocket",
+        "sidecar",
+        "python",
+        "system-tray",
+        "linux",
+        "x11",
+        "wayland",
+        "glitch",
+        "ipc",
+        "invoke",
+        "events",
+        "window",
+        "decorations",
+        "skip-taskbar"
       ],
       "sources_count": 8,
       "can_do_from_cli": "partial",
-      "related_scrolls": ["css-sprite-animation"]
+      "related_scrolls": [
+        "css-sprite-animation"
+      ]
     },
     {
       "name": "css-sprite-animation",
       "domain": "Animation/Glitch",
       "level": "2-tomoe",
-      "description": "CSS animation system for 2.5D layered sprite overlays — breathing, state machines, sprite swaps, and Tauri overlay performance gotchas.",
+      "description": "CSS animation system for 2.5D layered sprite overlays \u2014 breathing, state machines, sprite swaps, and Tauri overlay performance gotchas.",
       "last_updated": "2026-02-19",
       "keywords": [
-        "css", "animation", "sprite", "overlay", "tauri", "keyframes",
-        "state-machine", "glitch", "breathing", "sprite-swap", "will-change",
-        "compositing", "pixijs", "data-attributes", "transitions", "2.5d"
+        "css",
+        "animation",
+        "sprite",
+        "overlay",
+        "tauri",
+        "keyframes",
+        "state-machine",
+        "glitch",
+        "breathing",
+        "sprite-swap",
+        "will-change",
+        "compositing",
+        "pixijs",
+        "data-attributes",
+        "transitions",
+        "2.5d"
       ],
       "sources_count": 12,
       "can_do_from_cli": true,
-      "related_scrolls": ["tauri-v2-overlay"]
+      "related_scrolls": [
+        "tauri-v2-overlay"
+      ]
     },
     {
       "name": "supabase-rls",
       "domain": "Backend/Security",
       "level": "3-tomoe",
-      "description": "Supabase Row Level Security — enabling, writing policies (public/owner/private patterns), testing with SET ROLE anon, views gotcha, and validated design for 10-table SaaS schema.",
+      "description": "Supabase Row Level Security \u2014 enabling, writing policies (public/owner/private patterns), testing with SET ROLE anon, views gotcha, and validated design for 10-table SaaS schema.",
       "last_updated": "2026-02-19",
       "keywords": [
-        "supabase", "rls", "row-level-security", "postgresql", "policy",
-        "auth.uid", "anon", "authenticated", "insert", "select", "update",
-        "delete", "security-definer", "security-invoker", "postgrest",
-        "migration", "waitlist", "prompt-toolkit", "saas", "nextjs"
+        "supabase",
+        "rls",
+        "row-level-security",
+        "postgresql",
+        "policy",
+        "auth.uid",
+        "anon",
+        "authenticated",
+        "insert",
+        "select",
+        "update",
+        "delete",
+        "security-definer",
+        "security-invoker",
+        "postgrest",
+        "migration",
+        "waitlist",
+        "prompt-toolkit",
+        "saas",
+        "nextjs"
       ],
       "sources_count": 3,
       "can_do_from_cli": true,
-      "related_scrolls": ["fastapi-realtime-spa"]
+      "related_scrolls": [
+        "fastapi-realtime-spa"
+      ]
+    },
+    {
+      "name": "gemini-models",
+      "domain": "AI/LLM",
+      "level": "2-tomoe",
+      "description": "Google Gemini model family \u2014 specs, benchmarks, API access. Focus on Gemini 3.1 Pro (Feb 2026) for Shadow Council and multi-LLM workflows.",
+      "last_updated": "2026-02-19",
+      "keywords": [
+        "gemini",
+        "google",
+        "llm",
+        "ai",
+        "model",
+        "deepmind",
+        "gemini-3",
+        "gemini-3.1-pro",
+        "multimodal",
+        "agentic",
+        "shadow-council",
+        "litellm",
+        "vertex-ai",
+        "ai-studio",
+        "benchmarks",
+        "arc-agi",
+        "swe-bench",
+        "mcp",
+        "notebooklm"
+      ],
+      "sources_count": 3,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "shadow-council"
+      ]
+    },
+    {
+      "name": "lottiefiles",
+      "domain": "Animation/Glitch",
+      "level": "3-tomoe",
+      "description": "Platform + runtime ecosystem for lightweight JSON/dotLottie animations. Full API reference, state machine interactivity, and integration patterns for Tauri, React, and vanilla JS.",
+      "last_updated": "2026-02-19",
+      "keywords": [
+        "lottie",
+        "lottiefiles",
+        "dotlottie",
+        "animation",
+        "micro-animation",
+        "loading-states",
+        "after-effects",
+        "canvas",
+        "wasm",
+        "react",
+        "react-native",
+        "tauri",
+        "glitch",
+        "sprite",
+        "ui",
+        "motion",
+        "dotlottie-react",
+        "dotlottie-web",
+        "bodymovin",
+        "json",
+        "segment",
+        "state-machine",
+        "interactivity",
+        "theming",
+        "freeze",
+        "web-component",
+        "vue",
+        "svelte",
+        "solid",
+        "markers",
+        "multi-animation"
+      ],
+      "sources_count": 7,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "css-sprite-animation",
+        "tauri-v2-overlay"
+      ]
+    },
+    {
+      "name": "kokoro-tts",
+      "domain": "Audio/TTS",
+      "level": "2-tomoe",
+      "description": "Open-source 82M-param TTS model — blazing fast and free but emotionally flat compared to ElevenLabs V3. Good for draft audio, Glitch notifications, Sharingan podcasts. Not for YouTube content.",
+      "last_updated": "2026-02-20",
+      "keywords": [
+        "kokoro",
+        "tts",
+        "text-to-speech",
+        "open-source",
+        "elevenlabs",
+        "voice",
+        "audio",
+        "speech",
+        "onnx",
+        "styletts2",
+        "self-hosted",
+        "docker",
+        "fastapi",
+        "glitch",
+        "sharingan"
+      ],
+      "sources_count": 4,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "remotion-video-code"
+      ]
     },
     {
       "name": "daily-observations",
       "domain": "Meta/Workflow",
       "level": "2-tomoe",
       "description": "Daily running log of work observations from chat history and daily review.",
-      "last_updated": "2026-02-19",
+      "last_updated": "2026-02-20",
       "keywords": [
         "daily",
         "log",
@@ -188,14 +365,46 @@
       ],
       "can_do_from_cli": true,
       "auto_generated": true
+    },
+    {
+      "name": "shadow-council",
+      "domain": "AI/Multi-LLM",
+      "level": "3-tomoe",
+      "description": "Multi-perspective brainstorming tool — parallel LLM agents with different specializations analyze complex decisions, then synthesize into unified recommendations.",
+      "last_updated": "2026-02-20",
+      "keywords": [
+        "shadow-council",
+        "council",
+        "brainstorm",
+        "multi-llm",
+        "parallel",
+        "architect",
+        "design",
+        "decision",
+        "anthropic",
+        "openai",
+        "perplexity",
+        "gemini",
+        "llm-council",
+        "ninja-assist",
+        "sage-mode",
+        "consensus",
+        "httpx",
+        "async"
+      ],
+      "sources_count": 4,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "gemini-models"
+      ]
     }
   ],
   "stats": {
-    "total_scrolls": 9,
+    "total_scrolls": 13,
     "by_level": {
       "1-tomoe": 0,
-      "2-tomoe": 6,
-      "3-tomoe": 2,
+      "2-tomoe": 8,
+      "3-tomoe": 4,
       "mangekyo": 1
     }
   }

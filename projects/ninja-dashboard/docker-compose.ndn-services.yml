@@ -15,6 +15,7 @@ services:
       CELERY_BROKER_URL: redis://sage_mode_redis:6379/0
       PYTHONPATH: /app:/data/scripts
       DOJO_DATABASE_URL: ${DOJO_DATABASE_URL:?DOJO_DATABASE_URL required}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY required}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:

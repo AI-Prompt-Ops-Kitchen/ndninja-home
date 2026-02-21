@@ -16,7 +16,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 
-SCOPES = ['https://www.googleapis.com/auth/youtube.upload']
+SCOPES = ['https://www.googleapis.com/auth/youtube', 'https://www.googleapis.com/auth/youtube.upload']
 TOKEN_DIR = Path.home() / '.config' / 'youtube_uploader'
 TOKEN_FILE = TOKEN_DIR / 'token.json'
 CLIENT_SECRETS = Path(__file__).parent / 'client_secrets.json'
@@ -49,13 +49,24 @@ def get_credentials(manual_code=None):
                 flow.fetch_token(code=manual_code)
                 creds = flow.credentials
             else:
-                # Try local server first, fall back to console
+                # Try local server first, fall back to manual code entry
                 try:
                     print("🔐 Starting OAuth flow (browser will open)...")
-                    creds = flow.run_local_server(port=8080, open_browser=False)
-                except Exception:
+                    creds = flow.run_local_server(port=9090, open_browser=False)
+                except Exception as e:
                     print("🔐 Starting manual OAuth flow...")
-                    creds = flow.run_console()
+                    # Set redirect URI for manual flow
+                    flow.redirect_uri = 'http://localhost'
+                    print("\n" + "="*60)
+                    auth_url, _ = flow.authorization_url()
+                    print(f"\n1. Open this URL in your browser:\n\n{auth_url}\n")
+                    print("2. Authorize the application")
+                    print("3. You'll be redirected to localhost (won't load)")
+                    print("4. Copy the FULL URL from your browser")
+                    print("="*60 + "\n")
+                    redirect_response = input("Paste the full redirect URL: ").strip()
+                    flow.fetch_token(authorization_response=redirect_response)
+                    creds = flow.credentials
         
         # Save credentials
         TOKEN_DIR.mkdir(parents=True, exist_ok=True)
