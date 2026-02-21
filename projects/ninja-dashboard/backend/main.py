@@ -31,6 +31,7 @@ from broll_db import (
     update_slot,
 )
 from broll_discovery import clip_youtube, download_clip, run_discovery
+from thumbnail_studio import router as thumbnail_studio_router, THUMBNAILS_DIR
 
 # Rasengan event emitter (fire-and-forget, never blocks)
 def _rasengan_emit(event_type: str, payload: dict | None = None) -> None:
@@ -46,6 +47,7 @@ UPLOADS_DIR.mkdir(exist_ok=True)
 BROLL_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="The Dojo — Ninja Content Pipeline")
+app.include_router(thumbnail_studio_router)
 
 # Allow Vite dev server on 5173 during development
 app.add_middleware(
@@ -92,6 +94,7 @@ ws_manager = WSManager()
 @app.on_event("startup")
 async def startup() -> None:
     init_db()
+    THUMBNAILS_DIR.mkdir(parents=True, exist_ok=True)
     try:
         init_broll_db()
     except Exception as e:
@@ -558,7 +561,7 @@ async def _run_pipeline_task(job_id: str, script_text: str) -> None:
             )
         await ws_manager.broadcast("job_updated", job)
         if job and job.get("status") == "ready_for_review":
-            asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_completed", {"job_id": job_id})
+            asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_completed", {"job_id": job_id, "title": job.get("title", "")})
         elif job and job.get("status") == "error":
             asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_failed", {"job_id": job_id, "error": (job.get("error_msg") or "")[:200]})
     except Exception as exc:
@@ -647,7 +650,7 @@ async def _run_youtube_upload(
             await ws_manager.broadcast("job_updated", job)
             asyncio.get_event_loop().run_in_executor(
                 None, _rasengan_emit, "dojo.video_uploaded",
-                {"job_id": job_id, "video_id": video_id},
+                {"job_id": job_id, "video_id": video_id, "title": title},
             )
         else:
             error = output[-500:] if output else "Upload returned no video ID"
