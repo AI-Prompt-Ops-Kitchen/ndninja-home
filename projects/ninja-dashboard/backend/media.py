@@ -116,6 +116,20 @@ async def serve_video(filename: str, request: Request) -> StreamingResponse:
         )
 
 
+async def serve_video_download(filename: str) -> Response:
+    """Serve a video file as a download (Content-Disposition: attachment)."""
+    video_path = safe_resolve(filename, OUTPUT_DIR)
+    if not video_path or not video_path.exists() or not video_path.is_file():
+        raise HTTPException(404, "Video not found")
+
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        path=video_path,
+        media_type="video/mp4",
+        filename=video_path.name,
+    )
+
+
 async def serve_thumb(filename: str) -> Response:
     """Serve a thumbnail image."""
     thumb_path = safe_resolve(filename, OUTPUT_DIR)

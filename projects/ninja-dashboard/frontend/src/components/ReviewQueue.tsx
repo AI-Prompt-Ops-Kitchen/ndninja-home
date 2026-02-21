@@ -217,6 +217,17 @@ function ApprovedCard({ job }: { job: Job }) {
           />
         )}
 
+        {/* Download button */}
+        {filename && (
+          <a
+            href={api.downloadUrl(job.output_path!)}
+            download
+            className="flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-300 hover:text-gray-100 transition-colors"
+          >
+            ⬇ Download Video
+          </a>
+        )}
+
         {/* Uploaded — show YouTube link */}
         {isUploaded && job.youtube_video_id && (
           <div className="flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2">

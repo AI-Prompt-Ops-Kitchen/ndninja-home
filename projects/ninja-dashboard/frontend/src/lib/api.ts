@@ -94,6 +94,10 @@ export const api = {
     return `${BASE}/api/thumb/${encodeURIComponent(basename(thumbPath))}`;
   },
 
+  downloadUrl(outputPath: string): string {
+    return `${BASE}/api/video/${encodeURIComponent(basename(outputPath))}/download`;
+  },
+
   // B-roll Wingman
   async getBrollSession(jobId: string): Promise<{ session: BrollSession | null }> {
     const r = await fetch(`${BASE}/api/broll-wingman/${jobId}`);

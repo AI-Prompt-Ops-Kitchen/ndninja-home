@@ -266,6 +266,12 @@ async def api_stream_video(filename: str, request: Request):
     return await serve_video(filename, request)
 
 
+@app.get("/api/video/{filename:path}/download")
+async def api_download_video(filename: str):
+    from media import serve_video_download
+    return await serve_video_download(filename)
+
+
 @app.get("/api/thumb/{filename:path}")
 async def api_serve_thumb(filename: str):
     return await serve_thumb(filename)
