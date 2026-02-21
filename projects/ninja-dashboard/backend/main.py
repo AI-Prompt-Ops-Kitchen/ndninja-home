@@ -21,6 +21,7 @@ from pipeline import BROLL_DIR, run_pipeline
 from scriptgen import generate_script
 
 from broll_db import (
+    create_candidate,
     get_candidate,
     get_full_session,
     get_slot,
@@ -392,6 +393,49 @@ async def api_skip_broll_slot(slot_id: str) -> dict:
     await _check_session_complete(slot["session_id"])
 
     return {"skipped": True, "slot_id": slot_id}
+
+
+@app.post("/api/broll-wingman/slots/{slot_id}/assign-local")
+async def api_assign_local_broll(slot_id: str, payload: dict) -> dict:
+    filename = payload.get("filename")
+    if not filename:
+        raise HTTPException(400, "filename required")
+
+    local_path = BROLL_DIR / Path(filename).name
+    if not local_path.exists():
+        raise HTTPException(404, f"File not found in B-roll library: {filename}")
+
+    slot = await asyncio.to_thread(get_slot, slot_id)
+    if not slot:
+        raise HTTPException(404, "Slot not found")
+
+    file_size_mb = round(local_path.stat().st_size / 1_048_576, 1)
+
+    # Create a local-source candidate already marked as ready
+    cand = await asyncio.to_thread(
+        create_candidate, slot_id, source="local", title=local_path.name,
+    )
+    await asyncio.to_thread(
+        update_candidate, cand["id"],
+        download_status="ready", local_path=str(local_path), file_size_mb=file_size_mb,
+    )
+
+    # Approve the slot with this candidate
+    await asyncio.to_thread(update_slot, slot_id, status="approved", approved_candidate_id=cand["id"])
+
+    await ws_manager.broadcast("broll_slot_approved", {
+        "slot_id": slot_id,
+        "candidate_id": cand["id"],
+    })
+    await ws_manager.broadcast("broll_candidate_ready", {
+        "candidate_id": cand["id"],
+        "slot_id": slot_id,
+        "local_path": str(local_path),
+    })
+
+    await _check_session_complete(slot["session_id"])
+
+    return {"approved": True, "slot_id": slot_id, "candidate": cand}
 
 
 @app.get("/api/broll-wingman/preview/{candidate_id}")

@@ -159,6 +159,10 @@ export function useBrollWingman(jobId: string | null) {
     await api.skipBrollSlot(slotId);
   }, []);
 
+  const assignLocal = useCallback(async (slotId: string, filename: string) => {
+    await api.assignLocalBroll(slotId, filename);
+  }, []);
+
   const startDiscovery = useCallback(async () => {
     if (jobId) await api.startBrollDiscovery(jobId);
   }, [jobId]);
@@ -171,6 +175,7 @@ export function useBrollWingman(jobId: string | null) {
     loading,
     approveSlot,
     skipSlot,
+    assignLocal,
     startDiscovery,
     resolvedCount,
     totalSlots,

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { BrollSlot, BrollCandidate } from '../types';
 import { useBrollWingman } from '../hooks/useBrollWingman';
+import { api } from '../lib/api';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { cn } from '../lib/utils';
@@ -88,16 +89,65 @@ function CandidateCard({
 // Single slot card
 // ---------------------------------------------------------------------------
 
+function LibraryPicker({
+  onPick,
+  onClose,
+}: {
+  onPick: (filename: string) => void;
+  onClose: () => void;
+}) {
+  const [clips, setClips] = useState<{ filename: string; size_mb: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.listBroll()
+      .then(setClips)
+      .catch(() => setClips([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
+      className="mt-2 rounded-lg border border-purple-500/20 bg-[#0d0d1a] overflow-hidden"
+    >
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+        <span className="text-xs font-semibold text-purple-400">Local Library</span>
+        <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+      </div>
+      <div className="max-h-40 overflow-y-auto">
+        {loading && <p className="text-xs text-gray-600 p-3">Loading...</p>}
+        {!loading && clips.length === 0 && <p className="text-xs text-gray-600 p-3">No clips in library</p>}
+        {clips.map(c => (
+          <button
+            key={c.filename}
+            onClick={() => onPick(c.filename)}
+            className="w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-purple-500/10 transition-colors cursor-pointer"
+          >
+            <span className="text-xs text-gray-300 truncate mr-2">{c.filename}</span>
+            <span className="text-[10px] text-gray-600 flex-shrink-0">{c.size_mb} MB</span>
+          </button>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 function SlotCard({
   slot,
   onApprove,
   onSkip,
+  onAssignLocal,
 }: {
   slot: BrollSlot;
   onApprove: (candidateId: string) => void;
   onSkip: () => void;
+  onAssignLocal: (filename: string) => void;
 }) {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [showLibrary, setShowLibrary] = useState(false);
   const isResolved = slot.status === 'approved' || slot.status === 'skipped';
   const isSearching = slot.status === 'searching';
 
@@ -182,11 +232,32 @@ function SlotCard({
           >
             Approve
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowLibrary(v => !v)}
+            className={showLibrary ? '!text-purple-400' : ''}
+          >
+            Library
+          </Button>
           <Button variant="ghost" size="sm" onClick={onSkip}>
             Skip
           </Button>
         </div>
       )}
+
+      {/* Library picker dropdown */}
+      <AnimatePresence>
+        {showLibrary && !isResolved && (
+          <LibraryPicker
+            onPick={(filename) => {
+              onAssignLocal(filename);
+              setShowLibrary(false);
+            }}
+            onClose={() => setShowLibrary(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
@@ -201,6 +272,7 @@ export function BrollWingman({ jobId }: { jobId: string }) {
     loading,
     approveSlot,
     skipSlot,
+    assignLocal,
     startDiscovery,
     resolvedCount,
     totalSlots,
@@ -303,6 +375,7 @@ export function BrollWingman({ jobId }: { jobId: string }) {
                 slot={slot}
                 onApprove={(candidateId) => approveSlot(slot.id, candidateId)}
                 onSkip={() => skipSlot(slot.id)}
+                onAssignLocal={(filename) => assignLocal(slot.id, filename)}
               />
             ))}
           </motion.div>

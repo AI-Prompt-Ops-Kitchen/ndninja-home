@@ -102,6 +102,21 @@ export const api = {
     if (!r.ok) throw new Error(`skipBrollSlot: ${r.status}`);
   },
 
+  async assignLocalBroll(slotId: string, filename: string): Promise<void> {
+    const r = await fetch(`${BASE}/api/broll-wingman/slots/${slotId}/assign-local`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filename }),
+    });
+    if (!r.ok) throw new Error(`assignLocalBroll: ${r.status}`);
+  },
+
+  async listBroll(): Promise<{ filename: string; size_mb: number; modified: string }[]> {
+    const r = await fetch(`${BASE}/api/broll`);
+    if (!r.ok) throw new Error(`listBroll: ${r.status}`);
+    return r.json();
+  },
+
   brollPreviewUrl(candidateId: string): string {
     return `${BASE}/api/broll-wingman/preview/${candidateId}`;
   },
