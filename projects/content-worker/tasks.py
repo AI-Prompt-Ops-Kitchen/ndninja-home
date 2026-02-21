@@ -91,7 +91,12 @@ def _find_newest_mp4(hint_prefix: str) -> str | None:
     mp4s = sorted(OUTPUT_DIR.glob("*.mp4"), key=lambda f: f.stat().st_mtime, reverse=True)
     if not mp4s:
         return None
+    # Only consider files created in the last 30 minutes (prevent stale fallback)
+    import time
+    cutoff = time.time() - 1800
     for mp4 in mp4s[:5]:
+        if mp4.stat().st_mtime < cutoff:
+            continue
         if mp4.stem.startswith(hint_prefix.replace(".mp4", "")):
             return str(mp4)
     return None

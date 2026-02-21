@@ -16,6 +16,8 @@ services:
       PYTHONPATH: /app:/data/scripts
       DOJO_DATABASE_URL: ${DOJO_DATABASE_URL:?DOJO_DATABASE_URL required}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY required}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-gen-lang-client-0601509945}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -94,6 +96,7 @@ services:
       BROLL_DIR: /data/output/broll
       CONTENT_SCRIPT: /app/scripts/ninja_content.py
       FAL_KEY: ${FAL_KEY:-}
+      FAL_AI_API_KEY: ${FAL_AI_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT:-gen-lang-client-0601509945}
       ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
@@ -114,6 +117,37 @@ services:
           memory: 4G
         reservations:
           memory: 1G
+      restart_policy:
+        condition: any
+
+  # Rasengan — Event Hub + Context Engine
+  rasengan:
+    image: 192.168.68.80:5000/ndn-rasengan:latest
+    ports:
+      - "8050:8050"
+    environment:
+      DATABASE_URL: postgresql://rasengan_user:rasengan2026@host.docker.internal:5432/rasengan
+      REDIS_URL: redis://sage_mode_redis:6379/0
+      RASENGAN_PORT: "8050"
+      GIT_DIR: /data/git
+      SHARINGAN_INDEX: /data/sharingan/index.json
+      LOG_LEVEL: INFO
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /home/ndninja:/data/git:ro
+      - /home/ndninja/.sharingan:/data/sharingan:ro
+    networks:
+      - ndn_network
+      - sage_network
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.role == manager
+      resources:
+        limits:
+          memory: 256M
       restart_policy:
         condition: any
 

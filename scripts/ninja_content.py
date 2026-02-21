@@ -39,6 +39,12 @@ import requests
 import keyring
 from pathlib import Path
 
+# Normalize fal.ai env var names (Swarm uses FAL_KEY, fal_client expects FAL_KEY)
+if os.environ.get('FAL_AI_API_KEY') and not os.environ.get('FAL_KEY'):
+    os.environ['FAL_KEY'] = os.environ['FAL_AI_API_KEY']
+elif os.environ.get('FAL_KEY') and not os.environ.get('FAL_AI_API_KEY'):
+    os.environ['FAL_AI_API_KEY'] = os.environ['FAL_KEY']
+
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 

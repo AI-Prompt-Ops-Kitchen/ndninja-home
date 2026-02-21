@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libpq-dev gcc \
     curl \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -18,4 +19,11 @@ RUN ln -s /data/output /app/output
 
 COPY celery_app.py tasks.py ./
 
-CMD ["celery", "-A", "celery_app", "worker", "-l", "info", "-c", "2", "-Q", "content", "-n", "content@%h"]
+# Preflight + entrypoint for fail-fast boot validation
+COPY preflight.sh entrypoint.sh /app/
+RUN chmod +x /app/preflight.sh /app/entrypoint.sh
+
+HEALTHCHECK --interval=60s --timeout=10s --retries=3 --start-period=15s \
+    CMD /app/preflight.sh
+
+ENTRYPOINT ["/app/entrypoint.sh"]

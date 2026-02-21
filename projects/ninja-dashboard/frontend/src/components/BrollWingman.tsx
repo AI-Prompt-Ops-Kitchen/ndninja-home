@@ -148,8 +148,14 @@ function SlotCard({
 }) {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [editing, setEditing] = useState(false);
   const isResolved = slot.status === 'approved' || slot.status === 'skipped';
   const isSearching = slot.status === 'searching';
+
+  // Find the approved candidate for display
+  const approvedCandidate = isResolved && slot.approved_candidate_id
+    ? slot.candidates.find(c => c.id === slot.approved_candidate_id)
+    : null;
 
   return (
     <motion.div
@@ -159,8 +165,8 @@ function SlotCard({
       exit={{ opacity: 0, y: -10 }}
       className={cn(
         'rounded-xl border p-3 transition-all',
-        isResolved
-          ? 'border-white/5 bg-[#111120] opacity-60'
+        isResolved && !editing
+          ? 'border-white/5 bg-[#111120]'
           : 'border-purple-500/20 bg-[#14142a]',
       )}
     >
@@ -174,12 +180,28 @@ function SlotCard({
             {slot.keyword}
           </span>
         </div>
-        <div>
-          {slot.status === 'approved' && (
-            <span className="text-xs text-green-400 font-semibold">Approved</span>
+        <div className="flex items-center gap-2">
+          {slot.status === 'approved' && !editing && (
+            <>
+              <span className="text-xs text-green-400 font-semibold">Approved</span>
+              <button
+                onClick={() => setEditing(true)}
+                className="text-[10px] text-gray-600 hover:text-purple-400 transition-colors"
+              >
+                Edit
+              </button>
+            </>
           )}
-          {slot.status === 'skipped' && (
-            <span className="text-xs text-gray-500 font-semibold">Skipped</span>
+          {slot.status === 'skipped' && !editing && (
+            <>
+              <span className="text-xs text-gray-500 font-semibold">Skipped</span>
+              <button
+                onClick={() => setEditing(true)}
+                className="text-[10px] text-gray-600 hover:text-purple-400 transition-colors"
+              >
+                Edit
+              </button>
+            </>
           )}
           {isSearching && (
             <span className="flex items-center gap-1.5 text-xs text-purple-400">
@@ -201,8 +223,28 @@ function SlotCard({
         </p>
       )}
 
-      {/* Candidate strip */}
-      {!isResolved && slot.candidates.length > 0 && (
+      {/* Approved selection summary (collapsed view) */}
+      {isResolved && !editing && approvedCandidate && (
+        <div className="flex items-center gap-2 mt-1">
+          {approvedCandidate.preview_url ? (
+            <img
+              src={approvedCandidate.preview_url}
+              alt={approvedCandidate.title || ''}
+              className="w-16 h-11 rounded object-cover border border-white/10"
+            />
+          ) : (
+            <div className="w-16 h-11 rounded bg-[#1a1a30] flex items-center justify-center border border-white/10">
+              <span className="text-[8px] text-gray-600">Local</span>
+            </div>
+          )}
+          <span className="text-xs text-gray-400 truncate">
+            {approvedCandidate.title || approvedCandidate.local_path?.split('/').pop() || 'Selected clip'}
+          </span>
+        </div>
+      )}
+
+      {/* Candidate strip — show when not resolved OR when editing */}
+      {(!isResolved || editing) && slot.candidates.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-thin">
           {slot.candidates.map(c => (
             <CandidateCard
@@ -216,17 +258,22 @@ function SlotCard({
       )}
 
       {/* No candidates */}
-      {!isResolved && slot.status === 'candidates_ready' && slot.candidates.length === 0 && (
+      {(!isResolved || editing) && slot.status === 'candidates_ready' && slot.candidates.length === 0 && (
         <p className="text-xs text-gray-600 italic mb-2">No clips found for this keyword</p>
       )}
 
-      {/* Action buttons */}
-      {!isResolved && slot.status === 'candidates_ready' && (
+      {/* Action buttons — show when not resolved OR when editing */}
+      {(!isResolved || editing) && (slot.status === 'candidates_ready' || editing) && (
         <div className="flex gap-2">
           <Button
             variant="primary"
             size="sm"
-            onClick={() => selectedCandidateId && onApprove(selectedCandidateId)}
+            onClick={() => {
+              if (selectedCandidateId) {
+                onApprove(selectedCandidateId);
+                setEditing(false);
+              }
+            }}
             disabled={!selectedCandidateId}
             className="!bg-purple-500 hover:!bg-purple-400 !shadow-purple-500/20"
           >
@@ -240,19 +287,25 @@ function SlotCard({
           >
             Library
           </Button>
-          <Button variant="ghost" size="sm" onClick={onSkip}>
+          <Button variant="ghost" size="sm" onClick={() => { onSkip(); setEditing(false); }}>
             Skip
           </Button>
+          {editing && (
+            <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          )}
         </div>
       )}
 
       {/* Library picker dropdown */}
       <AnimatePresence>
-        {showLibrary && !isResolved && (
+        {showLibrary && (!isResolved || editing) && (
           <LibraryPicker
             onPick={(filename) => {
               onAssignLocal(filename);
               setShowLibrary(false);
+              setEditing(false);
             }}
             onClose={() => setShowLibrary(false)}
           />

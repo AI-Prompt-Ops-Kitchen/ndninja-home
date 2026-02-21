@@ -208,7 +208,9 @@ async def _search_pexels(keyword: str, slot_id: str) -> list[dict]:
 
 async def _search_youtube(keyword: str, slot_id: str) -> list[dict]:
     """Search YouTube for gameplay/trailer clips via yt-dlp flat playlist."""
-    search_query = f"{keyword} gameplay trailer"
+    # Use keyword as-is — Gemini already generates search-friendly terms.
+    # Only append "trailer" if keyword is very short/generic.
+    search_query = keyword if len(keyword.split()) >= 2 else f"{keyword} trailer"
     cmd = [
         "yt-dlp",
         f"ytsearch5:{search_query}",
