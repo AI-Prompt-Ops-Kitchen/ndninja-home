@@ -60,6 +60,24 @@ export const api = {
     return r.json();
   },
 
+  async uploadToYouTube(id: string, payload: {
+    title: string;
+    description: string;
+    tags: string[];
+    privacy: 'private' | 'unlisted' | 'public';
+  }): Promise<Job> {
+    const r = await fetch(`${BASE}/api/jobs/${id}/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) {
+      const text = await r.text();
+      throw new Error(text || `uploadToYouTube: ${r.status}`);
+    }
+    return r.json();
+  },
+
   async uploadFile(file: File): Promise<{ filename: string; path: string }> {
     const form = new FormData();
     form.append('file', file);

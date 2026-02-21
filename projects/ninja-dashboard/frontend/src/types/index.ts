@@ -4,6 +4,8 @@ export type JobStatus =
   | 'generating'
   | 'ready_for_review'
   | 'approved'
+  | 'uploading'
+  | 'uploaded'
   | 'discarded'
   | 'error';
 
@@ -22,10 +24,13 @@ export interface Job {
   target_length_sec: number;
   broll_count: number;
   broll_duration: number;
+  youtube_video_id: string | null;
+  youtube_title: string | null;
+  youtube_privacy: string | null;
 }
 
 export interface WSMessage {
-  type: 'job_list' | 'job_created' | 'job_updated';
+  type: 'job_list' | 'job_created' | 'job_updated' | 'job_deleted';
   data: Job | Job[];
 }
 

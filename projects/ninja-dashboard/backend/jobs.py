@@ -25,7 +25,10 @@ VALID_TRANSITIONS: dict[str, set[str]] = {
     "script_ready":     {"generating", "error"},
     "generating":       {"ready_for_review", "error"},
     "ready_for_review": {"approved", "generating", "discarded"},
-    "error":            {"generating"},
+    "approved":         {"uploading"},
+    "uploading":        {"uploaded", "error"},
+    "uploaded":         set(),
+    "error":            {"generating", "uploading"},
     "discarded":        {"generating"},  # Allow retry from discarded
 }
 
@@ -33,6 +36,7 @@ JOB_COLS = [
     "id", "type", "status", "created_at", "updated_at", "script_text",
     "article_url", "output_path", "thumb_path", "error_msg", "retry_count",
     "target_length_sec", "broll_count", "broll_duration",
+    "youtube_video_id", "youtube_title", "youtube_privacy",
 ]
 
 
@@ -78,6 +82,15 @@ def init_db() -> None:
                     broll_duration    DOUBLE PRECISION NOT NULL DEFAULT 10.0
                 )
             """)
+            # YouTube upload columns (added Phase 3)
+            for col, typedef in [
+                ("youtube_video_id", "TEXT"),
+                ("youtube_title", "TEXT"),
+                ("youtube_privacy", "TEXT DEFAULT 'private'"),
+            ]:
+                cur.execute(f"""
+                    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS {col} {typedef}
+                """)
 
 
 def create_job(

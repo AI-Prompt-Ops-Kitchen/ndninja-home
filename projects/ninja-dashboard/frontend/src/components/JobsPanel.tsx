@@ -5,7 +5,7 @@ import { Card } from './ui/Card';
 import { StatusDot } from './ui/StatusDot';
 import { timeAgo } from '../lib/utils';
 
-const DELETABLE = new Set(['error', 'approved', 'discarded']);
+const DELETABLE = new Set(['error', 'approved', 'uploaded', 'discarded']);
 
 async function deleteJob(id: string) {
   const r = await fetch(`/api/jobs/${id}`, { method: 'DELETE' });

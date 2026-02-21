@@ -8,6 +8,8 @@ const STATUS: Record<JobStatus, { label: string; dot: string }> = {
   generating:       { label: 'Generating',      dot: 'bg-yellow-400/20 animate-mangekyo-spin' },
   ready_for_review: { label: 'Ready to Review', dot: 'bg-green-400/20 animate-mangekyo-ready' },
   approved:         { label: 'Approved',        dot: 'bg-green-600' },
+  uploading:        { label: 'Uploading',       dot: 'bg-amber-400/20 animate-mangekyo-spin' },
+  uploaded:         { label: 'Uploaded',        dot: 'bg-blue-500' },
   discarded:        { label: 'Discarded',       dot: 'bg-gray-700' },
   error:            { label: 'Error',           dot: 'bg-red-400/20 animate-mangekyo-amaterasu' },
 };

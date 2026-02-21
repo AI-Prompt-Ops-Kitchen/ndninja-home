@@ -96,9 +96,18 @@ async def startup() -> None:
         init_broll_db()
     except Exception as e:
         print(f"⚠️ B-roll Wingman DB init failed (feature degraded): {e}")
-    # Recover any jobs that were stuck in 'generating' when the server last died.
-    # The subprocess keeps running but the asyncio listener is gone — find their output.
-    stuck = [j for j in list_jobs() if j["status"] == "generating"]
+    # Recover any jobs that were stuck when the server last died.
+    all_jobs = list_jobs()
+
+    # Uploads that were in progress — no way to resume, mark as error
+    for job in [j for j in all_jobs if j["status"] == "uploading"]:
+        await asyncio.to_thread(
+            update_job, job["id"], status="error",
+            error_msg="Server restarted during upload — retry upload",
+        )
+
+    # Generating jobs — check if output was produced before crash
+    stuck = [j for j in all_jobs if j["status"] == "generating"]
     for job in stuck:
         output_path = await asyncio.to_thread(_find_output_for_job, job["id"])
         if output_path:
@@ -552,6 +561,105 @@ async def _run_pipeline_task(job_id: str, script_text: str) -> None:
         )
         await ws_manager.broadcast("job_updated", job)
         asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_failed", {"job_id": job_id, "error": str(exc)[:200]})
+
+
+# ---------------------------------------------------------------------------
+# YouTube upload
+# ---------------------------------------------------------------------------
+
+@app.post("/api/jobs/{job_id}/upload")
+async def api_upload_youtube(job_id: str, payload: dict) -> dict:
+    job = await asyncio.to_thread(get_job, job_id)
+    if not job:
+        raise HTTPException(404, "Job not found")
+    if job["status"] not in ("approved", "error"):
+        raise HTTPException(400, f"Cannot upload from status '{job['status']}'")
+    if not job.get("output_path") or not Path(job["output_path"]).exists():
+        raise HTTPException(400, "Video file not found on disk")
+
+    title = (payload.get("title") or "").strip()
+    description = (payload.get("description") or "").strip()
+    tags = payload.get("tags") or []
+    privacy = payload.get("privacy") or "private"
+    if not title:
+        raise HTTPException(400, "Title is required")
+
+    job = await asyncio.to_thread(
+        transition, job_id, "uploading",
+        youtube_title=title, youtube_privacy=privacy,
+    )
+    await ws_manager.broadcast("job_updated", job)
+
+    asyncio.create_task(_run_youtube_upload(
+        job_id, job["output_path"], title, description, tags,
+        job.get("thumb_path"), privacy,
+    ))
+    return job
+
+
+async def _run_youtube_upload(
+    job_id: str, video_path: str, title: str, description: str,
+    tags: list[str], thumb_path: str | None, privacy: str,
+) -> None:
+    try:
+        import sys as _sys
+
+        # Scripts mounted at /data/scripts in Docker, fallback to ~/scripts locally
+        scripts_dir = Path("/data/scripts") if Path("/data/scripts").exists() else Path.home() / "scripts"
+        cmd = [
+            _sys.executable, str(scripts_dir / "youtube/youtube_upload.py"),
+            "--video", video_path,
+            "--title", title,
+            "--description", description,
+            "--privacy", privacy,
+        ]
+        if tags:
+            cmd += ["--tags", ",".join(tags)]
+        if thumb_path and Path(thumb_path).exists():
+            cmd += ["--thumbnail", thumb_path]
+
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+        stdout, _ = await proc.communicate()
+        output = stdout.decode()
+
+        # Parse video_id from youtube_upload.py stdout
+        video_id = None
+        for line in output.splitlines():
+            if "youtube.com/watch?v=" in line:
+                video_id = line.split("watch?v=")[-1].strip()
+                break
+
+        if proc.returncode == 0 and video_id:
+            job = await asyncio.to_thread(
+                transition, job_id, "uploaded",
+                youtube_video_id=video_id,
+            )
+            await ws_manager.broadcast("job_updated", job)
+            asyncio.get_event_loop().run_in_executor(
+                None, _rasengan_emit, "dojo.video_uploaded",
+                {"job_id": job_id, "video_id": video_id},
+            )
+        else:
+            error = output[-500:] if output else "Upload returned no video ID"
+            job = await asyncio.to_thread(
+                transition, job_id, "error",
+                error_msg=f"YouTube upload failed: {error}"[:800],
+            )
+            await ws_manager.broadcast("job_updated", job)
+            asyncio.get_event_loop().run_in_executor(
+                None, _rasengan_emit, "dojo.upload_failed",
+                {"job_id": job_id, "error": error[:200]},
+            )
+    except Exception as exc:
+        job = await asyncio.to_thread(
+            update_job, job_id, status="error",
+            error_msg=f"Upload exception: {str(exc)}"[:800],
+        )
+        await ws_manager.broadcast("job_updated", job)
 
 
 # ---------------------------------------------------------------------------

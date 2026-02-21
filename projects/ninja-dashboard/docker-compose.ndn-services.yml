@@ -24,6 +24,7 @@ services:
       - /home/ndninja/output:/data/output
       - /home/ndninja/uploads:/data/uploads
       - /home/ndninja/scripts:/data/scripts:ro
+      - /home/ndninja/.config/youtube_uploader:/root/.config/youtube_uploader
     networks:
       - ndn_network
       - sage_network
