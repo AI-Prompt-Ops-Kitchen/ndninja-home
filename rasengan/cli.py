@@ -8,10 +8,20 @@ import os
 import sys
 from datetime import datetime
 
+import subprocess
+
 import httpx
 
 BASE_URL = os.environ.get("RASENGAN_URL", "http://127.0.0.1:8050")
 TIMEOUT = 10.0
+
+# ── Deploy registry ─────────────────────────────────────────────────────────
+
+DEPLOY_REGISTRY = {
+    "sage_mode": "/home/ndninja/sage_mode/swarm-deploy.sh",
+    "ndn_infra": "/home/ndninja/infra/deploy.sh",
+    "landing": "/home/ndninja/server-landing/deploy.sh",
+}
 
 # ── ANSI colors ──────────────────────────────────────────────────────────────
 
@@ -192,6 +202,29 @@ def cmd_resume(_args):
                 f"{s.get('domain', '')}"
             )
 
+    deploys = data.get("deploys", {})
+    services = deploys.get("services", {})
+    if services:
+        print(f"\n  {C_BOLD}Deploys:{C_RESET}")
+        for svc, info in services.items():
+            last_event = info.get("last_event", "?")
+            if "completed" in last_event:
+                status_color = C_GREEN
+                status_icon = "OK"
+            elif "failed" in last_event:
+                status_color = C_RED
+                status_icon = "FAIL"
+            else:
+                status_color = C_YELLOW
+                status_icon = "..."
+            dur = info.get("duration_seconds")
+            dur_str = f" ({dur}s)" if dur is not None else ""
+            print(
+                f"    {C_BOLD}{svc}{C_RESET}  "
+                f"[{status_color}{status_icon}{C_RESET}]  "
+                f"{C_DIM}{_ts(info.get('last_at', ''))}{dur_str}{C_RESET}"
+            )
+
     recent = data.get("recent_events", [])
     if recent:
         print(f"\n  {C_BOLD}Recent Events:{C_RESET}")
@@ -266,6 +299,80 @@ def cmd_rules(args):
         print()
 
 
+def cmd_deploy(args):
+    service = args.service
+
+    if not service:
+        # List known services
+        print(f"\n{C_BOLD}Deploy Registry{C_RESET}:\n")
+        for svc, script in sorted(DEPLOY_REGISTRY.items()):
+            exists = os.path.isfile(script)
+            tag = f"{C_GREEN}found{C_RESET}" if exists else f"{C_RED}missing{C_RESET}"
+            print(f"  {C_BOLD}{svc}{C_RESET}  [{tag}]  {C_DIM}{script}{C_RESET}")
+        print()
+        return
+
+    if service not in DEPLOY_REGISTRY:
+        _die(f"unknown service '{service}'. Known: {', '.join(DEPLOY_REGISTRY)}")
+
+    script = DEPLOY_REGISTRY[service]
+    if not os.path.isfile(script):
+        _die(f"deploy script not found: {script}")
+
+    if args.dry:
+        print(f"{C_YELLOW}[dry run]{C_RESET} Would run: rasengan-deploy {service} {script}")
+        return
+
+    deploy_hook = os.path.expanduser("~/.local/bin/rasengan-deploy")
+    if not os.path.isfile(deploy_hook):
+        # Fallback to script dir
+        deploy_hook = os.path.join(os.path.dirname(os.path.abspath(__file__)), "deploy-hook.sh")
+    if not os.path.isfile(deploy_hook):
+        _die("rasengan-deploy not found. Run install-hooks.sh first.")
+
+    print(f"{C_BOLD}Deploying {service}{C_RESET} via rasengan-deploy...\n")
+    result = subprocess.run([deploy_hook, service, script])
+    sys.exit(result.returncode)
+
+
+def cmd_ci(args):
+    params = {"limit": args.limit}
+
+    if args.git and not args.deploy:
+        params["event_type_prefix"] = "git."
+    elif args.deploy and not args.git:
+        params["event_type_prefix"] = "deploy."
+    else:
+        # Both git + deploy — fetch both via prefix, merge
+        # Use a broad enough approach: get git. and deploy. separately
+        git_events = _get("/events", event_type_prefix="git.", limit=args.limit)
+        deploy_events = _get("/events", event_type_prefix="deploy.", limit=args.limit)
+        all_events = git_events + deploy_events
+        all_events.sort(key=lambda e: e.get("created_at", ""), reverse=True)
+        all_events = all_events[:args.limit]
+
+        if not all_events:
+            print(f"{C_DIM}no CI/CD events found{C_RESET}")
+            return
+
+        print(f"\n{C_BOLD}CI/CD Events{C_RESET} ({len(all_events)} shown):\n")
+        for ev in all_events:
+            fmt_event(ev)
+        print()
+        return
+
+    events = _get("/events", **params)
+    if not events:
+        print(f"{C_DIM}no CI/CD events found{C_RESET}")
+        return
+
+    label = "Git" if args.git else "Deploy" if args.deploy else "CI/CD"
+    print(f"\n{C_BOLD}{label} Events{C_RESET} ({len(events)} shown):\n")
+    for ev in events:
+        fmt_event(ev)
+    print()
+
+
 async def cmd_tail(args):
     import websockets
 
@@ -338,6 +445,17 @@ def build_parser():
     ru.add_argument("rule_id", nargs="?", default=None, help="Rule ID for toggle/delete/log")
     ru.add_argument("--limit", "-n", type=int, default=20, help="Limit for log")
 
+    # deploy
+    dp = sub.add_parser("deploy", help="Run deploy scripts with event tracking")
+    dp.add_argument("service", nargs="?", default=None, help="Service to deploy (omit to list)")
+    dp.add_argument("--dry", action="store_true", help="Dry run — show what would execute")
+
+    # ci
+    ci = sub.add_parser("ci", help="View git + deploy events")
+    ci.add_argument("--git", action="store_true", help="Only git events")
+    ci.add_argument("--deploy", action="store_true", help="Only deploy events")
+    ci.add_argument("--limit", "-n", type=int, default=20, help="Max results (default 20)")
+
     # tail
     ta = sub.add_parser("tail", help="Live event stream (WebSocket)")
     ta.add_argument("--type", "-t", help="Filter by event_type")
@@ -366,6 +484,8 @@ def main():
         "resume": cmd_resume,
         "emit": cmd_emit,
         "rules": cmd_rules,
+        "deploy": cmd_deploy,
+        "ci": cmd_ci,
     }
 
     if args.command == "tail":

@@ -43,5 +43,37 @@
       "type": "log",
       "message": "Video ready for review — job={payload.job_id} title={payload.title}"
     }
+  },
+  {
+    "name": "git_activity_tracker",
+    "event_type": "git.*",
+    "action": {
+      "type": "log",
+      "message": "[Git] {event_type} — branch={payload.branch} hash={payload.hash}"
+    }
+  },
+  {
+    "name": "deploy_tracker",
+    "event_type": "deploy.*",
+    "action": {
+      "type": "log",
+      "message": "[Deploy] {event_type} — service={payload.service} exit={payload.exit_code}"
+    }
+  },
+  {
+    "name": "deploy_failure_alert",
+    "event_type": "deploy.failed",
+    "cooldown_seconds": 60,
+    "action": {
+      "type": "emit",
+      "event_type": "notification.deploy_failure",
+      "source": "rasengan",
+      "payload_template": {
+        "service": "{payload.service}",
+        "exit_code": "{payload.exit_code}",
+        "duration_seconds": "{payload.duration_seconds}",
+        "severity": "high"
+      }
+    }
   }
 ]

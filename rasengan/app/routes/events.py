@@ -23,10 +23,17 @@ async def create_event(event: EventIn):
 async def list_events(
     event_type: str | None = Query(None),
     source: str | None = Query(None),
+    event_type_prefix: str | None = Query(None),
     limit: int = Query(50, le=500),
     offset: int = Query(0),
 ):
-    rows = query_events(event_type=event_type, source=source, limit=limit, offset=offset)
+    rows = query_events(
+        event_type=event_type,
+        source=source,
+        limit=limit,
+        offset=offset,
+        event_type_prefix=event_type_prefix,
+    )
     # Serialize datetimes
     for r in rows:
         if hasattr(r.get("created_at"), "isoformat"):

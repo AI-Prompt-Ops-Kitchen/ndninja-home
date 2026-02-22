@@ -58,12 +58,16 @@ def query_events(
     source: str | None = None,
     limit: int = 50,
     offset: int = 0,
+    event_type_prefix: str | None = None,
 ) -> list[dict]:
     clauses = []
     params: list[Any] = []
     if event_type:
         clauses.append("event_type = %s")
         params.append(event_type)
+    if event_type_prefix:
+        clauses.append("event_type LIKE %s")
+        params.append(f"{event_type_prefix}%")
     if source:
         clauses.append("source = %s")
         params.append(source)

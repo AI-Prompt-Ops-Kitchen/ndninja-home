@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Rasengan post-commit hook — emits git.commit events (fire-and-forget)
+# Install: cp to .git/hooks/post-commit && chmod +x
+
+RASENGAN_URL="${RASENGAN_URL:-http://127.0.0.1:8050}"
+
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+hash=$(git rev-parse --short HEAD 2>/dev/null)
+full_hash=$(git rev-parse HEAD 2>/dev/null)
+message=$(git log -1 --format=%s 2>/dev/null)
+author=$(git log -1 --format='%an <%ae>' 2>/dev/null)
+files_changed=$(git diff --numstat HEAD~1 HEAD 2>/dev/null | wc -l | tr -d ' ')
+insertions=$(git diff --shortstat HEAD~1 HEAD 2>/dev/null | grep -oP '\d+ insertion' | grep -oP '\d+' || echo 0)
+deletions=$(git diff --shortstat HEAD~1 HEAD 2>/dev/null | grep -oP '\d+ deletion' | grep -oP '\d+' || echo 0)
+
+payload=$(cat <<EOF
+{
+  "event_type": "git.commit",
+  "source": "git-hook",
+  "payload": {
+    "branch": "${branch}",
+    "hash": "${hash}",
+    "full_hash": "${full_hash}",
+    "message": $(printf '%s' "$message" | python3 -c 'import sys,json; print(json.dumps(sys.stdin.read()))' 2>/dev/null || echo "\"${message}\""),
+    "author": "${author}",
+    "files_changed": ${files_changed:-0},
+    "insertions": ${insertions:-0},
+    "deletions": ${deletions:-0}
+  }
+}
+EOF
+)
+
+# Fire-and-forget: background curl with 2s timeout, never block git
+curl -s -X POST "${RASENGAN_URL}/events" \
+  -H "Content-Type: application/json" \
+  -d "$payload" \
+  --connect-timeout 2 --max-time 2 \
+  >/dev/null 2>&1 &
+
+exit 0

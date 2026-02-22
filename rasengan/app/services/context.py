@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from app.config import GIT_DIR, SHARINGAN_INDEX
-from app.database import recent_events
+from app.database import query_events, recent_events
 
 logger = logging.getLogger("rasengan.context")
 
@@ -70,6 +70,29 @@ def _sharingan_context() -> dict:
         return {"error": str(e)}
 
 
+def _deploy_context() -> dict:
+    """Recent deploy status per service."""
+    try:
+        events = query_events(event_type_prefix="deploy.", limit=50)
+        services: dict[str, dict] = {}
+        for ev in events:
+            payload = ev.get("payload", {})
+            service = payload.get("service", "unknown")
+            if service not in services:
+                ts = ev.get("created_at")
+                if isinstance(ts, datetime):
+                    ts = ts.isoformat()
+                services[service] = {
+                    "last_event": ev.get("event_type", "?"),
+                    "last_at": ts or "?",
+                    "exit_code": payload.get("exit_code"),
+                    "duration_seconds": payload.get("duration_seconds"),
+                }
+        return {"services": services, "total_recent": len(events)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def build_resume() -> dict:
     """Build a context resume brief."""
     events = recent_events(10)
@@ -82,5 +105,6 @@ def build_resume() -> dict:
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "git": _git_context(),
         "sharingan": _sharingan_context(),
+        "deploys": _deploy_context(),
         "recent_events": events,
     }
