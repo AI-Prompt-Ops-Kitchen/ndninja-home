@@ -176,7 +176,7 @@ async def api_submit_article(payload: dict) -> dict:
     text: Optional[str] = payload.get("text") or None
     target_length_sec: int = int(payload.get("target_length_sec", 60))
     broll_count: int = int(payload.get("broll_count", 3))
-    broll_duration: float = float(payload.get("broll_duration", 10.0))
+    broll_duration: float = float(payload.get("broll_duration", 4.0))
 
     if not url and not text:
         raise HTTPException(400, "Provide url or text")

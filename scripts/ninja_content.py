@@ -112,14 +112,19 @@ def identify_broll_moments(script_text, audio_duration, num_moments=3, clip_dura
     min_gap = 8.0       # Minimum seconds between cuts
     pad = 3.0            # No cuts in first/last 3s
     usable = audio_duration - 2 * pad
+    max_broll_ratio = 0.30  # B-roll must not exceed 30% of total video
 
     if usable < min_gap:
         print("   ⚠️ Audio too short for B-roll")
         return []
 
-    # Clamp num_moments to what fits
+    # Cap moments so total B-roll stays under max_broll_ratio
+    max_broll_seconds = audio_duration * max_broll_ratio
+    max_by_ratio = max(1, int(max_broll_seconds / clip_duration))
+    # Clamp num_moments to what fits spatially and by ratio
     max_possible = max(1, int(usable / min_gap))
-    num_moments = min(num_moments, max_possible)
+    num_moments = min(num_moments, max_possible, max_by_ratio)
+    print(f"   📊 B-roll budget: {num_moments} clips × {clip_duration}s = {num_moments * clip_duration}s / {audio_duration:.0f}s ({num_moments * clip_duration / audio_duration * 100:.0f}%)")
 
     try:
         from google import genai
@@ -282,16 +287,10 @@ def resolve_broll_clips(moments, broll_dir=None, broll_map=None):
 
     resolved = [m for m in moments if "clip_path" in m]
 
-    # Last resort: round-robin assign available clips to any unmatched moments
-    if len(resolved) < len(moments) and dir_files:
-        all_clips = list(dir_files.values())
-        clip_idx = 0
-        for m in moments:
-            if "clip_path" not in m:
-                m["clip_path"] = all_clips[clip_idx % len(all_clips)]
-                clip_idx += 1
-        resolved = [m for m in moments if "clip_path" in m]
-        print(f"   🔄 Round-robin assigned remaining: {len(resolved)}/{len(moments)} total")
+    # Skip unmatched moments instead of forcing random clips
+    if len(resolved) < len(moments):
+        skipped = len(moments) - len(resolved)
+        print(f"   ⏭️  Skipped {skipped} moments with no matching B-roll (no round-robin)")
 
     print(f"   ✅ Resolved {len(resolved)}/{len(moments)} clips: {[m['topic'] for m in resolved]}")
     return moments

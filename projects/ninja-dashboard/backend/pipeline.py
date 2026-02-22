@@ -35,7 +35,7 @@ async def run_pipeline(
     script_text: str,
     job_id: str,
     broll_count: int = 3,
-    broll_duration: float = 10.0,
+    broll_duration: float = 4.0,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     Run ninja_content.py via Celery worker (if configured) or local subprocess.

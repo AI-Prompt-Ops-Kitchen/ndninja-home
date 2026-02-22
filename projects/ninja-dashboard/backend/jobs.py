@@ -79,7 +79,7 @@ def init_db() -> None:
                     retry_count       INTEGER NOT NULL DEFAULT 0,
                     target_length_sec INTEGER NOT NULL DEFAULT 60,
                     broll_count       INTEGER NOT NULL DEFAULT 3,
-                    broll_duration    DOUBLE PRECISION NOT NULL DEFAULT 10.0
+                    broll_duration    DOUBLE PRECISION NOT NULL DEFAULT 4.0
                 )
             """)
             # YouTube upload columns (added Phase 3)
