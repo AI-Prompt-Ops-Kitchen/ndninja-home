@@ -349,10 +349,16 @@ def assemble_with_broll(avatar_video, moments, output_path, crossfade=0.15):
 
             # B-roll segment (scaled to match avatar dimensions)
             broll_file = tmpdir / f"broll_{i}.mp4"
+            if height > width:
+                # Portrait/Shorts — scale to cover then center-crop to fill frame
+                broll_vf = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},fps=30"
+            else:
+                # Landscape — scale+pad (preserve letterbox)
+                broll_vf = f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:-1:-1,fps=30"
             subprocess.run([
                 "ffmpeg", "-y", "-i", clip_path,
                 "-t", str(dur),
-                "-vf", f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:-1:-1,fps=30",
+                "-vf", broll_vf,
                 "-c:v", "libx264", "-crf", "18", "-preset", "fast",
                 "-an", str(broll_file)
             ], capture_output=True)

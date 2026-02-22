@@ -205,7 +205,7 @@ def compose_with_broll(main_video: str, broll_clips: List[str], output_path: str
             subprocess.run([
                 "ffmpeg", "-y", "-i", broll_clips[i],
                 "-t", str(broll_actual),
-                "-vf", "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:-1:-1,fps=30",
+                "-vf", "scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,fps=30",
                 "-c:v", "libx264", "-crf", "18", "-preset", "fast",
                 "-an",  # No audio for B-roll
                 broll_seg
