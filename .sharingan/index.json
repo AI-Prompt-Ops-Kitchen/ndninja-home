@@ -2,54 +2,6 @@
   "version": 1,
   "scrolls": [
     {
-      "name": "remotion-video-code",
-      "domain": "Video/Code",
-      "level": "2-tomoe",
-      "description": "React framework for creating videos programmatically. Claude Code + Remotion skill generates motion graphics from prompts. Kie.ai provides cheap TTS/media APIs.",
-      "last_updated": "2026-02-18",
-      "keywords": [
-        "remotion",
-        "video",
-        "react",
-        "motion-graphics",
-        "claude-code",
-        "kie-ai",
-        "elevenlabs",
-        "tts",
-        "voiceover",
-        "mp4",
-        "animation",
-        "programmatic-video",
-        "content-creation",
-        "mcp",
-        "remotion-media-mcp"
-      ],
-      "sources_count": 5,
-      "can_do_from_cli": true
-    },
-    {
-      "name": "workflow-insights",
-      "domain": "Meta/Workflow",
-      "level": "mangekyo",
-      "description": "Auto-synthesized weekly insights from Claude Code chat history.",
-      "last_updated": "2026-02-19",
-      "keywords": [
-        "workflow",
-        "decisions",
-        "patterns",
-        "weekly",
-        "digest",
-        "chat",
-        "insights",
-        "meta",
-        "lessons",
-        "projects"
-      ],
-      "sources_count": 367,
-      "can_do_from_cli": true,
-      "auto_generated": true
-    },
-    {
       "name": "spline-3d-web",
       "level": "3-tomoe",
       "description": "Browser-based 3D design tool for creating interactive web elements. Full Code API for programmatic control via React/Next.js/Vanilla JS.",
@@ -322,7 +274,7 @@
       "name": "kokoro-tts",
       "domain": "Audio/TTS",
       "level": "2-tomoe",
-      "description": "Open-source 82M-param TTS model — blazing fast and free but emotionally flat compared to ElevenLabs V3. Good for draft audio, Glitch notifications, Sharingan podcasts. Not for YouTube content.",
+      "description": "Open-source 82M-param TTS model \u2014 blazing fast and free but emotionally flat compared to ElevenLabs V3. Good for draft audio, Glitch notifications, Sharingan podcasts. Not for YouTube content.",
       "last_updated": "2026-02-20",
       "keywords": [
         "kokoro",
@@ -348,29 +300,10 @@
       ]
     },
     {
-      "name": "daily-observations",
-      "domain": "Meta/Workflow",
-      "level": "2-tomoe",
-      "description": "Daily running log of work observations from chat history and daily review.",
-      "last_updated": "2026-02-20",
-      "keywords": [
-        "daily",
-        "log",
-        "observations",
-        "workflow",
-        "projects",
-        "activity",
-        "meta",
-        "digest"
-      ],
-      "can_do_from_cli": true,
-      "auto_generated": true
-    },
-    {
       "name": "shadow-council",
       "domain": "AI/Multi-LLM",
       "level": "3-tomoe",
-      "description": "Multi-perspective brainstorming tool — parallel LLM agents with different specializations analyze complex decisions, then synthesize into unified recommendations.",
+      "description": "Multi-perspective brainstorming tool \u2014 parallel LLM agents with different specializations analyze complex decisions, then synthesize into unified recommendations.",
       "last_updated": "2026-02-20",
       "keywords": [
         "shadow-council",
@@ -397,14 +330,117 @@
       "related_scrolls": [
         "gemini-models"
       ]
+    },
+    {
+      "name": "daily-observations",
+      "domain": "Meta/Workflow",
+      "level": "2-tomoe",
+      "description": "Daily running log of work observations from chat history and daily review.",
+      "last_updated": "2026-02-22",
+      "keywords": [
+        "daily",
+        "log",
+        "observations",
+        "workflow",
+        "projects",
+        "activity",
+        "meta",
+        "digest"
+      ],
+      "can_do_from_cli": true,
+      "auto_generated": true
+    },
+    {
+      "name": "workflow-insights",
+      "domain": "Meta/Workflow",
+      "level": "mangekyo",
+      "description": "Auto-synthesized weekly insights from Claude Code chat history.",
+      "last_updated": "2026-02-22",
+      "keywords": [
+        "workflow",
+        "decisions",
+        "patterns",
+        "weekly",
+        "digest",
+        "chat",
+        "insights",
+        "meta",
+        "lessons",
+        "projects"
+      ],
+      "sources_count": 490,
+      "can_do_from_cli": true,
+      "auto_generated": true
+    },
+    {
+      "name": "modal-serverless-gpu",
+      "domain": "Cloud/GPU",
+      "level": "2-tomoe",
+      "description": "Serverless GPU cloud — deploy AI workloads via Python SDK with sub-second cold starts, elastic scaling, pay-per-second billing. $30/mo free credits.",
+      "last_updated": "2026-02-22",
+      "keywords": [
+        "modal",
+        "serverless",
+        "gpu",
+        "cloud",
+        "a100",
+        "h100",
+        "t4",
+        "inference",
+        "training",
+        "batch",
+        "python-sdk",
+        "containers",
+        "autoscale",
+        "pay-per-second",
+        "fal-alternative",
+        "replicate-alternative",
+        "cheap-gpu",
+        "whisper",
+        "flux",
+        "vllm",
+        "tts",
+        "video-generation"
+      ],
+      "sources_count": 3,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "kokoro-tts",
+        "remotion-video-code"
+      ]
+    },
+    {
+      "name": "remotion-video-code",
+      "level": "3-tomoe",
+      "description": "React framework for creating videos programmatically. Claude Code + Remotion skill generates motion graphics from prompts. Kie.ai provides cheap TTS/media APIs.",
+      "last_updated": "2026-02-22",
+      "keywords": [
+        "remotion",
+        "video",
+        "react",
+        "motion-graphics",
+        "claude-code",
+        "kie-ai",
+        "elevenlabs",
+        "tts",
+        "voiceover",
+        "mp4",
+        "animation",
+        "programmatic-video",
+        "content-creation",
+        "mcp",
+        "remotion-media-mcp"
+      ],
+      "sources_count": 8,
+      "can_do_from_cli": true
     }
   ],
   "stats": {
-    "total_scrolls": 13,
+    "total_scrolls": 14,
     "by_level": {
       "1-tomoe": 0,
       "2-tomoe": 8,
-      "3-tomoe": 4,
+      "3-tomoe": 5,
       "mangekyo": 1
     }
   }
