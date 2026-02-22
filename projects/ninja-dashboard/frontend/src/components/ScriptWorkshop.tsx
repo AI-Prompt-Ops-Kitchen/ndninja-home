@@ -17,10 +17,11 @@ const LENGTH_PRESETS = [
 
 // ── B-roll presets ────────────────────────────────────────────────────────────
 const BROLL_DURATION_PRESETS = [
-  { label: '3s', value: 3 },
   { label: '4s', value: 4 },
   { label: '6s', value: 6 },
   { label: '8s', value: 8 },
+  { label: '10s', value: 10 },
+  { label: '15s', value: 15 },
 ] as const;
 
 const BROLL_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
