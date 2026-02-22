@@ -2,6 +2,9 @@
 # Dev mode: FastAPI on 8090 + Vite on 5173 (proxied)
 set -e
 
+# Load environment variables (API keys, etc.)
+[ -f "$HOME/.env" ] && set -a && source "$HOME/.env" && set +a
+
 PROJ=/home/ndninja/projects/ninja-dashboard
 
 cleanup() {

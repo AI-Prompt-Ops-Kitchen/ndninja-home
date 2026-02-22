@@ -2,6 +2,9 @@
 # Production: build frontend → serve everything from FastAPI on port 8090
 set -e
 
+# Load environment variables (API keys, etc.)
+[ -f "$HOME/.env" ] && set -a && source "$HOME/.env" && set +a
+
 PROJ=/home/ndninja/projects/ninja-dashboard
 
 echo "🔨 Building frontend…"
