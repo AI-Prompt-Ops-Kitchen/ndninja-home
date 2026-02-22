@@ -112,19 +112,16 @@ def identify_broll_moments(script_text, audio_duration, num_moments=3, clip_dura
     min_gap = 8.0       # Minimum seconds between cuts
     pad = 3.0            # No cuts in first/last 3s
     usable = audio_duration - 2 * pad
-    max_broll_ratio = 0.30  # B-roll must not exceed 30% of total video
 
     if usable < min_gap:
         print("   ⚠️ Audio too short for B-roll")
         return []
 
-    # Cap moments so total B-roll stays under max_broll_ratio
-    max_broll_seconds = audio_duration * max_broll_ratio
-    max_by_ratio = max(1, int(max_broll_seconds / clip_duration))
-    # Clamp num_moments to what fits spatially and by ratio
+    # Clamp num_moments to what fits spatially
     max_possible = max(1, int(usable / min_gap))
-    num_moments = min(num_moments, max_possible, max_by_ratio)
-    print(f"   📊 B-roll budget: {num_moments} clips × {clip_duration}s = {num_moments * clip_duration}s / {audio_duration:.0f}s ({num_moments * clip_duration / audio_duration * 100:.0f}%)")
+    num_moments = min(num_moments, max_possible)
+    broll_pct = round(num_moments * clip_duration / audio_duration * 100)
+    print(f"   📊 B-roll budget: {num_moments} clips × {clip_duration}s = {num_moments * clip_duration}s / {audio_duration:.0f}s ({broll_pct}%)")
 
     try:
         from google import genai
