@@ -36,6 +36,7 @@ async def run_pipeline(
     job_id: str,
     broll_count: int = 3,
     broll_duration: float = 4.0,
+    broll_map: Optional[list[str]] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
     Run ninja_content.py via Celery worker (if configured) or local subprocess.
@@ -44,7 +45,7 @@ async def run_pipeline(
     celery = _get_celery()
     if celery:
         return await _run_via_celery(celery, script_text, job_id, broll_count, broll_duration)
-    return await _run_local(script_text, job_id, broll_count, broll_duration)
+    return await _run_local(script_text, job_id, broll_count, broll_duration, broll_map=broll_map)
 
 
 async def _run_via_celery(
@@ -76,6 +77,7 @@ async def _run_local(
     job_id: str,
     broll_count: int,
     broll_duration: float,
+    broll_map: Optional[list[str]] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """Fallback: run ninja_content.py as local async subprocess."""
     if not CONTENT_SCRIPT.exists():
@@ -103,7 +105,13 @@ async def _run_local(
         "--broll-duration", str(broll_duration),
     ]
 
-    if BROLL_DIR.exists() and any(BROLL_DIR.glob("*.mp4")):
+    if broll_map:
+        # Use Wingman-approved clips — pass explicit keyword:path mappings
+        cmd += ["--broll", "--broll-map"] + broll_map
+        # Also pass broll-dir as fallback for any remaining moments
+        if BROLL_DIR.exists() and any(BROLL_DIR.glob("*.mp4")):
+            cmd += ["--broll-dir", str(BROLL_DIR)]
+    elif BROLL_DIR.exists() and any(BROLL_DIR.glob("*.mp4")):
         cmd += ["--broll", "--broll-dir", str(BROLL_DIR)]
 
     try:

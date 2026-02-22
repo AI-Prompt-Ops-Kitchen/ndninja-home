@@ -17,10 +17,10 @@ const LENGTH_PRESETS = [
 
 // ── B-roll presets ────────────────────────────────────────────────────────────
 const BROLL_DURATION_PRESETS = [
+  { label: '3s', value: 3 },
+  { label: '4s', value: 4 },
   { label: '6s', value: 6 },
   { label: '8s', value: 8 },
-  { label: '10s', value: 10 },
-  { label: '12s', value: 12 },
 ] as const;
 
 const BROLL_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
@@ -34,7 +34,7 @@ function ArticleForm({ onJobCreated }: { onJobCreated: (id: string) => void }) {
   const [customLength, setCustomLength] = useState(75);
   const [useCustom, setUseCustom] = useState(false);
   const [brollCount, setBrollCount] = useState(3);
-  const [brollDuration, setBrollDuration] = useState(10);
+  const [brollDuration, setBrollDuration] = useState(4);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -390,7 +390,7 @@ export function ScriptWorkshop({ jobs, currentJobId, onCurrentJobChange }: Props
             <p className="text-sm text-gray-400">Generating script with Claude…</p>
             <p className="text-xs text-gray-600">
               Target: {currentJob?.target_length_sec}s ·{' '}
-              {currentJob?.broll_count ?? 3} B-roll × {currentJob?.broll_duration ?? 10}s
+              {currentJob?.broll_count ?? 3} B-roll × {currentJob?.broll_duration ?? 4}s
             </p>
           </motion.div>
         )}

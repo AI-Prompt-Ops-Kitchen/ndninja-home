@@ -89,7 +89,7 @@ export function JobsPanel({ jobs, loading, currentJobId, onSelectJob }: Props) {
                       {job.retry_count > 0 && (
                         <span className="text-xs text-yellow-600">retry #{job.retry_count}</span>
                       )}
-                      <span className="text-xs text-gray-700">{job.target_length_sec}s</span>
+                      <span className="text-xs text-gray-700">target {job.target_length_sec}s</span>
                     </div>
                     {job.status === 'error' && job.error_msg && (
                       <p className="text-xs text-red-400 mt-1 line-clamp-2">

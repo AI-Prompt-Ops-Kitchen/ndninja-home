@@ -545,8 +545,23 @@ async def _run_pipeline_task(job_id: str, script_text: str) -> None:
     try:
         job_data = await asyncio.to_thread(get_job, job_id)
         broll_count = int((job_data or {}).get("broll_count") or 3)
-        broll_duration = float((job_data or {}).get("broll_duration") or 10.0)
-        output_path, error_msg = await run_pipeline(script_text, job_id, broll_count, broll_duration)
+        broll_duration = float((job_data or {}).get("broll_duration") or 4.0)
+
+        # Query Wingman for approved clips — pass as explicit broll_map
+        broll_map: list[str] = []
+        try:
+            session = await asyncio.to_thread(get_full_session, job_id)
+            if session and session.get("slots"):
+                for slot in session["slots"]:
+                    if slot.get("status") != "approved" or not slot.get("approved_candidate_id"):
+                        continue
+                    cand = next((c for c in slot.get("candidates", []) if c["id"] == slot["approved_candidate_id"]), None)
+                    if cand and cand.get("local_path") and Path(cand["local_path"]).exists():
+                        broll_map.append(f"{slot['keyword']}:{cand['local_path']}")
+        except Exception:
+            pass  # Wingman DB unavailable — fall back to directory scan
+
+        output_path, error_msg = await run_pipeline(script_text, job_id, broll_count, broll_duration, broll_map=broll_map or None)
         if output_path:
             video_path = Path(output_path)
             thumb = get_thumbnail_for_video(video_path)
