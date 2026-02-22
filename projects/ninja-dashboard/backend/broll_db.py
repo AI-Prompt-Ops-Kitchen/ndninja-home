@@ -18,7 +18,7 @@ psycopg2.extras.register_uuid()
 
 DATABASE_URL = os.environ.get(
     "DOJO_DATABASE_URL",
-    "postgresql://dojo_user@localhost/dojo",
+    "postgresql://dojo_user:zhjmOmF-YzlqEzMGtHsOCJyiWoMUR0Fk@localhost/dojo",
 )
 
 
