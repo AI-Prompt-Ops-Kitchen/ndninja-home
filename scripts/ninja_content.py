@@ -147,13 +147,31 @@ def identify_broll_moments(script_text, audio_duration, num_moments=3, clip_dura
     return moments
 
 
-def resolve_broll_clips(moments, broll_dir=None, broll_map=None):
-    """Find video files for each moment's topic.
+def resolve_broll_clips(moments, broll_dir=None, broll_map=None, broll_clips=None):
+    """Assign video files to each B-roll moment.
 
-    Priority: explicit broll_map → scan broll_dir filenames → BROLL_MAP from longform → skip
-    Adds 'clip_path' to each moment dict. Skips moments with no match.
+    Priority:
+    1. broll_clips (ordered list of paths) — assigned 1:1 to moments in order
+    2. broll_map (keyword:path pairs) — fuzzy match by topic
+    3. broll_dir filenames — fuzzy match by topic
+    4. skip unmatched moments
+
+    Adds 'clip_path' to each moment dict.
     """
     print("   🔍 Resolving B-roll clips...")
+
+    # Fast path: ordered clip list from Wingman — assign directly, no matching
+    if broll_clips:
+        valid_clips = [c for c in broll_clips if Path(c).exists()]
+        for i, m in enumerate(moments):
+            if i < len(valid_clips):
+                m["clip_path"] = valid_clips[i]
+        assigned = min(len(moments), len(valid_clips))
+        if assigned < len(moments):
+            print(f"   ⚠️ Only {assigned}/{len(moments)} clips provided, {len(moments) - assigned} moments will have no B-roll")
+        resolved = [m for m in moments if "clip_path" in m]
+        print(f"   ✅ Resolved {len(resolved)}/{len(moments)} clips (ordered assignment)")
+        return moments
 
     # Build lookup from explicit map (e.g. {"nioh": "nioh3.mp4"})
     explicit_map = {}
@@ -1150,7 +1168,7 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
     return draft_id
 
 
-def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard", broll_dir=None, broll_map=None, broll_count=3, broll_duration=4.0, voice_style="expressive"):
+def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard", broll_dir=None, broll_map=None, broll_clips=None, broll_count=3, broll_duration=4.0, voice_style="expressive"):
     """Run the full content pipeline.
     
     Args:
@@ -1210,7 +1228,7 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
                 if broll:
                     print("\n🎬 Adding B-roll cutaways to lip-sync video...")
                     moments = identify_broll_moments(script_text, audio_duration, broll_count, broll_duration)
-                    moments = resolve_broll_clips(moments, broll_dir, broll_map)
+                    moments = resolve_broll_clips(moments, broll_dir, broll_map, broll_clips)
                     valid = [m for m in moments if 'clip_path' in m]
                     if valid:
                         broll_out = tmpdir / "with_broll.mp4"
@@ -1484,6 +1502,8 @@ def main():
                         help="Directory containing B-roll clips (e.g. ~/output/feb_games/broll/)")
     parser.add_argument("--broll-map", nargs="+", default=None,
                         help="Explicit keyword:file.mp4 mappings (repeatable, e.g. nioh:nioh3.mp4)")
+    parser.add_argument("--broll-clips", nargs="+", default=None,
+                        help="Ordered list of B-roll clip paths, assigned 1:1 to moments")
     parser.add_argument("--broll-count", type=int, default=3,
                         help="Number of B-roll cutaways (default: 3)")
     parser.add_argument("--broll-duration", type=float, default=4.0,
@@ -1563,6 +1583,7 @@ def main():
         kling_model=args.kling_model,
         broll_dir=args.broll_dir,
         broll_map=args.broll_map,
+        broll_clips=args.broll_clips,
         broll_count=args.broll_count,
         broll_duration=args.broll_duration,
         voice_style=args.voice_style,

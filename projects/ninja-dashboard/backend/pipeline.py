@@ -106,8 +106,9 @@ async def _run_local(
     ]
 
     if broll_map:
-        # Use Wingman-approved clips — pass explicit keyword:path mappings
-        cmd += ["--broll", "--broll-map"] + broll_map
+        # Use Wingman-approved clips — pass as ordered list, assigned 1:1 to moments
+        clip_paths = [entry.split(':', 1)[1] if ':' in entry else entry for entry in broll_map]
+        cmd += ["--broll", "--broll-clips"] + clip_paths
         # Also pass broll-dir as fallback for any remaining moments
         if BROLL_DIR.exists() and any(BROLL_DIR.glob("*.mp4")):
             cmd += ["--broll-dir", str(BROLL_DIR)]
