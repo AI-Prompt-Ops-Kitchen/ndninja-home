@@ -12,6 +12,11 @@ assets/backgrounds/*.png
 assets/scenes/
 .worktrees/
 
+# SQLite artifacts (all data lives in PostgreSQL)
+*.db
+*.db-wal
+*.db-shm
+
 # Python cache files
 __pycache__/
 *.pyc
