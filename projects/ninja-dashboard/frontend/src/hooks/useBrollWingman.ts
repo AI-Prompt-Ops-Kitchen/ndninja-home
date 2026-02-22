@@ -160,7 +160,27 @@ export function useBrollWingman(jobId: string | null) {
   }, []);
 
   const assignLocal = useCallback(async (slotId: string, filename: string) => {
-    await api.assignLocalBroll(slotId, filename);
+    const result = await api.assignLocalBroll(slotId, filename);
+    // Optimistically update state with the new candidate + approved status
+    if (result?.candidate) {
+      setSession(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          slots: prev.slots.map(s =>
+            s.id === slotId
+              ? {
+                  ...s,
+                  status: 'approved' as const,
+                  approved_candidate_id: result.candidate.id,
+                  candidates: [...s.candidates, result.candidate],
+                }
+              : s
+          ),
+        };
+      });
+    }
+    return result;
   }, []);
 
   const startDiscovery = useCallback(async () => {

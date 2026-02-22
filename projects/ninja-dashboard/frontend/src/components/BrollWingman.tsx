@@ -98,6 +98,7 @@ function LibraryPicker({
 }) {
   const [clips, setClips] = useState<{ filename: string; size_mb: number }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [picking, setPicking] = useState<string | null>(null);
 
   useEffect(() => {
     api.listBroll()
@@ -106,32 +107,40 @@ function LibraryPicker({
       .finally(() => setLoading(false));
   }, []);
 
+  const handlePick = (filename: string) => {
+    if (picking) return;
+    setPicking(filename);
+    onPick(filename);
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      className="mt-2 rounded-lg border border-purple-500/20 bg-[#0d0d1a] overflow-hidden"
-    >
+    <div className="mt-2 rounded-lg border border-purple-500/20 bg-[#0d0d1a]">
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
         <span className="text-xs font-semibold text-purple-400">Local Library</span>
-        <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-300">Close</button>
+        <button onClick={onClose} className="text-xs text-gray-500 hover:text-gray-300 py-1 px-2">Close</button>
       </div>
-      <div className="max-h-40 overflow-y-auto">
+      <div className="max-h-48 overflow-y-auto">
         {loading && <p className="text-xs text-gray-600 p-3">Loading...</p>}
         {!loading && clips.length === 0 && <p className="text-xs text-gray-600 p-3">No clips in library</p>}
         {clips.map(c => (
           <button
             key={c.filename}
-            onClick={() => onPick(c.filename)}
-            className="w-full flex items-center justify-between px-3 py-1.5 text-left hover:bg-purple-500/10 transition-colors cursor-pointer"
+            type="button"
+            onClick={() => handlePick(c.filename)}
+            className={cn(
+              'w-full flex items-center justify-between px-3 py-3 text-left transition-colors cursor-pointer',
+              'hover:bg-purple-500/10 active:bg-purple-500/20',
+              picking === c.filename && 'bg-purple-500/20 text-purple-300',
+            )}
           >
             <span className="text-xs text-gray-300 truncate mr-2">{c.filename}</span>
-            <span className="text-[10px] text-gray-600 flex-shrink-0">{c.size_mb} MB</span>
+            <span className="text-[10px] text-gray-600 flex-shrink-0">
+              {picking === c.filename ? 'Assigning...' : `${c.size_mb} MB`}
+            </span>
           </button>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -144,7 +153,7 @@ function SlotCard({
   slot: BrollSlot;
   onApprove: (candidateId: string) => void;
   onSkip: () => void;
-  onAssignLocal: (filename: string) => void;
+  onAssignLocal: (filename: string) => Promise<any>;
 }) {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [showLibrary, setShowLibrary] = useState(false);
@@ -159,7 +168,6 @@ function SlotCard({
 
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
@@ -299,18 +307,20 @@ function SlotCard({
       )}
 
       {/* Library picker dropdown */}
-      <AnimatePresence>
-        {showLibrary && (!isResolved || editing) && (
-          <LibraryPicker
-            onPick={(filename) => {
-              onAssignLocal(filename);
+      {showLibrary && (!isResolved || editing) && (
+        <LibraryPicker
+          onPick={async (filename) => {
+            try {
+              await onAssignLocal(filename);
               setShowLibrary(false);
               setEditing(false);
-            }}
-            onClose={() => setShowLibrary(false)}
-          />
-        )}
-      </AnimatePresence>
+            } catch {
+              // Keep library open on error so user can retry
+            }
+          }}
+          onClose={() => setShowLibrary(false)}
+        />
+      )}
     </motion.div>
   );
 }
