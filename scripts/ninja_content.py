@@ -103,116 +103,47 @@ def extract_topic_from_script(script_text: str) -> str:
 
 
 def identify_broll_moments(script_text, audio_duration, num_moments=3, clip_duration=4.0):
-    """Use Gemini Flash to identify hype moments in the script for B-roll insertion.
+    """Calculate evenly-spaced B-roll insertion points using an alternating pattern.
 
-    Returns: [{"timestamp": 12.5, "duration": 4.0, "topic": "Nioh 3"}, ...]
+    Creates avatar → broll → avatar → broll → ... pattern that scales to any
+    combination of video length, clip count, and clip duration.
+
+    Returns: [{"timestamp": 12.5, "duration": 4.0, "topic": "clip_1"}, ...]
     """
-    print(f"   🧠 Identifying {num_moments} B-roll moments in script...")
+    total_broll = num_moments * clip_duration
+    total_avatar = audio_duration - total_broll
 
-    min_gap = 8.0       # Minimum seconds between cuts
-    pad = 3.0            # No cuts in first/last 3s
-    usable = audio_duration - 2 * pad
+    if total_avatar < 2.0:
+        # Not enough room for avatar — reduce clip count until it fits
+        while num_moments > 0 and (audio_duration - num_moments * clip_duration) < 2.0:
+            num_moments -= 1
+        if num_moments == 0:
+            print("   ⚠️ Video too short for B-roll with these settings")
+            return []
+        total_broll = num_moments * clip_duration
+        total_avatar = audio_duration - total_broll
 
-    if usable < min_gap:
-        print("   ⚠️ Audio too short for B-roll")
-        return []
+    # Distribute avatar time evenly across (num_moments + 1) segments
+    # Pattern: [avatar] [broll] [avatar] [broll] ... [avatar]
+    avatar_segment = total_avatar / (num_moments + 1)
 
-    # Clamp num_moments to what fits spatially
-    max_possible = max(1, int(usable / min_gap))
-    num_moments = min(num_moments, max_possible)
-    broll_pct = round(num_moments * clip_duration / audio_duration * 100)
-    print(f"   📊 B-roll budget: {num_moments} clips × {clip_duration}s = {num_moments * clip_duration}s / {audio_duration:.0f}s ({broll_pct}%)")
-
-    try:
-        from google import genai
-        from google.genai import types
-
-        project = os.environ.get('GOOGLE_CLOUD_PROJECT', 'gen-lang-client-0601509945')
-        location = os.environ.get('GOOGLE_CLOUD_LOCATION', 'us-central1')
-        client = genai.Client(vertexai=True, project=project, location=location)
-
-        prompt = f"""Analyze this video script and identify the {num_moments} most visually exciting moments —
-the sentences where game footage or action shots would have the most impact.
-
-Script:
-{script_text}
-
-For each moment, return a JSON array of objects with:
-- "sentence": the exact sentence or phrase from the script
-- "topic": the game or subject name (1-4 words, e.g. "Nioh 3", "Avowed")
-- "position": what fraction through the script this sentence appears (0.0 to 1.0)
-
-Rules:
-- Pick moments that describe ACTION or VISUALS (trailers, gameplay, reveals)
-- Avoid intro/outro lines
-- Spread them out across the script
-- Return ONLY valid JSON array, no other text
-
-JSON:"""
-
-        response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.3,
-                max_output_tokens=500,
-            )
-        )
-
-        # Parse LLM response
-        import re
-        text = response.text.strip()
-        # Extract JSON array from response
-        match = re.search(r'\[.*\]', text, re.DOTALL)
-        if match:
-            raw_moments = json.loads(match.group())
-        else:
-            raise ValueError("No JSON array in response")
-
-        # Convert position fractions to timestamps
-        moments = []
-        for m in raw_moments[:num_moments]:
-            pos = float(m.get("position", 0.5))
-            ts = pad + pos * usable
-            moments.append({
-                "timestamp": round(ts, 2),
-                "duration": clip_duration,
-                "topic": m.get("topic", ""),
-                "sentence": m.get("sentence", ""),
-            })
-
-        # Enforce min_gap: remove moments too close together
-        moments.sort(key=lambda x: x["timestamp"])
-        filtered = []
-        for m in moments:
-            if not filtered or (m["timestamp"] - filtered[-1]["timestamp"]) >= min_gap:
-                # Also ensure B-roll doesn't extend past end
-                if m["timestamp"] + m["duration"] <= audio_duration - 1.0:
-                    filtered.append(m)
-
-        if filtered:
-            print(f"   ✅ Found {len(filtered)} moments: {[f'{m['topic']}@{m['timestamp']:.1f}s' for m in filtered]}")
-            return filtered
-
-    except Exception as e:
-        print(f"   ⚠️ LLM moment detection failed ({e}), using even distribution...")
-
-    # Fallback: evenly distribute cuts
-    # Use generic topics so resolve_broll_clips can still assign clips via fuzzy match
-    fallback_topics = ["gameplay", "action", "combat", "game"]
-    interval = usable / (num_moments + 1)
     moments = []
     for i in range(num_moments):
-        ts = pad + interval * (i + 1)
-        if ts + clip_duration <= audio_duration - 1.0:
-            moments.append({
-                "timestamp": round(ts, 2),
-                "duration": clip_duration,
-                "topic": fallback_topics[i % len(fallback_topics)],
-                "sentence": "",
-            })
+        ts = avatar_segment * (i + 1) + clip_duration * i
+        moments.append({
+            "timestamp": round(ts, 2),
+            "duration": clip_duration,
+            "topic": f"clip_{i + 1}",
+            "sentence": "",
+        })
 
-    print(f"   📍 Fallback: {len(moments)} evenly spaced moments")
+    broll_pct = round(total_broll / audio_duration * 100)
+    timeline = []
+    for i, m in enumerate(moments):
+        timeline.append(f"avatar {avatar_segment:.1f}s → broll {clip_duration}s")
+    timeline.append(f"avatar {avatar_segment:.1f}s")
+    print(f"   📊 B-roll: {num_moments} × {clip_duration}s = {total_broll:.0f}s ({broll_pct}%) | Avatar: {total_avatar:.0f}s ({100-broll_pct}%)")
+    print(f"   🎬 Pattern: {' → '.join(timeline)}")
     return moments
 
 
