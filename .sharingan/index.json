@@ -33,9 +33,9 @@
     {
       "name": "fastapi-realtime-spa",
       "domain": "Full-Stack/Dashboard",
-      "level": "2-tomoe",
+      "level": "3-tomoe",
       "description": "FastAPI + WebSocket broadcast + React 19 + Tailwind v4 \u2014 complete pattern for private real-time dashboards. Validated through The Dojo build.",
-      "last_updated": "2026-02-19",
+      "last_updated": "2026-02-23",
       "keywords": [
         "fastapi",
         "websocket",
@@ -65,9 +65,9 @@
     {
       "name": "fal-ai-image-gen",
       "domain": "Image/Character Art",
-      "level": "2-tomoe",
-      "description": "fal.ai image generation for consistent character poses \u2014 Flux model comparison, LoRA training, and why kontext is wrong for pose variation.",
-      "last_updated": "2026-02-19",
+      "level": "3-tomoe",
+      "description": "fal.ai image generation for consistent character art \u2014 FLUX.2 model family, LoRA training workflows, API parameter reference, and production patterns.",
+      "last_updated": "2026-02-23",
       "keywords": [
         "fal",
         "fal-ai",
@@ -96,7 +96,7 @@
     {
       "name": "tauri-v2-overlay",
       "domain": "Desktop/Glitch",
-      "level": "2-tomoe",
+      "level": "3-tomoe",
       "description": "Tauri v2 for transparent always-on-top Linux desktop overlay \u2014 config, system tray, Rust commands, Python sidecar, WebSocket IPC, and Linux X11/Wayland gotchas.",
       "last_updated": "2026-02-19",
       "keywords": [
@@ -130,7 +130,7 @@
     {
       "name": "css-sprite-animation",
       "domain": "Animation/Glitch",
-      "level": "2-tomoe",
+      "level": "3-tomoe",
       "description": "CSS animation system for 2.5D layered sprite overlays \u2014 breathing, state machines, sprite swaps, and Tauri overlay performance gotchas.",
       "last_updated": "2026-02-19",
       "keywords": [
@@ -194,7 +194,7 @@
     {
       "name": "gemini-models",
       "domain": "AI/LLM",
-      "level": "2-tomoe",
+      "level": "3-tomoe",
       "description": "Google Gemini model family \u2014 specs, benchmarks, API access. Focus on Gemini 3.1 Pro (Feb 2026) for Shadow Council and multi-LLM workflows.",
       "last_updated": "2026-02-19",
       "keywords": [
@@ -273,7 +273,7 @@
     {
       "name": "kokoro-tts",
       "domain": "Audio/TTS",
-      "level": "2-tomoe",
+      "level": "3-tomoe",
       "description": "Open-source 82M-param TTS model \u2014 blazing fast and free but emotionally flat compared to ElevenLabs V3. Good for draft audio, Glitch notifications, Sharingan podcasts. Not for YouTube content.",
       "last_updated": "2026-02-20",
       "keywords": [
@@ -332,25 +332,6 @@
       ]
     },
     {
-      "name": "daily-observations",
-      "domain": "Meta/Workflow",
-      "level": "2-tomoe",
-      "description": "Daily running log of work observations from chat history and daily review.",
-      "last_updated": "2026-02-22",
-      "keywords": [
-        "daily",
-        "log",
-        "observations",
-        "workflow",
-        "projects",
-        "activity",
-        "meta",
-        "digest"
-      ],
-      "can_do_from_cli": true,
-      "auto_generated": true
-    },
-    {
       "name": "workflow-insights",
       "domain": "Meta/Workflow",
       "level": "mangekyo",
@@ -375,9 +356,9 @@
     {
       "name": "modal-serverless-gpu",
       "domain": "Cloud/GPU",
-      "level": "2-tomoe",
-      "description": "Serverless GPU cloud — deploy AI workloads via Python SDK with sub-second cold starts, elastic scaling, pay-per-second billing. $30/mo free credits.",
-      "last_updated": "2026-02-22",
+      "level": "3-tomoe",
+      "description": "Serverless GPU cloud \u2014 deploy AI workloads via Python SDK with sub-second cold starts, elastic scaling, pay-per-second billing. $30/mo free credits.",
+      "last_updated": "2026-02-23",
       "keywords": [
         "modal",
         "serverless",
@@ -433,14 +414,220 @@
       ],
       "sources_count": 8,
       "can_do_from_cli": true
+    },
+    {
+      "name": "dual-avatar-production",
+      "domain": "Video/Avatar",
+      "level": "3-tomoe",
+      "description": "Production scroll for dual-anchor animated news desk video pipeline. Covers platform selection, idle/reaction clip solutions, broadcast camera angle patterns, FFmpeg composite recipes, audio normalization, and cost analysis.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "dual-avatar",
+        "news-desk",
+        "kling",
+        "avatar",
+        "lip-sync",
+        "ffmpeg",
+        "composite",
+        "multi-character",
+        "omnihuman",
+        "dzine",
+        "hunyuan",
+        "multitalk",
+        "fasterliveportrait",
+        "camera-angles",
+        "broadcast",
+        "reaction-clips",
+        "idle-clips",
+        "split-screen",
+        "shorts"
+      ],
+      "sources_count": 12,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "remotion-video-code",
+        "kokoro-tts"
+      ]
+    },
+    {
+      "name": "kling-avatar-api",
+      "domain": "Video/Avatar",
+      "level": "3-tomoe",
+      "description": "Kling Avatar v2 API via fal.ai — talking-head video generation from image + audio. Complete API reference, prompt engineering, pricing, dual-anchor pipeline, Kling 3.0 O3 multi-character, platform comparison.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "kling",
+        "avatar",
+        "fal-ai",
+        "fal",
+        "lip-sync",
+        "video-generation",
+        "talking-head",
+        "ai-avatar",
+        "kuaishou",
+        "kling-3",
+        "o3",
+        "multi-character",
+        "prompt-engineering",
+        "expressiveness",
+        "image-to-video",
+        "reaction-clips",
+        "dual-anchor",
+        "heygen",
+        "synthesia",
+        "webhook",
+        "async",
+        "cost-optimization",
+        "shorts",
+        "youtube"
+      ],
+      "sources_count": 9,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "dual-avatar-production",
+        "kokoro-tts",
+        "remotion-video-code"
+      ]
+    },
+    {
+      "name": "daily-observations",
+      "domain": "Meta/Workflow",
+      "level": "2-tomoe",
+      "description": "Daily running log of work observations from chat history and daily review.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "daily",
+        "log",
+        "observations",
+        "workflow",
+        "projects",
+        "activity",
+        "meta",
+        "digest"
+      ],
+      "can_do_from_cli": true,
+      "auto_generated": true
+    },
+    {
+      "name": "lazygit-tui",
+      "domain": "CLI/Git",
+      "level": "2-tomoe",
+      "description": "Terminal UI for git \u2014 visual staging, diff viewer, branch management, commit history, stash management.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "lazygit",
+        "git",
+        "tui",
+        "staging",
+        "diff",
+        "commit",
+        "branch",
+        "stash",
+        "terminal",
+        "cli"
+      ],
+      "sources_count": 2,
+      "can_do_from_cli": true,
+      "related_scrolls": []
+    },
+    {
+      "name": "zoxide-smart-cd",
+      "domain": "CLI/Navigation",
+      "level": "2-tomoe",
+      "description": "Smart cd replacement \u2014 frecency-based directory jumper with fuzzy matching.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "zoxide",
+        "cd",
+        "navigation",
+        "directory",
+        "fuzzy",
+        "frecency",
+        "jump",
+        "cli",
+        "z"
+      ],
+      "sources_count": 2,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "ranger-file-browser"
+      ]
+    },
+    {
+      "name": "eza-modern-ls",
+      "domain": "CLI/Files",
+      "level": "1-tomoe",
+      "description": "Modern ls replacement with icons, color coding, git status, tree views, and directory grouping.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "eza",
+        "ls",
+        "files",
+        "tree",
+        "icons",
+        "git-status",
+        "cli",
+        "directory"
+      ],
+      "sources_count": 2,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "ranger-file-browser"
+      ]
+    },
+    {
+      "name": "btop-system-monitor",
+      "domain": "CLI/System",
+      "level": "1-tomoe",
+      "description": "Rich terminal system monitor \u2014 CPU, memory, network, disk, and process management TUI.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "btop",
+        "monitor",
+        "system",
+        "cpu",
+        "memory",
+        "processes",
+        "tui",
+        "htop",
+        "docker",
+        "cli"
+      ],
+      "sources_count": 2,
+      "can_do_from_cli": true,
+      "related_scrolls": []
+    },
+    {
+      "name": "ranger-file-browser",
+      "domain": "CLI/Files",
+      "level": "1-tomoe",
+      "description": "Terminal file browser with vim navigation, 3-column preview, and file operations. GUI file manager replacement for headless servers.",
+      "last_updated": "2026-02-23",
+      "keywords": [
+        "ranger",
+        "file-browser",
+        "file-manager",
+        "vim",
+        "terminal",
+        "preview",
+        "headless",
+        "cli",
+        "navigation"
+      ],
+      "sources_count": 2,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "zoxide-smart-cd",
+        "eza-modern-ls"
+      ]
     }
   ],
   "stats": {
-    "total_scrolls": 14,
+    "total_scrolls": 21,
     "by_level": {
-      "1-tomoe": 0,
-      "2-tomoe": 8,
-      "3-tomoe": 5,
+      "1-tomoe": 3,
+      "2-tomoe": 3,
+      "3-tomoe": 14,
       "mangekyo": 1
     }
   }
