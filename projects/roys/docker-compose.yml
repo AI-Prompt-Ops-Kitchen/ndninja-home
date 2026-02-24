@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: roys_user
+      POSTGRES_PASSWORD: roys_pass
+      POSTGRES_DB: roys
+    ports:
+      - "5433:5432"
+    volumes:
+      - roys_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U roys_user -d roys"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: .
+    ports:
+      - "8070:8070"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://roys_user:roys_pass@db:5432/roys
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-not-for-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:8070}
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  roys_pgdata:

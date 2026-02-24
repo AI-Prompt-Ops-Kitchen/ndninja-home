@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+node_modules/
+backend/static/
+dist/
+.venv/
+*.egg-info/
+.pytest_cache/
+alembic/versions/__pycache__/
