@@ -49,7 +49,7 @@ export default function Layout() {
       </main>
       <footer className="border-t border-navy-200 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-navy-500 text-sm">
-          Roystonea Systems &copy; {new Date().getFullYear()}
+          Roystonea Documents &copy; {new Date().getFullYear()}
         </div>
       </footer>
     </div>

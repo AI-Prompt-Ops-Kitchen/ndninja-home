@@ -6,7 +6,7 @@ from pathlib import Path
 from config import get_settings
 from routers import health, standards, sops, assembly, auth, admin
 
-app = FastAPI(title="ROYS — Roystonea Systems", version="0.1.0")
+app = FastAPI(title="ROYS — Roystonea Documents", version="0.1.0")
 
 settings = get_settings()
 app.add_middleware(

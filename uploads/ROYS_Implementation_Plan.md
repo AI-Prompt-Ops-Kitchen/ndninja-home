@@ -1,4 +1,4 @@
-# ROYS (Roystonea Systems) — Implementation Plan
+# ROYS (Roystonea Documents) — Implementation Plan
 ## All Phases: From Foundation to Launch
 ### February 22, 2026 — CONFIDENTIAL
 

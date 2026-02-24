@@ -1,4 +1,4 @@
-# ROYS (Roystonea Systems) — Technical Architecture Proposal
+# ROYS (Roystonea Documents) — Technical Architecture Proposal
 ## Version 1.0 — February 22, 2026
 ### CONFIDENTIAL — Roystonea Compliance LLC
 

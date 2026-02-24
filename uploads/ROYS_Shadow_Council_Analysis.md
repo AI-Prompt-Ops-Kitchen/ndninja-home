@@ -1,4 +1,4 @@
-# ROYS (Roystonea Systems) — Shadow Council Analysis
+# ROYS (Roystonea Documents) — Shadow Council Analysis
 ## A Comprehensive Multi-Perspective Strategic Review
 ### Prepared for Evelyn Rodriguez Gomez, Roystonea Compliance LLC
 ### February 22, 2026
