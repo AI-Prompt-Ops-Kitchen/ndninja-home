@@ -48,6 +48,23 @@ elif os.environ.get('FAL_KEY') and not os.environ.get('FAL_AI_API_KEY'):
 # Add scripts directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
+# Rasengan pipeline stage emitter (fire-and-forget, never blocks)
+_RASENGAN_URL = os.environ.get("RASENGAN_URL", "http://127.0.0.1:8050")
+
+def _pipeline_stage(job_id: str, stage: str) -> None:
+    """Emit a pipeline.stage_entered event to Rasengan. Never raises."""
+    if not job_id:
+        return
+    try:
+        requests.post(
+            f"{_RASENGAN_URL}/events",
+            json={"event_type": "pipeline.stage_entered", "source": "content-worker",
+                  "payload": {"job_id": job_id, "stage": stage}},
+            timeout=2,
+        )
+    except Exception:
+        pass
+
 # Paths
 SCRIPT_DIR = Path(__file__).parent
 PROJECT_DIR = SCRIPT_DIR.parent
@@ -102,7 +119,7 @@ def extract_topic_from_script(script_text: str) -> str:
     return script_text[100:250] if len(script_text) > 250 else script_text
 
 
-def identify_broll_moments(script_text, audio_duration, num_moments=3, clip_duration=4.0):
+def identify_broll_moments(script_text, audio_duration, num_moments=4, clip_duration=10.0):
     """Calculate evenly-spaced B-roll insertion points using an alternating pattern.
 
     Creates avatar → broll → avatar → broll → ... pattern that scales to any
@@ -212,13 +229,14 @@ def resolve_broll_clips(moments, broll_dir=None, broll_map=None, broll_clips=Non
         if "clip_path" in m:
             continue
 
-        # 2. Scan broll_dir filenames
-        for stem, filepath in dir_files.items():
-            # Fuzzy: check if topic words appear in filename or vice versa
-            topic_words = topic.split()
-            if any(w in stem for w in topic_words) or any(stem_part in topic for stem_part in stem.split('_')):
-                m["clip_path"] = filepath
-                break
+        # 2. Scan broll_dir filenames (skip generic topic names like "clip_1")
+        if not topic.startswith("clip_"):
+            for stem, filepath in dir_files.items():
+                # Fuzzy: check if topic words appear in filename or vice versa
+                topic_words = [w for w in topic.split() if len(w) > 3]
+                if any(w in stem for w in topic_words) or any(stem_part in topic for stem_part in stem.split('_') if len(stem_part) > 3):
+                    m["clip_path"] = filepath
+                    break
 
         if "clip_path" in m:
             continue
@@ -233,13 +251,84 @@ def resolve_broll_clips(moments, broll_dir=None, broll_map=None, broll_clips=Non
 
     resolved = [m for m in moments if "clip_path" in m]
 
-    # Skip unmatched moments instead of forcing random clips
+    # Fallback: assign remaining clips from broll_dir in order (for Shorts
+    # where topics are generic like "clip_1", "clip_2")
+    # Each clip is used at most once — no repeats
+    if len(resolved) < len(moments) and dir_files:
+        used = {m.get("clip_path") for m in moments if "clip_path" in m}
+        available = [fp for fp in dir_files.values() if fp not in used]
+        unresolved = [m for m in moments if "clip_path" not in m]
+        for i, m in enumerate(unresolved):
+            if i < len(available):
+                m["clip_path"] = available[i]
+                used.add(available[i])  # track so we don't double-assign
+        newly_resolved = [m for m in unresolved if "clip_path" in m]
+        if newly_resolved:
+            print(f"   🎲 Assigned {len(newly_resolved)} unique B-roll clips from directory")
+        resolved = [m for m in moments if "clip_path" in m]
+
     if len(resolved) < len(moments):
         skipped = len(moments) - len(resolved)
-        print(f"   ⏭️  Skipped {skipped} moments with no matching B-roll (no round-robin)")
+        print(f"   ⏭️  Skipped {skipped} moments with no matching B-roll")
+
+    # Detect crop_mode for each resolved clip: "ui_crop" for still/low-motion
+    # screenshots (menus, slides), "center" for gameplay/cinematics
+    for m in moments:
+        if "clip_path" not in m:
+            continue
+        if m.get("crop_mode"):
+            continue  # already set (e.g. by caller)
+        m["crop_mode"] = _detect_crop_mode(m["clip_path"])
 
     print(f"   ✅ Resolved {len(resolved)}/{len(moments)} clips: {[m['topic'] for m in resolved]}")
+    ui_crops = [m for m in resolved if m.get("crop_mode") == "ui_crop"]
+    if ui_crops:
+        print(f"   🔍 UI crop mode on {len(ui_crops)} clip(s): {[m['topic'] for m in ui_crops]}")
     return moments
+
+
+def _detect_crop_mode(clip_path: str) -> str:
+    """Detect whether a B-roll clip is a still image/UI screenshot or real footage.
+
+    Returns "ui_crop" for stills/low-motion (menus, screenshots, slides) or
+    "center" for gameplay/cinematics with actual motion.
+    """
+    try:
+        # Quick motion check: extract 2 frames and compare file sizes
+        with tempfile.TemporaryDirectory() as td:
+            probe = subprocess.run([
+                "ffprobe", "-v", "quiet", "-show_entries", "format=duration",
+                "-of", "csv=p=0", clip_path
+            ], capture_output=True, text=True, timeout=10)
+            try:
+                duration = float(probe.stdout.strip())
+            except (ValueError, AttributeError):
+                return "center"
+
+            if duration < 0.5:
+                return "center"
+
+            t1 = max(0.1, duration * 0.2)
+            t2 = max(0.2, duration * 0.8)
+            f1 = os.path.join(td, "a.jpg")
+            f2 = os.path.join(td, "b.jpg")
+            for ts, fp in [(t1, f1), (t2, f2)]:
+                subprocess.run([
+                    "ffmpeg", "-y", "-ss", str(ts), "-i", clip_path,
+                    "-vframes", "1", "-q:v", "2", fp
+                ], capture_output=True, timeout=10)
+
+            if os.path.exists(f1) and os.path.exists(f2):
+                s1 = os.path.getsize(f1)
+                s2 = os.path.getsize(f2)
+                if max(s1, s2) == 0:
+                    return "center"
+                size_ratio = min(s1, s2) / max(s1, s2)
+                if size_ratio > 0.95:
+                    return "ui_crop"
+    except Exception:
+        pass
+    return "center"
 
 
 def assemble_with_broll(avatar_video, moments, output_path, crossfade=0.15):
@@ -294,9 +383,19 @@ def assemble_with_broll(avatar_video, moments, output_path, crossfade=0.15):
 
             # B-roll segment (scaled to match avatar dimensions)
             broll_file = tmpdir / f"broll_{i}.mp4"
+            crop_mode = m.get("crop_mode", "center")
             if height > width:
-                # Portrait/Shorts — scale to cover then center-crop to fill frame
-                broll_vf = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},fps=30"
+                if crop_mode == "ui_crop":
+                    # UI screenshot: scale to fill height, then horizontal pan left→right
+                    # so the viewer sees the full 16:9 content at readable zoom
+                    broll_vf = (
+                        f"scale=-1:{height},"
+                        f"crop={width}:{height}:'(iw-{width})*t/{dur}':0,"
+                        f"fps=30"
+                    )
+                else:
+                    # Standard center-crop for gameplay/cinematics
+                    broll_vf = f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height},fps=30"
             else:
                 # Landscape — scale+pad (preserve letterbox)
                 broll_vf = f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:-1:-1,fps=30"
@@ -501,7 +600,7 @@ def generate_tts(script_text, output_path, voice_id=DEFAULT_VOICE_ID, pad_start=
     # Expressiveness is driven by audio tags ([excited], [laughs], etc.) not settings knobs
     # Higher similarity_boost preserves voice identity when using Creative stability
     VOICE_STYLES = {
-        "expressive": {"stability": 0.0, "similarity_boost": 0.85},
+        "expressive": {"stability": 0.0, "similarity_boost": 0.75},
         "natural":    {"stability": 0.5, "similarity_boost": 0.80},
         "calm":       {"stability": 1.0, "similarity_boost": 0.75},
     }
@@ -597,15 +696,19 @@ def get_audio_duration(audio_path):
     return float(result.stdout.strip())
 
 
-def generate_kling_avatar_video(image_path, audio_path, output_path, model="standard"):
+def generate_kling_avatar_video(image_path, audio_path, output_path, model="standard",
+                                prompt=None, negative_prompt=None, cfg_scale=None):
     """Generate lip-synced video using fal.ai Kling Avatar v2.
-    
+
     Args:
         image_path: Path to character image
         audio_path: Path to audio file (voice)
         output_path: Where to save the generated video
         model: "standard" ($0.056/sec) or "pro" ($0.115/sec, higher quality)
-    
+        prompt: Custom prompt for expressiveness. If None, uses default anchor prompt.
+        negative_prompt: What to avoid. If None, uses Kling default.
+        cfg_scale: Classifier Free Guidance (0.0-1.0). Higher = stricter prompt adherence.
+
     Returns:
         output_path on success, None on failure
     """
@@ -660,13 +763,19 @@ def generate_kling_avatar_video(image_path, audio_path, output_path, model="stan
     start_time = time.time()
     
     try:
+        default_prompt = "Static camera, stable framing. Animated character presenting directly to camera. Expressive eyes that blink and emote, natural head movements with nodding, eyebrow raises for emphasis. Maintain eye contact. No camera movement or zoom."
+        args = {
+            "image_url": image_url,
+            "audio_url": audio_url,
+            "prompt": prompt or default_prompt,
+        }
+        if negative_prompt:
+            args["negative_prompt"] = negative_prompt
+        if cfg_scale is not None:
+            args["cfg_scale"] = cfg_scale
         result = fal_client.subscribe(
             model_id,
-            arguments={
-                "image_url": image_url,
-                "audio_url": audio_url,
-                "prompt": "Static camera, stable framing. Professional news anchor presenting directly to camera. Subtle head movements with natural nodding, maintain consistent eye contact. No camera movement or zoom."
-            },
+            arguments=args,
             with_logs=True
         )
     except Exception as e:
@@ -995,6 +1104,160 @@ def format_srt_time(seconds):
     return f"{hours:02d}:{minutes:02d}:{secs:02d},{millis:03d}"
 
 
+def add_sfx_layer(video_path, output_path, broll_moments=None, script_text=None, sfx_volume=0.35):
+    """Mix ElevenLabs SFX into the video audio at B-roll transitions and key moments.
+
+    SFX library (ElevenLabs Sound Effects v2, ~/assets/sfx/):
+    - whoosh_transition: B-roll cut transitions (in and out)
+    - glitch_transition: Alternate transition sound for variety
+    - impact_hit: Dramatic emphasis on key reveals
+    - tension_rise: Builds into the "Here's what I actually think" opinion line
+    - news_sting: Opening news hook emphasis
+
+    Args:
+        video_path: Input video with dialogue audio
+        output_path: Where to write the SFX-mixed video
+        broll_moments: List of dicts with 'timestamp' keys (from identify_broll_moments)
+        script_text: The script text to scan for hype cues
+        sfx_volume: Volume of SFX relative to dialogue (0.0-1.0)
+    """
+    sfx_dir = Path(__file__).parent.parent / "assets" / "sfx"
+    if not sfx_dir.exists():
+        print("🔊 No SFX directory found, skipping...")
+        subprocess.run(["cp", video_path, output_path])
+        return output_path
+
+    # Map SFX files — ElevenLabs Sound Effects v2
+    sfx_files = {
+        "whoosh": sfx_dir / "sfx_whoosh_transition.mp3",
+        "glitch": sfx_dir / "sfx_glitch_transition.mp3",
+        "impact": sfx_dir / "sfx_impact_hit.mp3",
+        "tension": sfx_dir / "sfx_tension_rise.mp3",
+        "news_sting": sfx_dir / "sfx_news_sting.mp3",
+    }
+
+    available = {k: v for k, v in sfx_files.items() if v.exists()}
+    if not available:
+        print("🔊 No SFX files found, skipping...")
+        subprocess.run(["cp", video_path, output_path])
+        return output_path
+
+    # Get video duration for timestamp calculations
+    probe = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", video_path],
+        capture_output=True, text=True
+    )
+    try:
+        vid_duration = float(probe.stdout.strip())
+    except (ValueError, AttributeError):
+        vid_duration = 60.0  # fallback
+
+    # Build SFX cue list: [(timestamp_sec, sfx_file_path, label), ...]
+    cues = []
+
+    # 1. News sting at the very start (hook emphasis)
+    if "news_sting" in available:
+        cues.append((0.0, str(available["news_sting"]), "news_sting"))
+
+    # 2. Whoosh/glitch at B-roll transitions — alternate between them for variety
+    if broll_moments:
+        transition_sounds = []
+        if "whoosh" in available:
+            transition_sounds.append(str(available["whoosh"]))
+        if "glitch" in available:
+            transition_sounds.append(str(available["glitch"]))
+
+        if transition_sounds:
+            for idx, m in enumerate(broll_moments):
+                ts = m.get("timestamp", 0)
+                dur = m.get("duration", 3.0)
+                if ts > 0:
+                    sfx = transition_sounds[idx % len(transition_sounds)]
+                    # Whoosh INTO B-roll
+                    cues.append((max(0, ts - 0.2), sfx, "transition_in"))
+                    # Whoosh OUT of B-roll (use opposite sound)
+                    sfx_out = transition_sounds[(idx + 1) % len(transition_sounds)]
+                    cues.append((max(0, ts + dur - 0.2), sfx_out, "transition_out"))
+
+    # 3. Tension rise before the opinion line
+    if script_text and "tension" in available:
+        words = script_text.split()
+        total_words = len(words)
+        script_lower = script_text.lower()
+        # Find "here's what i actually think"
+        opinion_idx = script_lower.find("here's what i actually think")
+        if opinion_idx >= 0:
+            # Estimate word position from character position
+            words_before = len(script_text[:opinion_idx].split())
+            word_ratio = words_before / total_words
+            opinion_ts = word_ratio * vid_duration
+            # Tension rise 2s before the opinion line
+            cues.append((max(0, opinion_ts - 2.0), str(available["tension"]), "tension_rise"))
+
+    # 4. Impact hit on the opinion line itself
+    if script_text and "impact" in available:
+        opinion_idx = script_text.lower().find("here's what i actually think")
+        if opinion_idx >= 0:
+            words_before = len(script_text[:opinion_idx].split())
+            word_ratio = words_before / len(script_text.split())
+            opinion_ts = word_ratio * vid_duration
+            cues.append((opinion_ts, str(available["impact"]), "impact_hit"))
+
+    if not cues:
+        print("🔊 No SFX cues to apply, skipping...")
+        subprocess.run(["cp", video_path, output_path])
+        return output_path
+
+    # Sort cues by timestamp
+    cues.sort(key=lambda x: x[0])
+    print(f"🔊 Mixing {len(cues)} SFX cues into audio (volume={sfx_volume})")
+
+    # Build FFmpeg filter_complex
+    inputs = ["-i", video_path]
+    for _, sfx_path, _ in cues:
+        inputs.extend(["-i", sfx_path])
+
+    filter_parts = []
+    mix_inputs = ["[0:a]"]
+
+    for i, (ts, _, _) in enumerate(cues):
+        delay_ms = int(ts * 1000)
+        idx = i + 1
+        filter_parts.append(
+            f"[{idx}:a]volume={sfx_volume},adelay={delay_ms}|{delay_ms}[sfx{i}]"
+        )
+        mix_inputs.append(f"[sfx{i}]")
+
+    n = len(mix_inputs)
+    filter_parts.append(
+        f"{''.join(mix_inputs)}amix=inputs={n}:duration=first:dropout_transition=0[aout]"
+    )
+
+    filter_str = ";".join(filter_parts)
+
+    cmd = [
+        "ffmpeg", "-y",
+        *inputs,
+        "-filter_complex", filter_str,
+        "-map", "0:v", "-map", "[aout]",
+        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
+        output_path,
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"   ⚠️ SFX mixing failed: {result.stderr[:200]}")
+        subprocess.run(["cp", video_path, output_path])
+        return output_path
+
+    for ts, sfx_path, label in cues:
+        name = Path(sfx_path).stem
+        print(f"   🔊 {label} ({name}) @ {ts:.1f}s")
+    print(f"   ✅ SFX layer applied: {output_path}")
+    return output_path
+
+
 def add_background_music(video_path, output_path, music_volume=0.1):
     """Add background music (if available)."""
     music_dir = ASSETS_DIR / "music"
@@ -1168,7 +1431,7 @@ def generate_capcut_draft(video_path, audio_path, broll_clips, captions_srt, out
     return draft_id
 
 
-def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard", broll_dir=None, broll_map=None, broll_clips=None, broll_count=3, broll_duration=4.0, voice_style="expressive"):
+def run_pipeline(script_text, reference_image=None, output_name="ninja_content", multiclip=False, no_music=False, no_captions=True, broll=False, capcut=False, lip_sync=True, kenburns=False, motion=False, kling_model="standard", broll_dir=None, broll_map=None, broll_clips=None, broll_count=4, broll_duration=10.0, voice_style="expressive"):
     """Run the full content pipeline.
     
     Args:
@@ -1187,11 +1450,19 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
     print("="*60 + "\n")
     
     OUTPUT_DIR.mkdir(exist_ok=True)
-    
+
+    # Extract job_id from output_name for pipeline tracking (e.g. "ninja_dash_abc12345_...")
+    _job_id = ""
+    if output_name.startswith("ninja_dash_"):
+        parts = output_name.split("_")
+        if len(parts) >= 3:
+            _job_id = parts[2]  # the 8-char job_id prefix
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
-        
+
         # 1. Generate TTS
+        _pipeline_stage(_job_id, "tts")
         audio_path = tmpdir / "voice.mp3"
         if not generate_tts(script_text, str(audio_path), voice_style=voice_style):
             return None
@@ -1204,6 +1475,7 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
             # === LIP-SYNC MODE: Use Kling Avatar ===
             # Generates lip-synced video directly from image + audio
             # No looping needed - video matches audio duration perfectly
+            _pipeline_stage(_job_id, "avatar")
             lip_sync_video = tmpdir / "lip_sync_video.mp4"
             
             if not reference_image or not Path(reference_image).exists():
@@ -1226,6 +1498,7 @@ def run_pipeline(script_text, reference_image=None, output_name="ninja_content",
 
                 # B-roll cutaways for lip-sync mode
                 if broll:
+                    _pipeline_stage(_job_id, "broll")
                     print("\n🎬 Adding B-roll cutaways to lip-sync video...")
                     moments = identify_broll_moments(script_text, audio_duration, broll_count, broll_duration)
                     moments = resolve_broll_clips(moments, broll_dir, broll_map, broll_clips)
@@ -1444,17 +1717,30 @@ Camera locked in static medium shot. No camera movement. Studio background uncha
                 video_for_music = broll_composed
                 print("   ✅ B-roll inserted")
         
-        # 7. Add background music
+        # 7. Add SFX layer (whooshes on B-roll transitions, stings on opinion lines)
+        video_for_sfx = video_for_music
+        # SFX layer — DISABLED until quality improves from testing/experimentation
+        # Known issue: SFX at 0.0s gets clipped (needs start padding, same as TTS first-word bug)
+        # To re-enable: uncomment below and add ~0.3s padding to first cue in add_sfx_layer()
+        # _broll_moments = locals().get("moments", None)
+        # if _broll_moments or script_text:
+        #     sfx_out = tmpdir / "with_sfx.mp4"
+        #     add_sfx_layer(str(video_for_sfx), str(sfx_out),
+        #                   broll_moments=_broll_moments, script_text=script_text)
+        #     if sfx_out.exists() and sfx_out.stat().st_size > 0:
+        #         video_for_sfx = sfx_out
+
+        # 8. Add background music
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         final_output = OUTPUT_DIR / f"{output_name}_{timestamp}.mp4"
-        
+
         if no_music:
             # Just copy video to final
             import shutil
-            shutil.copy(str(video_for_music), str(final_output))
+            shutil.copy(str(video_for_sfx), str(final_output))
             print("🎵 Skipping background music (--no-music)")
         else:
-            add_background_music(str(video_for_music), str(final_output))
+            add_background_music(str(video_for_sfx), str(final_output))
         
         print("\n" + "="*60)
         print(f"✅ DONE! Output: {final_output}")
@@ -1474,8 +1760,8 @@ def main():
     mode.add_argument("--script", type=str, help="Use custom script text")
     mode.add_argument("--script-file", type=str, help="Use script from file")
     
-    parser.add_argument("--image", type=str, help="Reference image for character", 
-                        default=str(ASSETS_DIR / "reference" / "ninja_helmet_v4_hires.jpg"))
+    parser.add_argument("--image", type=str, help="Reference image for character",
+                        default=str(ASSETS_DIR / "reference" / "ninja_desk_presenter.jpeg"))
     parser.add_argument("--output", type=str, default="ninja_content", help="Output filename prefix")
     parser.add_argument("--category", type=str, default="tech", help="News category")
     parser.add_argument("--multiclip", action="store_true", 
@@ -1504,10 +1790,10 @@ def main():
                         help="Explicit keyword:file.mp4 mappings (repeatable, e.g. nioh:nioh3.mp4)")
     parser.add_argument("--broll-clips", nargs="+", default=None,
                         help="Ordered list of B-roll clip paths, assigned 1:1 to moments")
-    parser.add_argument("--broll-count", type=int, default=3,
-                        help="Number of B-roll cutaways (default: 3)")
-    parser.add_argument("--broll-duration", type=float, default=4.0,
-                        help="Duration per B-roll clip in seconds (default: 4.0)")
+    parser.add_argument("--broll-count", type=int, default=4,
+                        help="Number of B-roll cutaways (default: 4)")
+    parser.add_argument("--broll-duration", type=float, default=10.0,
+                        help="Duration per B-roll clip in seconds (default: 10.0)")
     parser.add_argument("--capcut", action="store_true",
                         help="Output as CapCut draft for manual editing (requires CapCut API server)")
     parser.add_argument("--no-lip-sync", action="store_true",
@@ -1516,7 +1802,7 @@ def main():
                         help="Use Ken Burns effect instead of lip-sync (for masked characters)")
     parser.add_argument("--motion", action="store_true",
                         help="Use Kling motion animation without lip-sync (for masked characters)")
-    parser.add_argument("--kling-model", default="standard",
+    parser.add_argument("--kling-model", default="pro",
                         choices=["standard", "pro"],
                         help="Kling Avatar quality: standard ($0.056/sec) or pro ($0.115/sec)")
     parser.add_argument("--voice-style", default="expressive",
