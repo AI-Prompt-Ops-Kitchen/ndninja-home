@@ -1,415 +1,394 @@
-# ROYS (Roystonea Documents) — Shadow Council Analysis
-## A Comprehensive Multi-Perspective Strategic Review
+# ROYS (Roystonea Documents) — Shadow Council Analysis v2
+## Updated Multi-Perspective Strategic Review — Post-Decision Assessment
 ### Prepared for Evelyn Rodriguez Gomez, Roystonea Compliance LLC
-### February 22, 2026
+### February 24, 2026
+
+---
+
+## Document History
+
+| Version | Date | Summary |
+|---------|------|---------|
+| v1 | February 22, 2026 | Initial five-perspective analysis based on Advisory Board Brief + Competitive Landscape |
+| **v2** | **February 24, 2026** | **Updated analysis incorporating Evelyn's Decisions Summary (Draft 3.0). Reflects resolved pricing, finalized build approach, and all strategic modifications.** |
 
 ---
 
 ## Table of Contents
 1. [Council Overview](#council-overview)
-2. [Synthesized Key Findings](#synthesized-key-findings)
-3. [SaaS Business Strategist Analysis](#1-saas-business-strategist)
-4. [Regulatory Affairs & Quality Systems Expert Analysis](#2-regulatory-affairs--quality-systems-expert)
-5. [Product & Technology Architect Analysis](#3-product--technology-architect)
-6. [B2B Marketing & Go-to-Market Specialist Analysis](#4-b2b-marketing--go-to-market-specialist)
-7. [Business Risk & Financial Analyst Analysis](#5-business-risk--financial-analyst)
-8. [Unified Recommendations & Next Steps](#unified-recommendations--next-steps)
-9. [Questions for Evelyn](#questions-for-evelyn)
+2. [What Changed: Key Decisions Summary](#what-changed)
+3. [Synthesized Key Findings (Updated)](#synthesized-key-findings-updated)
+4. [SaaS Business Strategist — Updated Analysis](#1-saas-business-strategist)
+5. [Regulatory Affairs & Quality Systems Expert — Updated Analysis](#2-regulatory-affairs--quality-systems-expert)
+6. [Product & Technology Architect — Updated Analysis](#3-product--technology-architect)
+7. [B2B Marketing & Go-to-Market Specialist — Updated Analysis](#4-b2b-marketing--go-to-market-specialist)
+8. [Business Risk & Financial Analyst — Updated Analysis](#5-business-risk--financial-analyst)
+9. [Unified Recommendations & Next Steps (Updated)](#unified-recommendations--next-steps)
+10. [Resolved Items](#resolved-items)
+11. [Remaining Open Items](#remaining-open-items)
 
 ---
 
 ## Council Overview
 
-Five specialized expert perspectives were brought to bear on the ROYS Advisory Board Brief and Competitive Landscape Analysis:
+The same five council members reconvened to assess Evelyn's decisions against the original analysis. This update reflects a founder who reviewed the council's work thoroughly, accepted what aligned with her expertise and market knowledge, pushed back where the council was wrong, and added strategic elements the council missed entirely.
 
 | Council Member | Focus Area |
 |---|---|
-| **SaaS Business Strategist** | Pricing, subscription economics, go-to-market, competitive moat |
-| **Regulatory Affairs & Quality Systems Expert** | Content depth, audit-readiness claims, regulatory credibility, standards expansion |
-| **Product & Technology Architect** | Bubble.io assessment, data model, MVP features, output quality, scalability |
-| **B2B Marketing & GTM Specialist** | Customer segmentation, content marketing, QMSR campaign, consultant channel |
-| **Business Risk & Financial Analyst** | TAM sizing, unit economics, opportunity cost, competitive threat timeline, go/no-go criteria |
+| **SaaS Business Strategist** | Pricing economics, subscription model, competitive moat |
+| **Regulatory Affairs & Quality Systems Expert** | Content credibility, tier structure, regulatory risks |
+| **Product & Technology Architect** | Custom stack assessment, MVP scope, technical risks |
+| **B2B Marketing & GTM Specialist** | Go-to-market strategy, positioning, channel approach |
+| **Business Risk & Financial Analyst** | Unit economics, revenue projections, go/no-go criteria |
 
-**Overall Consensus: ROYS addresses a genuine market gap with real domain expertise. The concept is strong. The execution plan needs sharpening — particularly around pricing (too low), platform choice (acceptable for MVP only), the "audit-ready" claim (needs reframing), and the QMSR timing window (must move fast).**
+**Overall Assessment: Evelyn has made disciplined, well-reasoned decisions that correct several assumptions the original analysis got wrong — particularly around target customer (established orgs, not startups), build approach (custom stack, not Bubble.io), and pricing psychology (volume play, not premium signaling). The strategic foundation is significantly stronger than what we originally proposed.**
 
 ---
 
-## Synthesized Key Findings
+## What Changed
 
-### What the Council Unanimously Agrees On
+### Resolved Since v1
+- **Pricing & tiers:** Two content tiers (Core/Enhanced), four purchase types, consulting add-on, overage pricing — all defined
+- **Build approach:** Custom stack (Python/FastAPI + React + PostgreSQL) built by husband Jeramie using Claude Code. Bubble.io eliminated.
+- **Technical docs:** Architecture and Implementation Plan completed. Phase 0 scaffolding (database, models, API, frontend shell) already built.
+- **Consulting add-on:** Adopted as core feature with defined scope and pricing
+- **Brand name:** Roystonea Documents (domain: roystoneadocs.com)
 
-1. **The content library is the real asset.** 610 requirements, 539 mappings, 567 content blocks, 81 SOPs — this represents months of genuine domain expertise encoded into a structured, reusable system. This is the core IP.
+### Key Corrections to Council Recommendations
+- **Target market:** Established organizations (labs, CROs, CMOs, pharma), not pre-submission startups
+- **QMSR timing:** Deadline already passed Feb 2, 2026 — remediation angle, not urgency campaign
+- **MDSAP expansion:** Requires TGA/PMDA/ANVISA/Health Canada buildout — strategic expansion, not quick win (council was wrong)
+- **88% coverage figure:** Flawed math — 539 is total mappings, not unique requirements covered (council was wrong)
+- **Marketing intensity:** 1 post/week, defer ROYS-specific marketing until 4-6 weeks before launch
+- **Consultant partner program:** Skip formal program at launch
 
-2. **The requirement-to-SOP traceability mapping is the killer differentiator.** Every council member identified this as the single most valuable and unique feature. No competitor offers visible, granular regulatory clause-to-procedure traceability. Lead with this in every conversation, every demo, every piece of marketing.
+### Items Removed from Scope
+AI content polishing, PDF export, gap analysis view, user dashboard, white-label for consultants, document numbering scheme, terminology substitutions, "Applies To" UI filter, investigation documentation
 
-3. **The pricing is too low.** All five perspectives converge on this: $49-$79 per SOP signals "template" rather than "expert-curated compliance system." The recommended range is $149-$299 for standard SOPs and $299-$449 for risk-integrated SOPs. At $200/hr consulting rates, even $299/SOP is a fraction of the alternative cost.
+---
 
-4. **The QMSR transition is a once-in-a-decade window.** Every council member flagged this as the most urgent strategic priority. The compliance deadline is NOW (February 2026). Speed to market matters more than feature completeness.
+## Synthesized Key Findings (Updated)
 
-5. **Bubble.io is acceptable for MVP but plan the exit.** Use it to validate, close first customers, and prove the model. But maintain the content library independently from Bubble.io, and plan migration when revenue hits $5K-$8K MRR.
+### What the Council Now Unanimously Agrees On
 
-6. **The "audit-ready" claim needs reframing.** The regulatory expert was most forceful here: "audit-ready" implies the SOP can go straight to an auditor as-is, which it cannot without organization-specific customization. Reframe as "audit-aligned" or sell the "hardest 80% done" story — which is actually more compelling and more honest.
+1. **The content library remains the core IP.** 610 requirements, 539 mappings, 567 content blocks, 81 SOPs. This has not changed and is the foundation everything else builds on.
 
-7. **Consultants are the golden distribution channel.** Quality/regulatory consultants who serve multiple clients are the highest-LTV segment and a force-multiplier for distribution. Build the consultant partner program early.
+2. **Traceability mapping is still the killer differentiator.** The tier split between reference-level (Core) and full traceability matrix (Enhanced) is a sound way to monetize this advantage. No competitor offers this at any tier.
 
-8. **The AI threat has a 12-18 month window.** Expert-curated content has a clear advantage today, but the gap narrows. By 2028, AI-generated compliance content will be "good enough" for many use cases. ROYS must build additional moats (brand trust, audit outcome data, regulatory update velocity, customer relationships) within this window.
+3. **The custom build is the right long-term decision.** Eliminating Bubble.io removes vendor lock-in, platform cost, and the inevitable migration pain. With a capable builder using Claude Code, the 14-18 week timeline is acceptable.
 
-### Where the Council Diverges
+4. **The consulting add-on is the strongest strategic addition.** The council undervalued the consulting-to-software pipeline. Evelyn's dual revenue model (software + consulting) hedges risk and creates a natural trust-building loop.
 
-| Topic | Optimistic View | Cautious View |
+5. **Pricing is lower than we recommended but internally consistent.** The Planet Fitness psychology — low enough to not cancel, below purchasing thresholds, 3:1 single-to-sub ratio — is a coherent strategy. The volume requirements are higher, but the near-zero infrastructure cost makes this viable.
+
+6. **Risk-based content as baseline is correct.** The regulatory expert's original recommendation to make this baseline (not premium) has been adopted. Modern standards require it. An SOP without risk elements signals amateur authorship.
+
+7. **The QMSR update is a launch blocker, not a post-launch patch.** Every 21 CFR 820 SOP must reflect QMSR alignment before the first sale. This is non-negotiable.
+
+### Where the Council Still Sees Risk
+
+| Risk | Severity | Flagged By |
 |---|---|---|
-| **Year 1 Revenue** | $75K-$150K achievable (Marketing, SaaS strategists) | $15K-$75K more realistic (Risk analyst) |
-| **Launch Scope** | All 5 standards from day one (Product architect) | ISO 13485 only, expand after validation (Risk analyst) |
-| **Subscription Model** | Viable with regulatory update framing (SaaS strategist) | May not justify recurring revenue as currently designed (Risk analyst) |
-| **Risk-based content tier** | Smart premium differentiation (SaaS strategist) | Should be baseline, not premium — modern standards require it (Regulatory expert) |
+| Launch catalog size may be too small for subscriptions | High | SaaS Strategist |
+| Content matrix completeness for all combo keys | High | Product Architect |
+| Customer acquisition cost at lower price points | Medium | Risk Analyst |
+| Subscription conversion ratio uncertainty | Medium | Risk Analyst, SaaS Strategist |
+| 14-18 weeks of zero revenue during build | Medium | SaaS Strategist |
+| Time allocation drift (10 hrs/week constraint) | Medium | Risk Analyst |
+| Mini-FMEA appendix liability if poorly scoped | Low | Regulatory Expert |
 
 ---
 
 ## 1. SaaS Business Strategist
 
-### Pricing Model: Raise Prices Significantly
+### Pricing Assessment: The Planet Fitness Play
 
-The proposed $49-$79/SOP is underpriced relative to alternatives:
-- Consultant: $1,500-$4,500 per SOP
-- Medical Device Academy bundle: $500-$1,000+ per SOP (all-in with customization time)
-- Internal quality engineer: $400-$2,000 per SOP in labor
+Evelyn's pricing logic is sound and internally consistent. The $49/$75 single SOP entry point eliminates purchase friction entirely — this sits below virtually every corporate procurement threshold and makes impulse buying trivial. The 3:1 single-to-subscription ratio ($49 single vs. $79/mo for 5 SOPs, effectively $15.80/each) creates a strong economic pull toward subscriptions once a buyer validates quality with their first purchase.
 
-**Recommended pricing:**
-- **Pay-per-SOP (Standard):** $149-$249
-- **Pay-per-SOP (Risk-Integrated):** $299-$449
-- **Individual Subscription:** $299-$499/month (one standard family) or $799-$1,199/month (all standards)
-- **Team Subscription:** $1,499-$2,499/month for 3-5 seats
-- **Annual discounts:** 30-35% off monthly rates
+Where the council pushed for $149+ per SOP, the math can still work at her price points — but the volume requirements change dramatically. At $79/mo Individual Core, she needs roughly 40 active subscribers to hit $3,160/mo MRR (compared to ~15 subscribers at the price range originally proposed). This is achievable in regulated industries where a single mid-size CRO might have 5-10 individual buyers, but it means the margin for error on customer acquisition is thinner.
 
-**Critical warning:** Do NOT use the phrase "AI-polished" in the premium tier description. In regulated industries, "AI-polished" *reduces* perceived value. Position as "expert-reviewed, risk-analyzed content with regulatory traceability."
+The real win in this structure is the Team tier at $199-$299/mo. One Team Annual contract at $2,990 equals roughly 38 months of a single Individual Core subscription. **The entire GTM motion should be engineered to convert individual buyers into team accounts.** Every individual purchaser should be viewed as a trojan horse into their organization.
 
-### Go-to-Market Priority Customers
+### Subscription Economics — Revised Model
 
-1. **Tier 1:** Pre-submission medical device startups (Series A/B, 10-50 employees) — highest urgency
-2. **Tier 2:** Contract research organizations and testing laboratories (GLP/ISO 17025)
-3. **Tier 3:** Quality consultants themselves — highest LTV, become a distribution channel
+Realistic 12-month targets at these prices:
 
-### Subscription Justification Tactics
+- **Months 1-3 (pre/post-launch):** Primarily one-off sales, maybe 20-30 single SOPs. Revenue: ~$1,500-$2,500 total.
+- **Months 4-8:** Convert early buyers to Individual subscriptions. Target 15-25 individual subs. MRR: $1,200-$3,000.
+- **Months 9-12:** Land 3-5 Team accounts from organizations where individuals already bought. MRR: $2,800-$5,500.
 
-- Make pay-per-SOP deliberately inferior (static export only, no updates, no cross-referencing)
-- Anchor subscription against regulatory risk, not template cost
-- Build interconnection between SOPs (cross-references create library value)
-- Offer annual commitment with 30-35% discount
+Annual revenue range: **$30K-$55K** in year one. This is modest but profitable against a ~$30/mo infrastructure cost. The consulting add-on at $99-$199 is actually the highest-margin item in the entire catalog and could meaningfully boost revenue if even 10-15% of buyers add it.
 
-### Competitive Moat Assessment
+### Go-to-Market: Custom Build Changes the Timeline
 
-- **Year 1-2:** Strong position — AI cannot match regulatory precision yet
-- **Year 2-3:** Narrowing gap — AI produces 60-70% quality
-- **Year 3-5:** Commoditization risk — moat must shift to customer relationships, audit data, and update velocity
+Building custom at 10 hrs/week across 14-18 weeks means launch is roughly June-July 2026. The QMSR deadline panic has passed, and the remediation angle ("you missed the deadline, now what?") actually has a longer shelf life than the compliance rush did.
 
-### Top 5 Actions (SaaS Strategist)
-1. Validate pricing with 10-15 contacts before building features
-2. Build the QMSR transition wedge campaign
-3. Secure 5 beta customers with testimonial agreements
-4. Launch LinkedIn content strategy immediately
-5. Define "no-go" criteria now (before emotional investment clouds judgment)
+The risk to flag: **14-18 weeks of building is 14-18 weeks of zero revenue.** She should strongly consider selling single SOPs as static Word documents before the platform launches. Manual fulfillment at $49-$75 per sale is absolutely worth it for early cash flow and customer validation.
+
+### Remaining Concerns
+
+1. **Content depth as the only moat.** The moat is Evelyn's regulatory expertise baked into the content — real but concentrated in one person.
+2. **Churn at $79/month.** Planet Fitness works at $10/month because people forget. At $79, she needs ongoing value (new SOPs, regulation updates) or subscribers will buy and cancel.
+3. **The consulting add-on could cannibalize subscriptions** if buyers prefer Evelyn's direct expertise over self-serve. Not necessarily bad, but it does not scale.
+4. **Launch catalog size.** Set a firm minimum of 20 Core SOPs before going live with subscriptions. Sell singles before that threshold.
+
+### Key Metric to Track
+
+**Individual-to-team conversion rate.** That single number determines whether this is a side income or a real business.
 
 ---
 
 ## 2. Regulatory Affairs & Quality Systems Expert
 
-### Content Library Assessment
+### Tier Structure: Regulatory Credibility Assessment
 
-610 requirements across 5 standards is credible for v1, but **EU MDR is the biggest gap.** EU MDR has 400+ requirements including annexes — if ROYS covers ~100-120, that's only 25-30% of the regulation. This is a credibility risk.
+The Core vs Enhanced differentiation is sound from a regulatory credibility standpoint. The critical decision — risk-based content as baseline in ALL tiers — is correct. Any quality professional who opens an SOP and finds zero risk consideration will immediately question whether the author understands the regulatory environment. Risk is not a premium feature; it is a fundamental expectation post-2015 in virtually every major quality framework.
 
-The 81 SOPs and 567 content blocks are reasonable. The 539 mappings covering 88% of requirements is defensible (remaining 12% likely informational/definitional).
+The tier split works well in the traceability depth. A Core document that references applicable clauses gives a quality manager enough to work with. An Enhanced document with a full traceability matrix mapping specific sections to specific clauses saves them dozens of hours of cross-referencing work. That is a genuine value differential quality professionals will recognize and pay for — it is the difference between "here is what applies" and "here is exactly where in your document each requirement is addressed." The latter is what auditors actually ask for during document review.
 
-### The "Audit-Ready" Claim — MUST Reframe
+**Caution on mini-FMEA appendix:** If included in the Enhanced tier, it must be structured as a starter framework with clear guidance that the organization must populate it with their own process-specific failure modes. Do not pre-populate risk scores — that crosses from document framework into consulting territory and creates liability. A poorly constructed FMEA template is worse than none.
 
-An auditor evaluates:
-- **Adequacy** (does it address the requirement?) — ROYS delivers this ✓
-- **Implementation evidence** — ROYS cannot deliver this ✗
-- **Organization-specific context** — ROYS cannot deliver this ✗
-- **Document control compliance** — ROYS cannot deliver this ✗
+### QMSR Content Readiness
 
-**Recommended language:** "ROYS eliminates the hardest 80% of the work — interpreting regulatory requirements and drafting compliant procedure language — so you can focus on the 20% that makes it yours."
+Evelyn is correct that 21 CFR 820 content requires QMSR updating before launch. This is non-negotiable. The QMSR (21 CFR 820 harmonized with ISO 13485:2016) took effect February 2, 2026. Any document sold today that references the old 820 structure is immediately dated.
 
-This framing is more honest AND more compelling to experienced quality professionals.
+The practical work: every SOP referencing 820 subparts needs remapping against the new QMSR structure. Section numbering changed, terminology shifted, and explicit ISO 13485 alignment means cross-references need updating throughout. This is tedious but straightforward. It should be treated as a **launch blocker**, not a post-launch patch.
 
-### Requirement-to-SOP Mapping: Genuinely Valuable
+### EU MDR Exclusion
 
-Auditors appreciate traceability matrices. Quality managers rely on them during audits. The key is granularity — mapping must be at the sub-clause level (e.g., "ISO 13485 clause 7.5.6" not just "clause 7") to be useful.
+The decision to exclude EU MDR from MVP is defensible IF the marketing does not imply international regulatory coverage. EU MDR is the single most complex regulatory framework in medical device right now, and a half-built implementation would damage credibility far more than its absence. Quality professionals in the EU MDR space are sophisticated buyers who will immediately spot gaps.
 
-### Multi-Standard Coverage: Market as Bundles, Not Breadth
+The credibility risk is minimal as long as bundle naming stays honest. "Medical Device QMS Bundle" without geographic qualifiers is fine. "Comprehensive Medical Device Regulatory Bundle" without EU MDR would raise eyebrows.
 
-Very few organizations need all 5 standards. Market as targeted combinations:
-1. **Medical Device QMS Bundle:** ISO 13485 + 21 CFR 820/QMSR + EU MDR
-2. **Laboratory Accreditation Bundle:** ISO 17025 (with optional GLP add-on)
-3. **GLP Compliance Package:** 21 CFR 58 standalone
+### Standards vs. Regulations UI Distinction
 
-The harmonized SOP approach (one procedure satisfying multiple standards simultaneously) is extremely valuable and is what consultants charge $300-500/hr to develop.
+This is a small decision with outsized credibility impact. Quality professionals are precise about this distinction, and conflating the two signals amateur understanding. ISO 13485 is a standard. 21 CFR 820 is a regulation. Getting this right in the UI earns trust before the buyer even reads a document.
 
-### Risk-Based Content: Should Be Baseline, Not Premium
+### Remaining Risks
 
-Modern standards (ISO 13485:2016, QMSR, ISO 17025:2017, EU MDR) all require risk-based thinking. An SOP without risk elements is arguably incomplete under current standards.
-
-**Restructured tiers recommended:**
-- **Core Tier ($79-$99/SOP):** Regulatory-complete content WITH risk-based elements as standard
-- **Enhanced Tier ($129-$179/SOP):** Core + implementation guidance + example forms + cross-references
-
-### Standards Expansion Roadmap (Priority Order)
-
-**Tier 1 (Add within 6 months):**
-- MDSAP (audit framework, high overlap with existing content)
-- ISO 14971:2019 (Risk Management — companion to ISO 13485)
-
-**Tier 2 (Add within 12 months):**
-- ISO 15189:2022 (Clinical Laboratory — transition deadline Dec 2027 creates urgency)
-- 21 CFR 210/211 (Pharmaceutical cGMP — massive market, requires pharma expertise)
-
-**Do NOT add:** ISO 14001, ISO 45001, ISO 27001 (not adjacent, different buyer)
-
-### Regulatory Risks to Address
-- **Customer misuse:** Strong ToS, customization prompts with placeholders in generated SOPs
-- **ISO copyright:** Paraphrase requirement descriptions rather than quoting standard text verbatim
-- **Content liability:** Professional liability insurance, clear terms establishing guidance (not regulatory advice)
-
-### Top 5 Actions (Regulatory Expert)
-1. Reframe "audit-ready" to "audit-aligned" / "the hardest 80% done"
-2. Build QMSR transition campaign in next 90 days
-3. Make risk-based content the baseline, not premium
-4. Pursue MDSAP mapping and ISO 14971 SOPs as immediate expansions
-5. Build the audit outcome feedback loop (which SOPs pass audits without findings)
+- **Content accuracy liability:** Every document needs a clear disclaimer requiring organization-specific customization. The "hardest 80% done" language helps — it implicitly communicates the remaining 20% is the buyer's responsibility.
+- **Paraphrasing standards content:** ISO and ANSI actively enforce copyright. All clause references should cite rather than reproduce.
+- **Version currency:** Standards and regulations update. A version date and applicable-edition reference on every document protects against claims of outdated content. Build this into document metadata from day one — retrofitting is painful.
 
 ---
 
 ## 3. Product & Technology Architect
 
-### Bubble.io: Acceptable for MVP, Plan the Exit
+### Custom Stack Decision
 
-**Pros:** Speed to market, no DevOps overhead, visual database modeling
-**Cons:** B2B credibility in regulated industries, data sovereignty limits, no SOC 2 for your app, vendor lock-in, performance ceiling, document generation limitations
+The pivot from Bubble.io to a custom FastAPI + React + PostgreSQL stack is fundamentally sound. The original Bubble.io recommendation optimized for speed-to-market with a non-technical founder. That constraint has been removed: Jeramie building with Claude Code changes the calculus entirely. The custom stack eliminates vendor lock-in, removes Bubble's per-workflow pricing ceiling, and gives full control over the document assembly engine — which is the core IP.
 
-**Critical recommendation:** From day one, maintain the content library (requirements, mappings, content blocks) in a separate, portable format — a PostgreSQL database or structured JSON/CSV files in a Git repository. The Bubble.io app is the delivery mechanism, not the product.
+The trade-off is real: 14-18 weeks instead of 4-6. But the Bubble exit was always coming. Building custom from day one avoids the painful migration that would have consumed similar calendar time later, with the added complexity of preserving live customer data and payment state.
 
-**Migration trigger:** $5K-$8K MRR or first enterprise deal requiring SOC 2, whichever comes first. Budget $15K-$25K and 6-8 weeks for migration to a custom stack (Next.js + PostgreSQL + Vercel or similar).
+**Verdict:** Correct call.
 
-### Data Model Recommendations
+### Architecture Assessment
 
-The schema should support:
-- **Standard versioning** (active/superseded status, effective dates)
-- **Standard combinations** (content blocks keyed to standard combos, not individual standards)
-- **Content block versioning** (full audit trail for every edit — eat your own dog food)
-- **Deterministic assembly logic** (simple lookup, not AI — same inputs = same output always)
+The stack choices are mature and well-matched:
 
-### MVP Feature Prioritization
+- **Async SQLAlchemy 2.0 + asyncpg:** Appropriate, though arguably over-engineered for document assembly that spends most compute in synchronous python-docx generation. The async foundation will not hurt. Run document generation in a thread pool executor if needed.
+- **Alembic migrations:** Correct, non-negotiable for evolving schema.
+- **JWT + bcrypt auth:** Standard and sufficient. Implement refresh token rotation. Use short-lived access tokens (15 minutes). Consider httpOnly cookies over localStorage for token storage.
+- **React 19 + Tailwind v4 + TanStack Query:** Solid frontend stack. TanStack Query handles the purchase-then-generate flow well.
+- **Combo key fallback strategy:** The most critical technical design. Lookup-based assembly (standard + regulation + template structure as composite key, falling back through progressively less specific keys) is deterministic and debuggable. Far preferable to AI generation for regulatory documents.
 
-**MVP (Weeks 1-10):**
-- Landing page, user registration, standard selection, SOP catalog
-- Single SOP generation with Word (.docx) download
-- Traceability table in the generated document
-- Stripe payment (pay-per-SOP)
-- Basic admin panel for content management
+**Phase 0 scaffolding is already built** — database models, API routers, services, schemas, seeds, and Alembic migration all in place. This is genuine progress, not planning artifacts.
 
-**v1.0 (Months 3-4):** Subscription tiers, PDF export, bundle purchasing, gap analysis view, user dashboard
+### MVP Feature Scope
 
-**v1.5 (Months 5-7):** Team accounts, light customization (company name/logo), content update alerts
+The feature list is right-sized with one concern and one gap:
 
-**v2.0 (Months 8-12):** API for eQMS integration, white-label for consultants, migration off Bubble.io
+**Concern — Template Structure Selection:** This multiplies content matrix complexity. If there are 3 structures across the standards/regulations, that is many content variants to author. Confirm the content exists before building the UI. The code is cheap; the content is the bottleneck.
 
-**Explicitly do NOT build:** Document management features, AI content generation, training management, audit scheduling
+**Gap — Transactional email:** Registration, purchase confirmation, and download link delivery require email. Not listed in the feature set. Use Resend or SendGrid; do not self-host SMTP.
 
-### Output Quality Is Everything
+**Correctly removed:** Everything cut (document management, AI generation, gap analysis, PDF export) was weight the MVP does not need. The discipline here is strong.
 
-The generated Word document IS the product. If formatting looks amateur, nothing else matters. Invest in a professional document template. The traceability table appendix is the single most valuable artifact — make it prominent, accurate, and complete.
+### Consulting Add-On: Keep It Minimal
 
-### Top 5 Actions (Product Architect)
-1. Maintain knowledge graph independently from Bubble.io
-2. Invest in document output quality before anything else
-3. Price by value, not by cost (test $199-$299 for complex SOPs)
-4. Build the gap analysis view early (most compelling UX)
-5. Plan the Bubble.io exit before you enter
+A form submission that writes to `consulting_requests` table and fires an email notification. A Calendly link in the confirmation email handles booking. One POST endpoint, one database table, one transactional email. Do not build scheduling, quoting, or CRM features.
+
+### Capacity Assessment
+
+50-100 concurrent users on a 4GB Digital Ocean droplet with FastAPI is generous headroom. Document assembly is CPU-bound but fast — a single SOP generates in under a second. Ensure generated DOCX files are streamed, not accumulated in memory. With proper streaming responses and connection pooling, this architecture handles the stated load without issue.
+
+### Technical Risks
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| Content matrix incomplete for combo keys | **High** | Validate coverage before building assembly UI. Seed scripts should fail loudly on missing keys. |
+| Stripe webhook reliability | Medium | Idempotency keys + webhook event log table. Never grant access from client-side payment confirmation. |
+| DOCX formatting across Word versions | Medium | Test in Word 2019, 365, and LibreOffice. Pin python-docx version. |
+| Auth token management | Medium | httpOnly cookies, short-lived access tokens, refresh rotation. |
+| Single-droplet availability | Low | Acceptable for MVP. Add health checks, automated restarts. Separate managed DB before scaling. |
+
+**Bottom line:** The architecture is sound, the scope is disciplined, Phase 0 is already real code. The primary risk is not technical — it is content completeness for the assembly matrix.
 
 ---
 
 ## 4. B2B Marketing & Go-to-Market Specialist
 
-### Ideal Customer Profiles (Ranked)
+### "Build First, Market Later" — Assessed
 
-| Segment | Acquisition Speed | LTV | Priority |
-|---|---|---|---|
-| **A: "Oh Shit, QMSR" MedDev Startups** | Fastest | Medium ($1,500-$4,000) | Launch with this |
-| **B: Regulatory Consultants** | Medium | Highest ($5,000-$15,000/yr) | Build channel by month 3 |
-| **C: Mid-Market Adding Standards** | Slowest | Medium-High ($3,000-$8,000) | Grows organically |
+Evelyn's decision to defer marketing until 4-6 weeks before launch is unconventional but defensible. The council's original recommendation assumed available bandwidth for parallel execution. That assumption was wrong.
 
-### QMSR Campaign — Execute Immediately
+**Benefits:** She avoids marketing vaporware. When she does launch content, she can show the actual product, actual output quality, actual workflows. In B2B regulatory, proof beats promises. She also avoids burning her LinkedIn network's attention before she has something to sell.
 
-**Core message:** "Your existing SOPs were written for the old 21 CFR 820. The QMSR changed everything. Do you know which of your SOPs are now non-compliant?"
+**Risks:** B2B sales cycles in regulated industries run 30-90 days even for low-ticket items. A 4-6 week pre-launch window means first paying customers arrive 8-12 weeks after launch, not at launch. Plan financially for that lag.
 
-**Specific campaigns:**
-1. **"QMSR SOP Gap Finder"** — Free interactive checklist, generates personalized gap report, captures qualified emails
-2. **"QMSR Countdown" LinkedIn Series** — Weekly posts highlighting specific QMSR changes and SOP implications
-3. **"Before and After" SOP Comparisons** — Literal before/after showing old 820 vs. QMSR language
-4. **"QMSR Ready" Certification Badge** — Social proof for customers and consultants
+**Revised position:** Acceptable tradeoff. Nudge the window to 6-8 weeks, not 4-6, because established organizations have procurement friction.
 
-### LinkedIn Strategy (Primary Channel — 60% of Effort)
+### Target Shift: Established Orgs Over Startups
 
-- **Profile headline:** "I help FDA-regulated companies build audit-ready SOPs in days, not months"
-- **3 posts/week:** Monday (regulatory insight), Wednesday (behind the build), Friday (practical tip)
-- **Daily engagement:** Comment on 5-10 posts from quality/regulatory professionals
-- **Connection strategy:** 10-15 targeted connections/day with personalized notes
+This is the right call and the council should have weighted it more heavily initially. Established organizations have existing budgets, existing pain (SOPs that need updating), and existing relationships Evelyn can activate.
 
-### Consultant Partner Program
+The subcontractor-to-client pipeline is particularly smart. She has worked inside these organizations. That is not a marketing angle — it is a sales advantage. The product practically pitches itself: "Remember how painful that SOP revision cycle was? I built a tool for that."
 
-**Tier 1: Consultant License ($199-$399/month or $1,999-$3,999/year)**
-- Full SOP library access, white-label customization, unlimited client deployments
-- "ROYS Certified Partner" badge, priority support
+### QMSR as a Marketing Hook
 
-**Tier 2: Referral Partner (Free)**
-- 20-25% recurring commission on referred subscriptions
-- 15-20% commission on one-time purchases
+The Feb 2 deadline weakens the urgency framing considerably. However, compliance remediation is permanent. The revised hook — "The deadline passed. Are your SOPs updated?" — works because the answer for most organizations is "no."
 
-### Messaging — NEVER Use the Word "Template"
+Do not build a campaign around QMSR alone. It belongs in the rotation as one of 3-4 pain-point themes alongside ISO 17025 accreditation prep, audit readiness, and regulatory submission documentation. One LinkedIn post on the post-deadline reality is worth doing. A series is not.
 
-"Template" cheapens positioning. Use: "SOPs," "procedures," "documentation," "compliance system." Every time "template" appears in ROYS marketing, it invites price comparison to $897 Advisera bundles.
+### Pricing Positioning
 
-### Pre-Launch Strategy (Starting NOW)
+At $49 single / $159 bundle, established orgs will not buy singles. They will buy bundles and subscriptions. The $49 price point serves as low-friction entry for individual consultants and quality managers testing with their own money before requesting team budget. The real revenue line is the $199-$299 team monthly tier.
 
-- **Week 1-2:** Waitlist landing page + QMSR Gap Analysis Checklist (lead magnet)
-- **Week 3-6:** LinkedIn content engine + recruit 10-15 beta testers + email newsletter
-- **Week 7-10:** Announce launch date, early access for waitlist, prepare launch week content
+**Caution:** Do not let $49 become the anchor in messaging. Lead with bundle and team pricing. Position single SOPs as "try one first" rather than the default.
 
-### Top 5 Actions (Marketing)
-1. Build waitlist + QMSR lead magnet (Week 1-2, $0-$19 cost)
-2. LinkedIn content engine — 3x/week starting immediately
-3. Recruit 10-15 beta testers from personal network
-4. Publish 2-3 SEO blog posts targeting QMSR keywords
-5. Design and soft-launch consultant partner program
+### Consulting-as-Funnel Strategy
+
+This is Evelyn's strongest asymmetric advantage and the council undervalued it. The platform generates leads for consulting; consulting builds trust for subscriptions. Each reinforces the other.
+
+Key execution detail: make consulting promotion contextual, not intrusive. After a user generates their third or fourth SOP, surface: "Need help implementing these across your QMS? Talk to our team." That feels like service, not sales.
+
+### Updated Recommendations (Bandwidth-Realistic)
+
+- **Now through launch:** 1 post/week on LinkedIn, rotating between regulatory pain points, behind-the-scenes product glimpses, and consulting thought leadership. No sales pitch until the product exists.
+- **6-8 weeks pre-launch:** Shift one post per week to product-specific content. Show before-and-after SOP output. Let the work speak.
+- **At launch:** Direct outreach to 20-30 contacts from professional network. Personalized messages, not mass email. These are warm leads.
+- **Post-launch:** Let early customer results drive content. One case study is worth fifty thought leadership posts.
 
 ---
 
 ## 5. Business Risk & Financial Analyst
 
-### Market Sizing
+### Recalculated Unit Economics
 
-- **TAM:** ~90,000-110,000 unique organizations globally (medical device, lab, GLP)
-- **SAM:** ~15,000-25,000 English-speaking SMBs actively building/updating QMS
-- **SOM (Year 1-3):** 50-200 customers Year 1, scaling to 500-1,000 by Year 3
+The council's original $1,500/customer assumption was aspirational. Evelyn's correction to 3-5 SOPs per established org customer is grounded in how quality departments actually buy: they have most of their documentation, they need specific gaps filled or aging documents updated.
 
-**This is a niche B2B market. Not venture-scale. Can be an excellent lifestyle/bootstrap business at $500K-$1.5M ARR.**
+**One-time customer value:**
+- Low end: 3 SOPs x $49 = $147
+- Mid: 4 SOPs x $62 (blended) = $248
+- Bundle buyer: $159-$239 (effectively $32-$48/SOP — discount but guaranteed volume)
 
-### Unit Economics
+**Subscription customer value (12-month retention):**
+- Individual: $79-$119/month = $948-$1,428/year
+- Team: $199-$299/month = $2,388-$3,588/year
 
-At $75 avg per SOP, 20 SOPs per customer = $1,500 average per customer.
+If the 3:1 single-to-subscription ratio holds, a cohort of 20 customers looks like: 15 one-time buyers at ~$200 avg ($3,000) plus 5 subscribers at ~$100/month avg ($6,000/year). That is $9,000 from 20 customers in year one. For a bootstrap project with near-zero costs, the margins are extraordinary.
 
-| Scenario | Customers | Revenue |
-|---|---|---|
-| Conservative Year 1 | 20-50 | $30K-$75K |
-| Moderate Year 1 | 50-100 | $75K-$150K |
-| Optimistic Year 1 | 100-200 | $150K-$300K |
+### Modified Go/No-Go Assessment
 
-Bubble.io costs are modest (<5% of revenue at 50+ customers). Cash break-even is easy.
+Evelyn's adjustment to 5-10 paying customers by month 3 and repeat purchases by month 6 is softer than the council's original 50+ customers / $8K MRR target, but matches the bootstrap reality: she is not burning runway, so she can afford patience.
 
-### Opportunity Cost — The Hidden Tax
+The risk with soft criteria is psychological, not financial. Without a firm kill threshold, a product can limp along indefinitely consuming 10 hours/week. At $99-$199/hour consulting rates, that is real opportunity cost — conditional on consulting opportunities existing, which currently they do not. Reassess quarterly.
 
-At $200/hr consulting, 10 hrs/week on ROYS = **$8,000/month opportunity cost.** True break-even (including opportunity cost): ~$8,500/month revenue, or ~57 subscribers at $149/month. Timeline: 12-18 months post-launch.
+**Recommended hard floor:** If month 6 shows zero repeat purchases and zero referrals, that is a product-market fit failure regardless of customer count.
 
-### Competitive Threat Timeline
+### Infrastructure Cost Advantage
 
-| Horizon | Threat Level | Reality |
-|---|---|---|
-| 6 months | LOW | AI cannot match regulatory precision. Window is open. |
-| 12 months | MODERATE | 2-3 AI compliance startups emerge. eQMS vendors market AI features. |
-| 24 months | HIGH | AI produces "good enough" first-draft SOPs. Expert advantage diminishes. |
-| 36 months | SEVERE | AI compliance content is table stakes. Moat must come from elsewhere. |
+Genuinely significant. At $30/month for Digital Ocean versus $500+/month for comparable SaaS tooling, breakeven drops to absurdly low levels. Two individual subscribers at $79/month cover all infrastructure costs with margin to spare. The custom build eliminates platform risk and creates a technical asset that appreciates over time.
 
-### Go/No-Go Framework
+### Realistic Revenue Projections
 
-**GREEN (Invest More):** 50+ customers, $8K+ MRR by month 6, NPS 40+, customers referencing SOPs in actual audits
+| Timeframe | Customers | Monthly Revenue |
+|-----------|-----------|-----------------|
+| Month 6 | 8-15 | $800-$2,500 |
+| Month 12 | 25-40, 8-12 subscribers | $1,500-$4,500 |
+| Month 18 | 50-80 (if referrals activate) | $3,000-$8,000 |
 
-**YELLOW (Keep Iterating):** 15-49 customers, $2K-$8K MRR, growth but slow, pricing pushback
+These numbers will not replace a salary. They could fund the operation, validate the market, and build toward meaningful side income.
 
-**RED (Pause/Pivot):** <15 customers, <$2K MRR, "ChatGPT does this" feedback, no repeat purchases
+### AI Competitive Threat — Revised
 
-### The Hard Questions
+Evelyn's distinction between AI capability and AI usability is the strongest counterargument. Quality professionals are process-conservative by professional obligation. They will not paste regulatory requirements into ChatGPT and trust the output for audit-facing documents. The moat is expertise baked into software plus trust that it meets regulatory standards. This holds for 2-3 years. Beyond that, AI-assisted compliance tools narrow the gap, making the consulting add-on and customer relationships the durable assets.
 
-1. **SaaS vs. consulting deliverable?** The SaaS only wins when revenue decouples from time. Until ~$15K MRR, consulting generates more per hour of Evelyn's time.
+### Top 3 Financial/Business Risks
 
-2. **Subscription justification?** Once a company has its 15-30 SOPs, the subscription must earn its keep through regulatory updates, new standards, and compliance monitoring. This needs more development.
+1. **Customer acquisition cost uncertainty.** Established orgs buy through relationships, not landing pages. If it takes 20 hours of selling effort per customer at $200 average value, the implicit acquisition cost exceeds revenue.
 
-3. **Consider a hybrid model:** "Consulting-assisted SaaS" — software generates first draft, Evelyn reviews for premium, pure self-serve at lower tier. This hedges risk and validates demand.
+2. **Subscription conversion dependency.** If the ratio flips to 5:1 single-to-sub instead of 3:1, annual revenue per 20-customer cohort drops from $9,000 to $5,400. Track this from day one.
 
-### Top 5 Actions (Risk Analyst)
-1. Pre-sell before you build — target 10 pre-sales or reassess
-2. Launch with ONE standard (ISO 13485), not five
-3. Set a financial kill switch ($5,000 cumulative revenue by month 6 or pause)
-4. Separate content from platform (portable format outside Bubble.io)
-5. Test consulting + SaaS hybrid model with next 3-5 consulting clients
+3. **Time allocation drift.** Ten hours per week is a real constraint. If build runs long, or if support/sales/content consume the maintenance hours, the product stalls without a clear mechanism to recover momentum.
 
 ---
 
 ## Unified Recommendations & Next Steps
 
-### The Council's Top 10 Priorities (Synthesized & Ranked)
+### The Council's Updated Top 10 Priorities
 
-**IMMEDIATE (Next 2 Weeks):**
+**IMMEDIATE (During Build Phase):**
 
-1. **Reframe the "audit-ready" claim.** Adopt "audit-aligned" or "the hardest 80% done" language. This is more honest AND more compelling. (Regulatory Expert, unanimous support)
+1. **Complete QMSR content update for all 21 CFR 820 SOPs.** This is a launch blocker. Begin now, in parallel with build. (Regulatory Expert — unanimous)
 
-2. **Raise the prices.** $149-$249 for standard SOPs, $299-$449 for enhanced. The current pricing signals "template" not "expert system." (All 5 council members)
+2. **Validate content matrix completeness.** Before building assembly UI, confirm content blocks exist for every combo key the platform will offer. Seed scripts should fail loudly on gaps. (Product Architect)
 
-3. **Build the waitlist + QMSR Gap Analysis lead magnet.** The window is NOW. Start capturing demand before the MVP is ready. (Marketing, SaaS strategist)
+3. **Define minimum launch catalog: 20 Core SOPs.** Do not launch subscriptions until this threshold is met. Sell singles below it. (SaaS Strategist)
 
-4. **Start LinkedIn content — 3x/week.** Don't wait for the product. Build the audience and authority now. (Marketing, SaaS strategist)
+4. **Add transactional email to the build plan.** Registration, purchase confirmation, download delivery all require it. Use Resend or SendGrid. (Product Architect)
 
-**SHORT-TERM (Weeks 3-8):**
+**PRE-LAUNCH (6-8 Weeks Before):**
 
-5. **Maintain content library independently from Bubble.io.** Store the knowledge graph (requirements, mappings, content blocks) in a portable format you control. This is your IP insurance. (Product architect, Risk analyst)
+5. **Begin LinkedIn content — 1 post/week.** Rotate between regulatory pain points, behind-the-scenes product, and consulting thought leadership. No sales pitch until product exists. (Marketing)
 
-6. **Recruit 10-15 beta testers with testimonial commitments.** In regulated industries, peer proof is the primary purchase driver. (Marketing, SaaS strategist)
+6. **Consider pre-platform sales.** Manual fulfillment of single SOPs as static Word documents for early cash flow and customer validation. (SaaS Strategist)
 
-7. **Restructure pricing tiers.** Risk-based content should be baseline (modern standards require it). Premium tier should be implementation guidance + forms + cross-references. (Regulatory expert)
+7. **Build version/edition metadata into every document.** Regulation version, document version date, applicable edition. Cannot be retrofitted easily. (Regulatory Expert)
 
-8. **Market as standard-specific bundles, not "all 5 standards."** Medical Device QMS Bundle, Lab Accreditation Bundle, GLP Package. (Regulatory expert, Marketing)
+**AT LAUNCH:**
 
-**PRE-LAUNCH (Weeks 8-12):**
+8. **Direct outreach to 20-30 warm contacts.** Personalized messages to professional network. These are relationship sales, not inbound leads. (Marketing)
 
-9. **Invest heavily in document output quality.** The generated Word doc IS the product. Professional formatting, clean traceability tables, proper headers/footers. Test with 3-5 quality managers: "Would you bring this to an FDA audit?" (Product architect)
+9. **Lead with bundle and team pricing in messaging.** Position $49 single as "try one first," not the anchor. (Marketing, SaaS Strategist)
 
-10. **Define go/no-go criteria before launch.** GREEN: 50+ customers, $8K MRR by month 6. RED: <15 customers, <$2K MRR. Write it down and commit. (Risk analyst)
-
-### The Strategic Narrative
-
-ROYS sits at a rare intersection: genuine domain expertise + a clear market gap + perfect regulatory timing (QMSR). The content library is built. The competitive landscape shows no one doing what ROYS does. The QMSR transition creates urgency that no amount of marketing could manufacture.
-
-The central risk is not the market or the product — it's execution speed. Every month of delay narrows the QMSR window, gives AI tools time to improve, and gives eQMS platforms time to add content generation. Move fast, stay focused, and let the expertise speak.
+10. **Track two metrics above all others:** Individual-to-team conversion rate and repeat purchase rate. These determine whether this is side income or a real business. (SaaS Strategist, Risk Analyst)
 
 ---
 
-## Questions for Evelyn
+## Resolved Items
 
-The council identified several areas where Evelyn's input would sharpen the strategy. These are for your conversation later today:
+Items from the original analysis that are no longer open:
 
-### Pricing & Business Model
-1. **What do your current consulting clients pay for SOP documentation work?** (Helps calibrate pricing against the alternative she's directly replacing)
-2. **Would you consider a "consulting-assisted SaaS" hybrid** — software generates the draft, you review/customize for a premium fee? This hedges the self-serve risk.
-3. **How many hours per week can you realistically commit to ROYS** alongside your consulting practice? (Critical for setting realistic timelines)
-4. **Is there an appetite for a co-founder or technical partner** to share the execution burden?
-
-### Content & Regulatory
-5. **How deep is the EU MDR coverage currently?** The council flagged this as potentially only 25-30% of the regulation. Is that accurate?
-6. **Are requirement descriptions paraphrased or quoted from ISO standards?** (Copyright risk with ISO/IEC standards)
-7. **What's the plan for content maintenance** when regulations update? Is this a monthly task, quarterly, ad-hoc?
-8. **Has any ROYS-generated SOP been used in an actual audit yet?** Even informally through consulting work?
-
-### Market & Customers
-9. **How large is your current professional network** of quality managers and consultants? (This is the launch audience)
-10. **Who are the 5 people you'd call first** to beta test? (Start there)
-11. **Are any consulting clients currently struggling with the QMSR transition?** They might be the perfect first customers.
-12. **What's your take on the consultant channel?** Would your peer consultants see ROYS as a tool or a threat?
-
-### Technical
-13. **Have you started the Bubble.io build yet?** How far along is it?
-14. **What does a generated SOP look like right now?** Is there a sample we can review?
-15. **Is there a technical development resource identified** for the Bubble.io work, or is that still being arranged?
+| Item | Resolution |
+|------|-----------|
+| Pricing & tier structure | Resolved — See Evelyn's Decisions Summary Section 5 |
+| Build approach (Bubble vs custom) | Resolved — Custom stack, Phase 0 complete |
+| "Audit-ready" reframing | Resolved — "The hardest 80% done" |
+| Risk-based content tier placement | Resolved — Baseline in all tiers |
+| Consulting add-on | Resolved — Core feature with defined scope and pricing |
+| Consultant partner program | Resolved — Skip at launch, formalize if organic interest |
+| EU MDR at launch | Resolved — Future expansion only |
+| External partnership | Resolved — Husband building with Claude Code |
+| Consulting add-on pricing | Resolved — $99-$199 by tier and customer type |
+| Brand name | Resolved — Roystonea Documents (roystoneadocs.com) |
 
 ---
 
-*This analysis was prepared by the Shadow Council — a multi-perspective strategic review framework. Each council member provided independent analysis from their area of expertise, and findings were synthesized into unified recommendations.*
+## Remaining Open Items
+
+| Item | Context | Owner |
+|------|---------|-------|
+| MVP feature list finalization | Council list plus Evelyn's additions/removals needs formal consolidation | Evelyn + Jeramie |
+| Subscription value proposition | What keeps customers subscribed after initial SOP purchases? Regulatory updates, new standards, passive retention | Evelyn |
+| Market education challenge | Buyers may not distinguish ROYS output from AI-generated SOPs. Strategy: sell to people who already recognize value | Strategic question |
+| Beta tester recruitment | Will recruit from professional network. Specific testers not yet identified | Evelyn (after build) |
+| Launch catalog size | Minimum 20 Core SOPs recommended before subscriptions go live | Evelyn (content) |
+| Transactional email service | Not yet in build plan. Required for registration, purchases, downloads | Jeramie (build) |
+| QMSR content update | All 21 CFR 820 SOPs need remapping to QMSR structure before launch | Evelyn (content) |
+
+---
+
+*This analysis was prepared by the Shadow Council — a multi-perspective strategic review framework. Each council member provided independent analysis from their area of expertise, incorporating Evelyn's decisions and corrections from the Draft 3.0 Decisions Summary.*
 
 *Confidential — Prepared for Roystonea Compliance LLC*
