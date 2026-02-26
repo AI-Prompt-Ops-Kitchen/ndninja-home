@@ -1,21 +1,17 @@
 import { ChartsClient } from './charts-client';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/session';
+import sql from '@/lib/db';
+import { redirect } from 'next/navigation';
 
 export default async function ChartsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSession();
+  if (!user) redirect('/auth/login');
 
-  let spikes: any[] = [];
+  const spikes = await sql`
+    SELECT * FROM spikes
+    WHERE user_id = ${user.id}
+    ORDER BY logged_at ASC
+  `;
 
-  if (user) {
-    const { data } = await supabase
-      .from('spikes')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('logged_at', { ascending: true });
-
-    spikes = data || [];
-  }
-
-  return <ChartsClient initialSpikes={spikes} />;
+  return <ChartsClient initialSpikes={spikes as any[]} />;
 }

@@ -1,21 +1,14 @@
 import { SettingsClient } from './settings-client';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/session';
+import sql from '@/lib/db';
+import { redirect } from 'next/navigation';
 
 export default async function SettingsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSession();
+  if (!user) redirect('/auth/login');
 
-  let profile = null;
+  const rows = await sql`SELECT * FROM profiles WHERE user_id = ${user.id} LIMIT 1`;
+  const profile = rows[0] || null;
 
-  if (user) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', user.id)
-      .single();
-
-    profile = data;
-  }
-
-  return <SettingsClient profile={profile} userEmail={user?.email || ''} />;
+  return <SettingsClient profile={profile as any} userEmail={user.email} />;
 }

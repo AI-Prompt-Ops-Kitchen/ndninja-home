@@ -1,22 +1,18 @@
 import { HistoryClient } from './history-client';
-import { createClient } from '@/lib/supabase/server';
+import { getSession } from '@/lib/session';
+import sql from '@/lib/db';
+import { redirect } from 'next/navigation';
 
 export default async function HistoryPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getSession();
+  if (!user) redirect('/auth/login');
 
-  let spikes: any[] = [];
+  const spikes = await sql`
+    SELECT * FROM spikes
+    WHERE user_id = ${user.id}
+    ORDER BY logged_at DESC
+    LIMIT 100
+  `;
 
-  if (user) {
-    const { data } = await supabase
-      .from('spikes')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('logged_at', { ascending: false })
-      .limit(100);
-
-    spikes = data || [];
-  }
-
-  return <HistoryClient initialSpikes={spikes} />;
+  return <HistoryClient initialSpikes={spikes as any[]} />;
 }

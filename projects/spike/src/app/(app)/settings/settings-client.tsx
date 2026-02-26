@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/client';
 import { Profile } from '@/types/spike';
 import { cn } from '@/lib/utils';
 import { Save, Mail, Clock, LogOut, Check, Send } from 'lucide-react';
@@ -53,19 +52,18 @@ export function SettingsClient({ profile, userEmail }: SettingsClientProps) {
     setSaved(false);
 
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('profiles')
-        .update({
+      const res = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           doctor_email: doctorEmail.trim() || null,
           timezone,
           daily_digest: dailyDigest,
           weekly_digest: weeklyDigest,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', profile.user_id);
+        }),
+      });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error('Save failed');
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -76,8 +74,7 @@ export function SettingsClient({ profile, userEmail }: SettingsClientProps) {
   }, [profile, doctorEmail, timezone, dailyDigest, weeklyDigest]);
 
   const handleSignOut = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/auth/login');
   }, [router]);
 

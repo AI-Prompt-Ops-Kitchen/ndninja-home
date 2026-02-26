@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { IntensitySlider } from '@/components/ui/intensity-slider';
 import { TimerOverlay } from '@/components/ui/timer-overlay';
 import { useTimer } from '@/hooks/use-timer';
-import { createClient } from '@/lib/supabase/client';
 import { queueSpike } from '@/lib/offline-queue';
 import { hapticTap, hapticSuccess } from '@/lib/haptics';
 import { getAffirmation } from '@/lib/affirmations';
@@ -73,10 +72,7 @@ export default function LogPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-
-      if (!user || !navigator.onLine) {
+      if (!navigator.onLine) {
         await queueSpike({
           type,
           intensity,
@@ -86,20 +82,25 @@ export default function LogPage() {
         hapticSuccess();
         setAffirmation(getAffirmation());
         setState('success');
-        setShowTimer(!user ? false : Math.abs(Date.now() - new Date(loggedAt).getTime()) < 60000);
+        setShowTimer(false);
         return;
       }
 
-      const { data, error } = await supabase.from('spikes').insert({
-        user_id: user.id,
-        type,
-        intensity,
-        notes: notes.trim() || null,
-        logged_at: new Date(loggedAt).toISOString(),
-      }).select('id').single();
+      const res = await fetch('/api/spikes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          intensity,
+          notes: notes.trim() || null,
+          logged_at: new Date(loggedAt).toISOString(),
+        }),
+      });
 
-      if (error) throw error;
-      setLastSpikeId(data?.id || null);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      setLastSpikeId(data.id || null);
       hapticSuccess();
       setAffirmation(getAffirmation());
       setState('success');

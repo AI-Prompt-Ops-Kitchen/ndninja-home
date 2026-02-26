@@ -4,63 +4,38 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { createClient } from '@/lib/supabase/client';
 import { motion } from 'framer-motion';
 import { Zap, Mail, Check, KeyRound } from 'lucide-react';
-
-type Step = 'email' | 'code' | 'success';
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [step, setStep] = useState<Step>('email');
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
-  const handleSendCode = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    if (!email.trim() || !pin.trim()) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), pin: pin.trim() }),
       });
 
-      if (authError) throw authError;
-      setStep('code');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
 
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!code.trim()) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.verifyOtp({
-        email: email.trim(),
-        token: code.trim(),
-        type: 'email',
-      });
-
-      if (authError) throw authError;
-      setStep('success');
-      // Redirect to log page after brief success flash
+      setSuccess(true);
       setTimeout(() => router.push('/log'), 800);
     } catch (err: any) {
-      setError(err.message || 'Invalid code');
+      setError(err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -91,63 +66,15 @@ export default function LoginPage() {
 
         <Card className="border-gray-800">
           <CardContent className="py-6">
-            {step === 'success' ? (
+            {success ? (
               <div className="text-center space-y-4">
                 <div className="mx-auto w-14 h-14 rounded-full bg-emerald-600/15 text-emerald-400 flex items-center justify-center animate-success">
                   <Check size={28} />
                 </div>
                 <p className="text-gray-200 font-medium">You&apos;re in!</p>
               </div>
-            ) : step === 'code' ? (
-              <form onSubmit={handleVerifyCode} className="space-y-4">
-                <div className="text-center space-y-1 mb-2">
-                  <p className="text-gray-200 font-medium">Enter your code</p>
-                  <p className="text-sm text-gray-500">
-                    We sent a 6-digit code to <span className="text-gray-300">{email}</span>
-                  </p>
-                </div>
-
-                <div className="relative">
-                  <KeyRound size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={6}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                    placeholder="000000"
-                    autoFocus
-                    className="w-full rounded-xl border border-gray-800 bg-gray-950/50 py-3 pl-11 pr-4 text-gray-200 text-center text-2xl tracking-[0.3em] font-mono placeholder:text-gray-700 focus:border-violet-600/50 focus:ring-2 focus:ring-violet-600/20 focus:outline-none transition-all"
-                  />
-                </div>
-
-                {error && (
-                  <p className="text-sm text-amber-400 bg-amber-600/10 px-3 py-2 rounded-lg">
-                    {error}
-                  </p>
-                )}
-
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="lg"
-                  className="w-full"
-                  disabled={loading || code.length < 6}
-                >
-                  {loading ? 'Verifying...' : 'Verify'}
-                </Button>
-
-                <button
-                  type="button"
-                  onClick={() => { setStep('email'); setCode(''); setError(null); }}
-                  className="w-full text-sm text-gray-500 hover:text-gray-300 transition-colors"
-                >
-                  Use a different email
-                </button>
-              </form>
             ) : (
-              <form onSubmit={handleSendCode} className="space-y-4">
+              <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-2">
                     Email address
@@ -167,6 +94,25 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label htmlFor="pin" className="block text-sm font-medium text-gray-400 mb-2">
+                    PIN
+                  </label>
+                  <div className="relative">
+                    <KeyRound size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                      id="pin"
+                      type="password"
+                      inputMode="numeric"
+                      value={pin}
+                      onChange={(e) => setPin(e.target.value)}
+                      placeholder="Enter PIN"
+                      required
+                      className="w-full rounded-xl border border-gray-800 bg-gray-950/50 py-3 pl-11 pr-4 text-gray-200 text-center text-xl tracking-[0.2em] font-mono placeholder:text-gray-700 focus:border-violet-600/50 focus:ring-2 focus:ring-violet-600/20 focus:outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
                 {error && (
                   <p className="text-sm text-amber-400 bg-amber-600/10 px-3 py-2 rounded-lg">
                     {error}
@@ -178,13 +124,13 @@ export default function LoginPage() {
                   variant="primary"
                   size="lg"
                   className="w-full"
-                  disabled={loading || !email.trim()}
+                  disabled={loading || !email.trim() || !pin.trim()}
                 >
-                  {loading ? 'Sending...' : 'Send login code'}
+                  {loading ? 'Signing in...' : 'Sign in'}
                 </Button>
 
                 <p className="text-xs text-gray-600 text-center">
-                  No password needed — we&apos;ll send a 6-digit code to your email
+                  Personal app — PIN-protected access
                 </p>
               </form>
             )}

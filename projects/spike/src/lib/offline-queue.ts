@@ -59,34 +59,3 @@ export async function clearPendingSpike(id: number): Promise<void> {
     tx.onerror = () => reject(tx.error);
   });
 }
-
-export async function syncPendingSpikes(
-  supabase: any,
-  userId: string
-): Promise<number> {
-  const pending = await getPendingSpikes();
-  if (pending.length === 0) return 0;
-
-  let synced = 0;
-
-  for (const spike of pending) {
-    try {
-      const { error } = await supabase.from('spikes').insert({
-        user_id: userId,
-        type: spike.type,
-        intensity: spike.intensity,
-        logged_at: spike.logged_at,
-      });
-
-      if (!error && spike.id) {
-        await clearPendingSpike(spike.id);
-        synced++;
-      }
-    } catch {
-      // Stop syncing on error — will retry next time
-      break;
-    }
-  }
-
-  return synced;
-}

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 
 const MAX_DURATION = 600; // 10 minutes
 
@@ -34,23 +33,22 @@ export function useTimer({ spikeId, onComplete }: UseTimerOptions) {
     // Save duration to spike
     if (spikeId && duration > 0) {
       try {
-        const supabase = createClient();
-        await supabase
-          .from('spikes')
-          .update({ duration_seconds: duration })
-          .eq('id', spikeId);
+        await fetch(`/api/spikes/${spikeId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ duration_seconds: duration }),
+        });
 
-        // Also save timer session
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const now = new Date();
-          await supabase.from('timer_sessions').insert({
-            user_id: user.id,
+        const now = new Date();
+        await fetch('/api/timer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             spike_id: spikeId,
             started_at: new Date(now.getTime() - duration * 1000).toISOString(),
             stopped_at: now.toISOString(),
-          });
-        }
+          }),
+        });
       } catch (err) {
         console.error('Failed to save timer:', err);
       }

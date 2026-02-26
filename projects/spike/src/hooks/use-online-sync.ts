@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import { syncPendingSpikes, getPendingSpikes } from '@/lib/offline-queue';
+import { getPendingSpikes, clearPendingSpike } from '@/lib/offline-queue';
 
 export function useOnlineSync() {
   const syncingRef = useRef(false);
@@ -16,11 +15,28 @@ export function useOnlineSync() {
         const pending = await getPendingSpikes();
         if (pending.length === 0) return;
 
-        const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
+        let synced = 0;
+        for (const spike of pending) {
+          try {
+            const res = await fetch('/api/spikes', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: spike.type,
+                intensity: spike.intensity,
+                logged_at: spike.logged_at,
+              }),
+            });
 
-        const synced = await syncPendingSpikes(supabase, user.id);
+            if (res.ok && spike.id) {
+              await clearPendingSpike(spike.id);
+              synced++;
+            }
+          } catch {
+            break;
+          }
+        }
+
         if (synced > 0) {
           console.log(`Synced ${synced} offline spike(s)`);
         }
@@ -31,12 +47,8 @@ export function useOnlineSync() {
       }
     }
 
-    // Sync on mount
     sync();
-
-    // Sync when coming back online
     window.addEventListener('online', sync);
-    // Also sync periodically when online
     const interval = setInterval(() => {
       if (navigator.onLine) sync();
     }, 30000);
