@@ -1,58 +1,80 @@
 ---
 name: modal-serverless-gpu
 domain: Cloud/GPU
-level: 2-tomoe
+level: 3-tomoe
 description: Serverless GPU cloud platform — deploy AI workloads via Python SDK with sub-second cold starts, elastic scaling to thousands of GPUs, and pay-per-second billing. $30/mo free credits.
 sources:
   - type: web
     title: "Modal: High-performance AI infrastructure"
     url: "https://modal.com/"
-    date: "2026-02-22"
+    date: "2026-02-23"
     confidence: high
   - type: web
     title: "Modal Pricing"
     url: "https://modal.com/pricing"
-    date: "2026-02-22"
+    date: "2026-02-23"
     confidence: high
   - type: web
     title: "Top Serverless GPU Clouds for 2026 (RunPod comparison)"
     url: "https://www.runpod.io/articles/guides/top-serverless-gpu-clouds"
-    date: "2026-02-22"
+    date: "2026-02-23"
     confidence: medium
-last_updated: 2026-02-22
+  - type: web
+    title: "Best Serverless GPU Platforms for AI in 2026 (Koyeb)"
+    url: "https://www.koyeb.com/blog/best-serverless-gpu-platforms-for-ai-apps-and-inference-in-2026"
+    date: "2026-02-23"
+    confidence: high
+  - type: web
+    title: "Modal Whisper Deployment Tutorial"
+    url: "https://modal.com/blog/how-to-deploy-whisper"
+    date: "2026-02-23"
+    confidence: high
+  - type: web
+    title: "Modal Batched Whisper Example"
+    url: "https://modal.com/docs/examples/batched_whisper"
+    date: "2026-02-23"
+    confidence: high
+  - type: web
+    title: "Modal Secrets & Environments Docs"
+    url: "https://modal.com/docs/guide/secrets"
+    date: "2026-02-23"
+    confidence: high
+sources_count: 7
+last_updated: 2026-02-23
 can_do_from_cli: true
 ---
 
 # Modal — Serverless GPU Cloud
 
 ## Mental Model
-Modal is a serverless GPU cloud where you write Python code, not YAML. You decorate functions with `@app.function(gpu="A100")`, push your code, and Modal handles containers, GPUs, scaling, and teardown. It's like AWS Lambda but for GPU workloads — pay per second, scale to zero, burst to thousands.
+Modal is a serverless GPU cloud where you write Python code, not YAML. Decorate functions with `@app.function(gpu="A100")`, push, and Modal handles containers, GPUs, scaling, and teardown. Like AWS Lambda for GPU workloads — pay per second, scale to zero, burst to thousands.
 
 ## Prerequisites
 - Python 3.8+
-- `pip install modal` (their CLI + SDK)
-- `modal setup` to authenticate (browser-based)
-- Free tier: $30/month compute credits (no credit card required)
+- `pip install modal` (CLI + SDK)
+- `modal setup` (browser-based auth)
+- Free tier: $30/month compute credits (no credit card)
 
-## Pricing — Why It's Crazy Low
+## GPU Pricing (Feb 2026)
 
-### GPU Rates (per-second billing)
-| GPU | VRAM | $/sec | $/hr equiv |
-|-----|------|-------|------------|
-| T4 | 16GB | $0.000164 | ~$0.59 |
-| A10G | 24GB | $0.000306 | ~$1.10 |
-| A100 40GB | 40GB | $0.000594 | ~$2.14 |
-| A100 80GB | 80GB | $0.000944 | ~$3.40 |
-| H100 | 80GB | $0.001267 | ~$4.56 |
+| GPU | VRAM | $/sec | $/hr |
+|-----|------|-------|------|
+| T4 | 16GB | $0.000164 | $0.59 |
+| L4 | 24GB | $0.000222 | $0.80 |
+| A10G | 24GB | $0.000306 | $1.10 |
+| L40S | 48GB | $0.000542 | $1.95 |
+| A100 40GB | 40GB | $0.000583 | $2.10 |
+| A100 80GB | 80GB | $0.000694 | $2.50 |
+| H100 | 80GB | $0.001097 | $3.95 |
+| H200 | 141GB | $0.001261 | $4.54 |
+| B200 | 192GB | $0.001736 | $6.25 |
 
-### Key Pricing Details
-- **$30/month FREE** on Starter tier — enough for significant experimentation
-- **Per-second billing** — only pay when your function runs, scales to zero
-- **Regional multipliers:** 1.25x for US/EU/UK/Asia-Pacific, up to 2.5x elsewhere
-- **Non-preemptible multiplier:** 3x (default is preemptible/spot)
-- Combined US non-preemptible = 3.75x base rate
-- **CPU:** $0.0000131/core/sec (~$0.047/hr)
-- **Memory:** $0.00000163/MB/sec
+**Multipliers (stack these):**
+- Regional: 1.25x (US/EU/UK/APAC), up to 2.5x elsewhere
+- Non-preemptible: 3x (default is preemptible/spot)
+- US non-preemptible effective = **3.75x** base rate
+
+**Other compute:** CPU $0.047/hr/core, Memory $0.008/GiB/hr
 
 ### Plan Tiers
 | Plan | Monthly | Credits | Containers | GPUs |
@@ -61,17 +83,22 @@ Modal is a serverless GPU cloud where you write Python code, not YAML. You decor
 | Team | $250 | $100 | 1,000 | 50 concurrent |
 | Enterprise | Custom | Custom | Custom | Custom |
 
-### Cost Comparison vs Alternatives
-- **vs fal.ai:** Modal is significantly cheaper for custom models (fal charges per-inference, Modal charges per-second of compute)
-- **vs RunPod:** RunPod slightly cheaper per-GPU-hour but Modal has faster cold starts (2-4s vs variable)
-- **vs Replicate:** Modal is ~3-5x cheaper for equivalent GPU time since Replicate adds margin
-- **vs own RTX 4090:** Modal H100 at ~$4.56/hr beats owning for bursty workloads (no idle cost)
+## Cross-Platform Pricing Comparison ($/hr, base rates)
+
+| GPU | Modal | RunPod | fal.ai | Replicate | Koyeb |
+|-----|-------|--------|--------|-----------|-------|
+| T4 | $0.59 | $0.44 | — | — | — |
+| L40S | $1.95 | $1.90 | — | $3.51 | $1.55 |
+| A100 80GB | $2.50 | $2.72 | $0.99* | $5.04 | $2.00 |
+| H100 | $3.95 | $4.18 | $1.99* | $5.49 | $3.30 |
+
+*fal.ai rates are "starting points" — actual pricing requires sales contact.
+
+**Verdict:** Modal is middle-of-road on raw $/hr but wins on DX (pure Python, no Docker, instant deploys). RunPod cheapest for raw GPU time. Replicate is 2x more expensive but zero-config for popular models. fal.ai is cheapest if you negotiate but vendor-locked.
 
 ## Core Workflows
 
-### Workflow 1: Deploy a GPU Function
-**When to use:** Run any Python function on a GPU (inference, processing, generation)
-
+### 1. Deploy a GPU Function
 ```python
 import modal
 
@@ -79,37 +106,24 @@ app = modal.App("my-app")
 
 @app.function(gpu="A100", timeout=300)
 def generate_video(prompt: str) -> bytes:
-    # Your GPU code here — install deps in the image
     import torch
-    # ...
+    # GPU code here
     return video_bytes
 
-# Call it
 with app.run():
     result = generate_video.remote("a ninja in a cyberpunk city")
 ```
 
-**Gotchas:**
-- Container images are built declaratively — no Dockerfile needed
-- First deploy builds the image (slow), subsequent deploys reuse cache
-- Functions timeout after 300s by default, configurable up to 24hrs
-
-### Workflow 2: Serve an API Endpoint
-**When to use:** Deploy a persistent HTTP endpoint (LLM inference, image gen API)
-
+### 2. Serve an API Endpoint
 ```python
 @app.function(gpu="A100")
 @modal.web_endpoint(method="POST")
 def infer(request: dict):
-    prompt = request["prompt"]
-    return {"result": run_model(prompt)}
+    return {"result": run_model(request["prompt"])}
+# URL: https://your-username--my-app-infer.modal.run
 ```
 
-Gives you a URL like `https://your-username--my-app-infer.modal.run`
-
-### Workflow 3: Batch Processing
-**When to use:** Process thousands of items in parallel
-
+### 3. Batch Processing (the killer feature)
 ```python
 @app.function(gpu="T4")
 def process_one(item: str) -> dict:
@@ -118,17 +132,13 @@ def process_one(item: str) -> dict:
 @app.local_entrypoint()
 def main():
     items = ["a", "b", "c", ...]
-    results = list(process_one.map(items))  # Parallel across GPUs!
+    results = list(process_one.map(items))  # 1000 items = 1000 GPUs
 ```
 
-`map()` auto-scales containers — 1000 items can run on 1000 GPUs simultaneously.
-
-### Workflow 4: Custom Container Image
-**When to use:** Need specific packages, model weights, CUDA libs
-
+### 4. Custom Container Image
 ```python
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.debian_slim(python_version="3.12")
     .pip_install("torch", "transformers", "accelerate")
     .run_commands("apt-get install -y ffmpeg")
 )
@@ -138,74 +148,152 @@ def my_func():
     ...
 ```
 
-### Workflow 5: Persistent Storage (Volumes)
-**When to use:** Cache model weights, store outputs between runs
-
+### 5. Volumes (Persistent Storage)
 ```python
 vol = modal.Volume.from_name("my-models", create_if_missing=True)
 
 @app.function(gpu="A100", volumes={"/models": vol})
 def download_model():
-    # Download once, cached in volume
     if not os.path.exists("/models/llama"):
         download_to("/models/llama")
 ```
 
-## Command Reference
-| Action | Command | Notes |
-|--------|---------|-------|
-| Install | `pip install modal` | Python SDK + CLI |
-| Auth | `modal setup` | Browser-based login |
-| Deploy | `modal deploy app.py` | Persistent deployment |
-| Run once | `modal run app.py` | Execute & teardown |
-| Serve dev | `modal serve app.py` | Hot-reload dev server |
-| View logs | `modal app logs my-app` | Stream live logs |
-| List apps | `modal app list` | See deployments |
-| Stop app | `modal app stop my-app` | Teardown |
-| Check usage | Dashboard at modal.com | No CLI for billing yet |
+### 6. Secrets Management
+```python
+# Create secrets at modal.com/secrets (encrypted at rest, injected at runtime)
+@app.function(
+    gpu="T4",
+    secrets=[modal.Secret.from_name("my-api-keys")]
+)
+def call_api():
+    import os
+    key = os.environ["API_KEY"]  # Injected as env vars
+```
 
-## Relevant Examples from Modal
-- **Batched Whisper** — high-throughput transcription (relevant for Sharingan podcast pipeline)
-- **Flux with torch.compile** — fast image generation (relevant for thumbnail pipeline)
-- **LTX-Video** — video clip generation (relevant for B-roll generation)
-- **vLLM OpenAI-compatible** — serve LLMs cheaply (relevant for Shadow Council cost reduction)
-- **Chatterbox TTS** — speech generation (relevant for Glitch voice)
-- **Sandboxes** — run untrusted code safely (relevant for Sage Mode agent execution)
+**Environments:** Use `modal.config.default_environment = "dev"` or `--env dev` CLI flag to separate dev/prod secrets, volumes, and deployments.
+
+## Complete Example: Whisper Transcription Service
+
+57-minute podcast transcribed in 2m14s for ~$0.11.
+
+```python
+import modal
+
+app = modal.App("whisper-transcriber")
+
+image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .apt_install("ffmpeg")
+    .pip_install("openai-whisper", "librosa", "torch", "numpy")
+)
+
+vol = modal.Volume.from_name("whisper-cache", create_if_missing=True)
+
+@app.cls(image=image, gpu="H100", volumes={"/cache": vol})
+class WhisperTranscriber:
+    @modal.enter()
+    def load_model(self):
+        import whisper
+        self.model = whisper.load_model(
+            "large-v3", download_root="/cache/models"
+        )
+
+    @modal.method()
+    def transcribe(self, audio_bytes: bytes) -> str:
+        import tempfile, librosa, numpy as np
+        with tempfile.NamedTemporaryFile(suffix=".wav") as f:
+            f.write(audio_bytes)
+            f.flush()
+            audio, sr = librosa.load(f.name, sr=16000)
+        result = self.model.transcribe(audio)
+        return result["text"]
+
+@app.local_entrypoint()
+def main(url: str = "https://example.com/podcast.mp3"):
+    import urllib.request
+    data = urllib.request.urlopen(url).read()
+    transcriber = WhisperTranscriber()
+    text = transcriber.transcribe.remote(data)
+    print(text)
+```
+
+```bash
+# Run it
+modal run whisper_app.py --url "https://example.com/audio.mp3"
+
+# Deploy as persistent service
+modal deploy whisper_app.py
+```
+
+### Batched Whisper (High-Throughput)
+For bulk transcription, use `@modal.batched` to auto-batch requests:
+```python
+@app.cls(image=image, gpu="A10G")
+class BatchWhisper:
+    @modal.enter()
+    def load(self):
+        self.model = whisper.load_model("large-v3", download_root="/cache")
+
+    @modal.batched(max_batch_size=64, wait_ms=1000)
+    def transcribe(self, audio_samples: list[bytes]) -> list[str]:
+        # Process up to 64 audio clips in one GPU pass
+        return [self.model.transcribe(s)["text"] for s in audio_samples]
+```
+
+## Command Reference
+| Action | Command |
+|--------|---------|
+| Install | `pip install modal` |
+| Auth | `modal setup` |
+| Deploy | `modal deploy app.py` |
+| Run once | `modal run app.py` |
+| Dev server | `modal serve app.py` (hot-reload) |
+| Logs | `modal app logs my-app` |
+| List apps | `modal app list` |
+| Stop | `modal app stop my-app` |
+| Shell | `modal shell --gpu A100` (interactive) |
+| Volume ls | `modal volume ls my-models` |
+| Env switch | `modal run app.py --env prod` |
+
+## GPU Selection Guide
+| Workload | Recommended GPU | Why |
+|----------|----------------|-----|
+| Small model inference (SDXL, Whisper) | **T4** ($0.59/hr) | Cheapest, 16GB enough |
+| Medium models (Flux, 7B LLMs) | **L4** ($0.80/hr) | Good perf/cost, 24GB |
+| Large models (13B+, batch inference) | **A100 40GB** ($2.10/hr) | Fast memory bandwidth |
+| Huge models (70B, video gen) | **A100 80GB** ($2.50/hr) | Need the VRAM |
+| Maximum speed (production APIs) | **H100** ($3.95/hr) | 3x A100 throughput |
+| Frontier models (405B) | **H200** ($4.54/hr) | 141GB HBM3e |
 
 ## Integration Points — Ninja Ecosystem
 
-### Content Pipeline (The Dojo)
-- **Avatar generation:** Could replace fal.ai Kling calls — deploy Kling/CogVideo/LTX on Modal for ~60% cost savings
-- **Thumbnail gen:** Run Flux on Modal A100 instead of paying per-image via Nano Banana
-- **B-roll gen:** LTX-Video on Modal for AI-generated B-roll clips
-- **TTS:** Self-host Kokoro or Chatterbox on Modal T4 (free tier might cover it)
+### The Dojo (Content Pipeline)
+- **Avatar gen:** Deploy Kling/CogVideo on Modal for ~60% cost savings vs fal.ai
+- **Thumbnails:** Flux on Modal A100 instead of per-image Nano Banana pricing
+- **B-roll:** LTX-Video on Modal for AI-generated B-roll clips
+- **TTS:** Self-host Kokoro on Modal T4 (free $30 tier might cover it)
 
 ### Glitch
-- **Avatar rendering:** FasterLivePortrait on Modal GPU instead of tying up the Vengeance 4090
-- **JoyVASA:** Audio-to-motion pipeline on Modal H100 for faster-than-realtime processing
-- **Voice:** ElevenLabs alternative — self-host open TTS model on Modal
-
-### Shadow Council / Sage Mode
-- **LLM inference:** Deploy vLLM with Llama/Mistral on Modal for council agents instead of paying per-token API rates
-- **Batch analysis:** Parallelize code review across GPUs
+- **Avatar rendering:** FasterLivePortrait on Modal instead of tying up Vengeance 4090
 
 ### Sharingan
-- **Whisper transcription:** Batch-transcribe YouTube videos on Modal (their example does exactly this)
-- **Training podcasts:** TTS generation on Modal GPU
+- **Whisper:** Batch-transcribe YouTube videos; **Shadow Council:** vLLM on Modal vs per-token APIs
 
-## Limitations & Gaps
-- **Vendor lock-in:** Everything uses Modal SDK — can't easily migrate to another cloud without rewriting deploy code
-- **No raw SSH:** You can't SSH into a container and poke around (use `modal shell` for interactive sessions)
-- **Preemption risk:** Cheaper "spot" instances can be interrupted (use non-preemptible for critical jobs, 3x cost)
-- **Cold starts:** 2-4 seconds is fast but not zero — not suitable for sub-100ms latency requirements
-- **Regional pricing:** Multipliers can sneak up — always check effective rate
-- **[SINGLE SOURCE]** Some pricing details from third-party comparison articles, may be slightly outdated
+## Limitations
+- **Vendor lock-in:** Modal SDK everywhere — rewrite needed to migrate
+- **No raw SSH:** Use `modal shell` for interactive sessions
+- **Preemption risk:** Spot instances can be interrupted (3x cost for guaranteed)
+- **Cold starts:** 2-4s is fast but not sub-100ms
+- **Multiplier stacking:** US non-preemptible = 3.75x base rate — always check effective cost
+- **Volume limits:** 100 GiB default, request increase for large model caches
 
 ## Tips & Best Practices
-- Start with $30 free tier — it's enough to test all GPU types
-- Use `modal.Volume` for model weights — avoids re-downloading on every cold start
-- Use `gpu="T4"` for inference of smaller models — it's the cheapest and often fast enough
-- `@modal.web_endpoint` gives you a public URL instantly — great for webhooks and API integration
-- The `map()` pattern is incredibly powerful for batch — think "1000 GPUs for 10 seconds" instead of "1 GPU for 3 hours"
-- Compare effective cost: Modal H100 at $4.56/hr * bursty usage often beats fal.ai per-inference pricing for high volume
-- Their Sandbox feature could replace Docker for Sage Mode's untrusted code execution
+- **$30 free tier** covers ~50 hrs of T4 or ~12 hrs of A100 — plenty to prototype
+- **Always use Volumes** for model weights — avoids re-downloading on cold starts
+- **Start with T4** — upgrade GPU only if you need it
+- **`map()` is the superpower** — think "1000 GPUs for 10 seconds" not "1 GPU for 3 hours"
+- **Use `@modal.enter()`** for model loading — runs once per container, not per request
+- **`@modal.batched()`** for high-throughput — auto-batches requests for GPU efficiency
+- **Secrets over env vars** — encrypted at rest, scoped per environment
+- **`modal serve` for dev** — hot-reload saves round-trips vs full `modal deploy`
+- **`--env` flag** — keep dev and prod deployments separate

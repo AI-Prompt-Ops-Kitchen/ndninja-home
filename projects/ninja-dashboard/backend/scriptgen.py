@@ -128,6 +128,28 @@ def _context_from_url(url: str) -> str:
     return f"{context} (from {host}). Look up this topic and write a script about it."
 
 
+_GAMING_KEYWORDS = {
+    "gacha", "banner", "update", "patch", "character", "rework", "nerf", "buff",
+    "meta", "tier list", "gameplay", "trailer", "ps5", "ps4", "xbox", "nintendo",
+    "switch", "steam", "playstation", "game pass", "genshin", "honkai", "wuthering",
+    "zelda", "mario", "pokemon", "fortnite", "valorant", "apex", "league", "elden ring",
+    "final fantasy", "souls", "remake", "remaster", "dlc", "expansion", "raid",
+    "pvp", "pve", "mmo", "rpg", "fps", "battle pass", "season pass", "launch",
+    "reveal", "state of play", "direct", "showcase", "game awards", "e3", "tgs",
+    "pity", "apologems", "copium", "summon", "pull", "roll", "reroll",
+}
+
+
+def _detect_content_category(title: str, summary: str) -> str:
+    """Auto-detect content category from title and summary text.
+
+    Returns 'gaming' if gaming keywords are found, otherwise 'tech'.
+    """
+    combined = f"{title} {summary}".lower()
+    matches = sum(1 for kw in _GAMING_KEYWORDS if kw in combined)
+    return "gaming" if matches >= 2 else "tech"
+
+
 async def generate_script(
     url: Optional[str] = None,
     text: Optional[str] = None,
@@ -193,23 +215,25 @@ async def generate_script(
                     if 10 < len(first_line) < 120:
                         title = first_line
 
+                category = _detect_content_category(title, summary)
                 story = _ns.Story(
                     title=title,
                     summary=summary,
                     url=url,
                     source="Custom URL",
-                    category="tech",
+                    category=category,
                 )
             else:
                 # Use first line as title, first 500 chars as summary
                 title = (text or "").split("\n")[0][:100].strip() or "Custom Article"
                 summary = (text or "")[:500]
+                category = _detect_content_category(title, summary)
                 story = _ns.Story(
                     title=title,
                     summary=summary,
                     url="",
                     source="Custom Text",
-                    category="tech",
+                    category=category,
                 )
             script = _ns.generate_script_with_llm(story)
             return script.full_text
@@ -217,5 +241,104 @@ async def generate_script(
             # Always restore originals
             _ns.TARGET_DURATION_SEC = orig_target
             _ns.MAX_WORDS = orig_max_words
+
+    return await asyncio.to_thread(_sync_generate)
+
+
+# ---------------------------------------------------------------------------
+# Dual-Anchor Script Generation (Ninja News Network)
+# ---------------------------------------------------------------------------
+
+DUAL_ANCHOR_INTRO = (
+    "NINJA: What's up my fellow Ninjas! This is Neurodivergent Ninja here "
+    "and welcome to the Ninja News Network!"
+)
+
+DUAL_ANCHOR_OUTRO = (
+    "NINJA: That's all for this one! Thanks for watching, hit that like and "
+    "subscribe — it really helps the channel grow.\n"
+    "GLITCH: Stay glitchy.\n"
+    "NINJA: Peace out ninjas, see you next time!"
+)
+
+
+async def generate_dual_anchor_script(
+    url: Optional[str] = None,
+    text: Optional[str] = None,
+    target_length_sec: int = 90,
+) -> str:
+    """Generate a dual-anchor dialogue script with NINJA: and GLITCH: labels.
+
+    Returns a full script including intro and outro.
+    """
+    if not url and not text:
+        raise ValueError("Provide url or text")
+
+    # Fetch article content (reuse same logic)
+    story_context = text or ""
+    if url:
+        try:
+            fetched = await asyncio.to_thread(_fetch_article_text, url)
+            if fetched and len(fetched.strip()) > 50:
+                story_context = fetched
+            else:
+                story_context = _context_from_url(url) or f"Article URL: {url}"
+        except Exception:
+            story_context = _context_from_url(url) or f"Article URL: {url}"
+
+    # Word budget: ~130 wpm speech, minus intro/outro (~40 words)
+    body_max_words = max(30, int(target_length_sec / 60 * 130) - 40)
+
+    llm_prompt = f"""You are writing a script for "Ninja News Network", a dual-anchor gaming news show.
+
+TWO CHARACTERS:
+- NINJA: The optimistic hype man. Gets excited about announcements. Uses slang like "yo", "dude", "let's go". Always sees the positive side. Catchphrase when excited: "That's a CRITICAL HIT!"
+- GLITCH: The analytical skeptic co-host. Questions hype, looks for the catch. Sarcastic humor, references data and history. Balances Ninja's enthusiasm. Says things like "Patch notes or it didn't happen" and "That's copium and you know it."
+
+FORMAT RULES:
+- Every line starts with "NINJA:" or "GLITCH:"
+- Lines alternate naturally (like a real conversation, not rigid turn-taking)
+- 6-12 exchanges total
+- Each line is 1-3 sentences max
+- Do NOT include any intro or outro (those are added automatically)
+- Start with NINJA reacting to the news, GLITCH responds
+- End on a fun note — either agreement, playful disagreement, or a callback joke
+- The dialogue should feel like two friends who genuinely enjoy each other's company
+
+ENERGY:
+- This is a YouTube Short, so keep the energy HIGH from the first word
+- No slow buildups — jump straight into the most exciting part of the news
+- Use emotional hooks: excitement, surprise, skepticism, humor
+- Make viewers want to comment which host they agree with
+
+STORY TO COVER:
+{story_context[:2500]}
+
+TARGET: ~{body_max_words} words for the dialogue body.
+Return ONLY the dialogue lines (NINJA: and GLITCH: labels), nothing else. No stage directions, no brackets, no narration."""
+
+    def _sync_generate() -> str:
+        import anthropic
+
+        api_key = _ns.get_api_key("anthropic")
+        if not api_key:
+            raise RuntimeError("Anthropic API key not found")
+
+        client = anthropic.Anthropic(api_key=api_key)
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": llm_prompt}],
+        )
+
+        body = message.content[0].text.strip()
+
+        # Validate: ensure it has NINJA: and GLITCH: labels
+        if "NINJA:" not in body or "GLITCH:" not in body:
+            print(f"[scriptgen] WARNING: LLM output missing speaker labels, using as-is")
+
+        # Assemble full script: intro + body + outro
+        full_script = f"{DUAL_ANCHOR_INTRO}\n{body}\n{DUAL_ANCHOR_OUTRO}"
+        return full_script
 
     return await asyncio.to_thread(_sync_generate)

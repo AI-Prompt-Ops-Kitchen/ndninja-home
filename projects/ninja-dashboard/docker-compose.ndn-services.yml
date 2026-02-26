@@ -132,12 +132,14 @@ services:
       RASENGAN_PORT: "8050"
       GIT_DIR: /data/git
       SHARINGAN_INDEX: /data/sharingan/index.json
+      PUSH_PATH_MAP: "/home/ndninja/.claude:/data/claude"
       LOG_LEVEL: INFO
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - /home/ndninja:/data/git:ro
       - /home/ndninja/.sharingan:/data/sharingan:ro
+      - /home/ndninja/.claude:/data/claude:rw
     networks:
       - ndn_network
       - sage_network

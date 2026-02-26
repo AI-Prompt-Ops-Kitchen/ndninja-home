@@ -1,155 +1,101 @@
 ---
 name: tauri-v2-overlay
 domain: Desktop/Glitch
-level: 2-tomoe
-description: Tauri v2 for transparent always-on-top Linux desktop overlay windows — config, system tray, Rust commands, Python sidecar, WebSocket IPC, and Linux X11/Wayland gotchas.
+level: 3-tomoe
+description: Tauri v2 transparent always-on-top Linux overlay — config, tray, Rust commands + state, Channel API, global shortcuts, Python WS IPC, X11/Wayland gotchas.
 sources:
-  - type: docs
-    title: "Tauri v2 Getting Started"
-    url: "https://v2.tauri.app/start/"
-    date: "2026-02-19"
-    confidence: high
-  - type: docs
-    title: "Tauri v2 Configuration Reference"
-    url: "https://v2.tauri.app/reference/config/"
-    date: "2026-02-19"
-    confidence: high
-  - type: docs
-    title: "Tauri v2 Window Customization"
-    url: "https://v2.tauri.app/learn/window-customization/"
-    date: "2026-02-19"
-    confidence: high
-  - type: docs
-    title: "Tauri v2 Shell Plugin / Sidecar"
-    url: "https://v2.tauri.app/plugin/shell/"
-    date: "2026-02-19"
-    confidence: high
-  - type: docs
-    title: "Tauri v2 WebSocket Plugin"
-    url: "https://v2.tauri.app/plugin/websocket/"
-    date: "2026-02-19"
-    confidence: high
-  - type: docs
-    title: "Tauri v2 System Tray"
-    url: "https://v2.tauri.app/learn/system-tray/"
-    date: "2026-02-19"
-    confidence: high
-  - type: github
-    title: "Transparent Window Bug (v2)"
-    url: "https://github.com/tauri-apps/tauri/issues/8308"
-    date: "2026-02-19"
-    confidence: medium
-  - type: github
-    title: "setIgnoreCursorEvents Wayland Bug"
-    url: "https://github.com/tauri-apps/tauri/issues/11461"
-    date: "2026-02-19"
-    confidence: high
-last_updated: 2026-02-19
+  - { type: docs, title: "Tauri v2 Getting Started", url: "https://v2.tauri.app/start/" }
+  - { type: docs, title: "Tauri v2 Config Reference", url: "https://v2.tauri.app/reference/config/" }
+  - { type: docs, title: "Tauri v2 Window Customization", url: "https://v2.tauri.app/learn/window-customization/" }
+  - { type: docs, title: "Tauri v2 Calling Rust", url: "https://v2.tauri.app/develop/calling-rust/" }
+  - { type: docs, title: "Tauri v2 State Management", url: "https://v2.tauri.app/develop/state-management/" }
+  - { type: docs, title: "Tauri v2 Global Shortcut", url: "https://v2.tauri.app/plugin/global-shortcut/" }
+  - { type: docs, title: "Tauri v2 Window State", url: "https://v2.tauri.app/plugin/window-state/" }
+  - { type: docs, title: "Tauri v2 IPC / Channel API", url: "https://v2.tauri.app/concept/inter-process-communication/" }
+  - { type: docs, title: "Tauri v2 Shell / Sidecar", url: "https://v2.tauri.app/plugin/shell/" }
+  - { type: docs, title: "Tauri v2 WebSocket Plugin", url: "https://v2.tauri.app/plugin/websocket/" }
+  - { type: github, title: "setIgnoreCursorEvents Wayland Bug", url: "https://github.com/tauri-apps/tauri/issues/11461" }
+  - { type: github, title: "Wayland+NVIDIA Overlay Workaround", url: "https://github.com/overlayeddev/overlayed/issues/263" }
+  - { type: github, title: "Window Props Ignored on Linux", url: "https://github.com/tauri-apps/tauri/issues/6162" }
+sources_count: 13
+last_updated: 2026-02-23
 can_do_from_cli: partial
 ---
 
-# Tauri v2 — Desktop Overlay Window
+# Tauri v2 -- Desktop Overlay Window
 
 ## Mental Model
-Tauri wraps your web frontend (HTML/CSS/JS) in a native desktop window using the system's built-in webview (WebKitGTK on Linux). It's not Electron — no bundled Chromium, apps can be under 600KB. Rust handles the native layer; JS/frontend talks to Rust via `invoke` commands and events. For an overlay, you combine `transparent + decorations:false + alwaysOnTop + skipTaskbar` and spawn the Python AI brain as a sidecar subprocess.
+Tauri = system webview (WebKitGTK on Linux) + Rust native layer. Not Electron -- no bundled Chromium, apps under 600KB. JS talks to Rust via `invoke` commands and events. For overlay: `transparent + decorations:false + alwaysOnTop + skipTaskbar`.
+
+**Versions (Feb 2026):** tauri-bundler 2.8.0, wry 0.54.2, tao 0.34.5
 
 ## Prerequisites
-- Rust 1.77.2+
-- Node.js/Bun
-- Linux: `webkit2gtk-4.1` dev package (`sudo apt install libwebkit2gtk-4.1-dev`)
-- `create-tauri-app` to scaffold
+```bash
+# Linux deps
+sudo apt install libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+# Scaffold
+npm create tauri-app@latest
+```
+Requires Rust 1.77.2+ and Node.js/Bun.
 
-## Core Workflows
-
-### Workflow 1: Overlay Window Config
-**When to use:** Setting up the transparent always-on-top Glitch window
-
+## 1: Overlay Window Config
 `tauri.conf.json`:
 ```json
-{
-  "app": {
-    "windows": [{
-      "label": "glitch-overlay",
-      "url": "index.html",
-      "width": 250,
-      "height": 370,
-      "decorations": false,
-      "transparent": true,
-      "alwaysOnTop": true,
-      "skipTaskbar": true,
-      "resizable": false,
-      "closable": false,
-      "visible": false
-    }]
-  }
-}
+{ "app": { "windows": [{
+  "label": "glitch-overlay", "url": "index.html",
+  "width": 250, "height": 370,
+  "decorations": false, "transparent": true,
+  "alwaysOnTop": true, "skipTaskbar": true,
+  "resizable": false, "closable": false, "visible": false
+}]}}
 ```
+Start hidden (`visible: false`) -> restore state -> show. No flicker.
 
-Start hidden (`visible: false`) → restore state → show. Prevents position flicker on startup.
+**Drag:** `<div data-tauri-drag-region>` or `await getCurrentWindow().startDragging()`
+**Anchor:** `npm run tauri add positioner` then `moveWindow(Position.BottomRight)`
 
-**Enable dragging without titlebar:**
-```html
-<div data-tauri-drag-region class="drag-handle"><!-- moves window --></div>
-```
-Or in JS: `await getCurrentWindow().startDragging()`
-Permission needed: `"core:window:allow-start-dragging"`
-
-**Anchor to corner at runtime:**
-```bash
-npm run tauri add positioner
-```
-```javascript
-import { moveWindow, Position } from '@tauri-apps/plugin-positioner';
-await moveWindow(Position.BottomRight);
-```
-
-**Gotchas:**
-- `transparent` has a known v2 bug on Windows — may need workaround for Win users
-- `macOS` requires `macos-private-api` feature flag for transparency
-- On Linux, some window properties are ignored by certain window managers (KDE/GNOME)
-- `visible: false` on startup + window-state plugin prevents position flicker
-
----
-
-### Workflow 2: Show / Hide / Toggle
-**When to use:** Super+G keybind toggling Glitch on/off
-
+## 2: Show / Hide / Toggle
 ```javascript
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { PhysicalSize, PhysicalPosition } from '@tauri-apps/api/dpi';
 const win = getCurrentWindow();
-
-// Toggle
-if (await win.isVisible()) {
-  await win.hide();
-} else {
-  await win.show();
-}
-
-// Modes
+if (await win.isVisible()) await win.hide(); else await win.show();
 await win.setSize(new PhysicalSize(100, 185));   // compact
 await win.setSize(new PhysicalSize(250, 370));   // full
-await win.setPosition(new PhysicalPosition(x, y));
 ```
 
-**Gotchas:**
-- `isVisible()` is async — always `await` it
-- Global hotkeys need a separate plugin (not built-in) — search `tauri-plugin-global-shortcut`
-
----
-
-### Workflow 3: System Tray
-**When to use:** Always-on tray icon for show/hide/quit
-
-`Cargo.toml`:
-```toml
-tauri = { version = "2", features = ["tray-icon"] }
+## 3: Global Shortcuts (Super+G)
+```bash
+npm run tauri add global-shortcut
 ```
-
-`src-tauri/src/lib.rs`:
 ```rust
-use tauri::menu::{Menu, MenuItem};
-use tauri::tray::TrayIconBuilder;
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
+let toggle = Shortcut::new(Some(Modifiers::SUPER), Code::KeyG);
+let focus  = Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyG);
+
+app.plugin(
+    tauri_plugin_global_shortcut::Builder::new()
+        .with_handler(move |app, shortcut, event| {
+            if event.state != ShortcutState::Pressed { return; }
+            let win = app.get_webview_window("glitch-overlay").unwrap();
+            if shortcut == &toggle {
+                if win.is_visible().unwrap() { win.hide().unwrap(); }
+                else { win.show().unwrap(); win.set_focus().unwrap(); }
+            } else if shortcut == &focus {
+                app.emit("focus-mode-toggle", ()).unwrap();
+            }
+        })
+        .build(),
+)?;
+app.global_shortcut().register(toggle)?;
+app.global_shortcut().register(focus)?;
+```
+Permissions: `"global-shortcut:allow-register"`, `"global-shortcut:allow-unregister"`
+
+## 4: System Tray
+`Cargo.toml`: `tauri = { version = "2", features = ["tray-icon"] }`
+```rust
 TrayIconBuilder::new()
   .icon(app.default_window_icon().unwrap().clone())
   .menu(&Menu::with_items(app, &[
@@ -165,199 +111,144 @@ TrayIconBuilder::new()
   })
   .build(app)?;
 ```
+Gotcha: Linux tray icon invisible unless a menu is attached.
 
-**Gotchas:**
-- On Linux, the tray icon may be invisible unless a menu is set — always attach a menu
-- Cursor events (hover enter/leave on tray) are NOT supported on Linux
-
----
-
-### Workflow 4: Rust Commands (JS → Rust)
-**When to use:** JS frontend triggers a Rust action (spawn process, read file, etc.)
-
-`src-tauri/src/lib.rs`:
+## 5: Rust Commands + State Management
 ```rust
-#[tauri::command]
-fn set_mode(mode: String) -> String {
-  format!("Mode set to {}", mode)
-}
+use std::sync::Mutex;
+use tauri::State;
+
+#[derive(Default)]
+struct GlitchState { mode: String, is_speaking: bool }
+type AppState = Mutex<GlitchState>;
 
 #[tauri::command]
-async fn get_screen_info() -> Result<String, String> {
-  // async ok
-  Ok("screen data".into())
+fn set_mode(mode: String, state: State<'_, AppState>) -> Result<String, String> {
+    let mut s = state.lock().map_err(|e| e.to_string())?;
+    s.mode = mode.clone();
+    Ok(format!("Mode set to {}", mode))
 }
 
-// Register in builder:
-.invoke_handler(tauri::generate_handler![set_mode, get_screen_info])
+// Register: .manage(Mutex::new(GlitchState::default()))
+//           .invoke_handler(tauri::generate_handler![set_mode])
 ```
-
-Frontend JS:
 ```javascript
-import { invoke } from '@tauri-apps/api/core';
-
 const result = await invoke('set_mode', { mode: 'compact' });
-const info   = await invoke('get_screen_info');
 ```
 
-**Gotchas:**
-- Command args use camelCase in JS, snake_case in Rust — Tauri maps automatically
-- Commands can't be `pub` in `lib.rs` root — put in a module if needed
-- All types must impl `serde::Serialize`/`Deserialize`
+**Key rules:** camelCase JS args -> snake_case Rust (auto-mapped). No `Arc` needed -- Tauri wraps internally. All types need `serde::Serialize/Deserialize`. `generate_handler!` called ONCE with all commands.
 
----
+**Error handling (thiserror):**
+```rust
+#[derive(Debug, thiserror::Error)]
+enum GlitchError {
+    #[error("Brain not connected: {0}")]
+    BrainDisconnected(String),
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+}
+impl serde::Serialize for GlitchError {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(self.to_string().as_ref())
+    }
+}
+```
 
-### Workflow 5: Events (Rust → JS)
-**When to use:** Rust pushes state changes to the frontend (sidecar message received, screen changed)
+## 6: Channel API (Rust -> JS Streaming)
+Faster than events, ordered. Use for viseme frames, progress, high-throughput data.
+```rust
+use tauri::ipc::Channel;
+#[tauri::command]
+async fn stream_visemes(channel: Channel<serde_json::Value>) {
+    for v in get_viseme_sequence().await {
+        channel.send(serde_json::json!({"mouth": v.shape, "ts": v.time_ms})).unwrap();
+    }
+}
+```
+```javascript
+import { invoke, Channel } from '@tauri-apps/api/core';
+const ch = new Channel();
+ch.onmessage = (msg) => setMouthShape(msg.mouth);
+await invoke('stream_visemes', { channel: ch });
+```
+**Channel vs Events:** Channel = ordered streaming within a command. Events = fire-and-forget broadcast from anywhere.
 
-Rust emit:
+## 7: Events (Rust -> JS Broadcast)
 ```rust
 app.emit("avatar-state", serde_json::json!({"state": "talking"}))?;
-// or target specific window:
-app.emit_to("glitch-overlay", "avatar-state", payload)?;
 ```
-
-JS listen:
 ```javascript
-import { listen } from '@tauri-apps/api/event';
-
-const unlisten = await listen('avatar-state', (event) => {
-  setState(event.payload.state);   // update data-state attribute
-});
-// Call unlisten() to remove when done
+const unlisten = await listen('avatar-state', (e) => setState(e.payload.state));
 ```
 
----
-
-### Workflow 6: Python Sidecar (AI Brain)
-**When to use:** Spawning the Python AI brain as a bundled subprocess
-
-`tauri.conf.json`:
-```json
-{
-  "bundle": {
-    "externalBin": ["binaries/glitch-brain"]
-  }
-}
-```
-
-Binary naming (REQUIRED — must match target triple):
-```
-binaries/glitch-brain-x86_64-unknown-linux-gnu   ← Linux
-binaries/glitch-brain-x86_64-pc-windows-msvc.exe ← Windows
-binaries/glitch-brain-aarch64-apple-darwin        ← macOS Apple Silicon
-```
-
-Get your triple: `rustc --print host-tuple`
-
-Rust spawn:
-```rust
-use tauri_plugin_shell::ShellExt;
-
-let (mut rx, child) = app.shell()
-  .sidecar("binaries/glitch-brain")?
-  .spawn()?;
-
-tokio::spawn(async move {
-  while let Some(event) = rx.recv().await {
-    match event {
-      CommandEvent::Stdout(line) => { /* parse JSON messages */ }
-      CommandEvent::Terminated(_) => break,
-      _ => {}
-    }
-  }
-});
-```
-
-**Simpler approach for Glitch:** Don't bundle Python. Start Python brain separately, connect via localhost WebSocket. Bundling requires PyInstaller compilation — complex. For dev/home use, just `subprocess` or systemd service.
-
-**Gotchas:**
-- Bundled sidecars need platform-specific binaries — one per OS
-- Python scripts can't be bundled directly — must be compiled with PyInstaller first
-- For local-only use (Glitch on your machine), running Python separately is simpler
-
----
-
-### Workflow 7: WebSocket to Python Brain
-**When to use:** Real-time bidirectional communication between overlay and Python AI
-
+## 8: Python Brain (WebSocket IPC)
+Don't bundle Python. Run brain as separate service, connect via localhost WS.
 ```bash
 npm run tauri add websocket
 ```
-
 ```javascript
 import { WebSocket } from '@tauri-apps/plugin-websocket';
-
 const ws = await WebSocket.connect('ws://127.0.0.1:8765');
-
 ws.addListener((msg) => {
-  const data = JSON.parse(msg.data);
-  if (data.action === 'setState')  setState(data.state);
-  if (data.action === 'setMouth')  setMouth(data.viseme);
-  if (data.action === 'setEyes')   setEyes(data.eyes);
+    const data = JSON.parse(msg.data);
+    if (data.action === 'setState') setState(data.state);
+    if (data.action === 'setMouth') setMouth(data.viseme);
 });
-
-// Send to brain
 await ws.send(JSON.stringify({ action: 'speak', text: 'Hello!' }));
 ```
+Permissions: `"websocket:allow-connect"`, `"websocket:allow-send"`
 
-Permissions (`capabilities/default.json`):
-```json
-{
-  "permissions": [
-    "websocket:allow-connect",
-    "websocket:allow-send"
-  ]
-}
+Sidecar naming (if bundling later): `binaries/glitch-brain-x86_64-unknown-linux-gnu` (get triple: `rustc --print host-tuple`)
+
+## 9: Window State Persistence
+```bash
+npm run tauri add window-state
 ```
-
-**Gotchas:**
-- The Python brain must be running before the WS connect — add retry logic or wait for sidecar stdout "ready" signal
-- Tauri WS plugin behaves differently from browser `WebSocket` — use the plugin import, not native WS
-
----
+```rust
+#[cfg(desktop)]
+app.handle().plugin(tauri_plugin_window_state::Builder::default().build());
+```
+Set `visible: false` in config. Plugin restores position then shows. Permission: `"window-state:default"`
 
 ## Command Reference
+| Action | How |
+|--------|-----|
+| Scaffold | `npm create tauri-app@latest` |
+| Add plugin | `npm run tauri add <name>` |
+| Build | `npm run tauri build` |
+| Dev mode | `npm run tauri dev` |
+| Invoke Rust | `invoke('cmd', {args})` from JS |
+| Stream to JS | `Channel<T>` param in command |
+| Emit broadcast | `app.emit("evt", payload)?` |
+| Global hotkey | `app.global_shortcut().register(shortcut)?` |
 
-| Action | How | Notes |
-|--------|-----|-------|
-| Scaffold project | `npm create tauri-app@latest` | Pick Rust + your frontend |
-| Add plugin | `npm run tauri add <plugin>` | e.g. `websocket`, `positioner`, `window-state` |
-| Build | `npm run tauri build` | Produces native binary |
-| Dev mode | `npm run tauri dev` | Hot reload |
-| List windows | `getAll()` from `@tauri-apps/api/window` | Returns all WebviewWindows |
-| Emit to frontend | `app.emit("event", payload)?` in Rust | JSON payload |
-| Invoke Rust | `invoke('command_name', args)` in JS | Awaitable |
-| Position to corner | `moveWindow(Position.BottomRight)` | Needs positioner plugin |
-| Persist position | `npm run tauri add window-state` | Auto save/restore |
+## Linux Gotchas -- X11 vs Wayland
 
-## Integration Points — Glitch
-- **Python AI brain:** Start as systemd service or sidecar → connect via `ws://127.0.0.1:8765`
-- **Sprite animation:** Tauri webview renders the HTML/CSS sprite overlay (`css-sprite-animation` scroll)
-- **Screen awareness:** AT-SPI called from Python brain (separate process) → sends window info over WebSocket
-- **ElevenLabs TTS:** Python brain generates audio + viseme timestamps → sends to JS → drives mouth sprites
-- **Keybinds:** `tauri-plugin-global-shortcut` for Super+G and Super+Shift+G
+| Issue | Sev | Workaround |
+|-------|-----|------------|
+| `setIgnoreCursorEvents` broken on Wayland | **HIGH** | X11 only for click-through |
+| Window position ignored on Wayland | HIGH | No global coords in Wayland protocol |
+| `alwaysOnTop` ignored by some WMs | MED | KDE/GNOME may override |
+| Wayland+NVIDIA crash | MED | `WEBKIT_DISABLE_DMABUF_RENDERER=1` (causes redraw glitches) |
+| CSS perf on WebKitGTK | MED | Only `transform`/`opacity`. No `filter`/`box-shadow`/`backdrop-filter` |
+| Tray icon invisible | LOW | Always attach a Menu |
+| No wlr-layer-shell | INFO | Tauri uses tao/wry, not wlr protocols |
 
-## Limitations & Gaps — CRITICAL FOR LINUX
+**Decision: X11 for Glitch MVP.** Force it: `GDK_BACKEND=x11 npm run tauri dev`
 
-| Issue | Severity | Workaround |
-|-------|----------|-----------|
-| `setIgnoreCursorEvents` **broken on Wayland** | HIGH | Target X11 only for MVP. Wayland users: use tray as primary interface |
-| Transparent window bug (v2 Windows) | MEDIUM | Mostly affects Windows users, Linux fine |
-| CSS animation performance on WebKitGTK | MEDIUM | Use transform/opacity only. Avoid filter, box-shadow, backdrop-filter |
-| Tray icon invisible on Linux without menu | LOW | Always attach a Menu |
-| Global hotkeys need extra plugin | LOW | Add `tauri-plugin-global-shortcut` |
-| AT-SPI "could not determine accessibility bus" error | LOW | Graceful degrade, not Tauri's responsibility |
-| Python sidecar bundling requires PyInstaller | MEDIUM | Run Python brain separately for local/dev use |
+## Glitch Integration Map
+- **Python brain:** systemd service -> `ws://127.0.0.1:8765`
+- **Sprite:** Tauri webview renders HTML/CSS overlay
+- **Screen awareness:** AT-SPI from Python -> WS -> Rust -> frontend
+- **TTS visemes:** Python generates audio + visemes -> Channel API -> mouth sprites
+- **Keybinds:** Super+G toggle, Super+Shift+G focus (global-shortcut plugin)
+- **State flow:** Python brain -> WS -> Rust -> Channel/Event -> JS -> CSS sprite
 
-**Click-through on Linux:** Overlay windows that let mouse events pass through to applications underneath are only reliable on X11. On Wayland this is unsupported. For Glitch MVP: use X11, make the window small enough to not be in the way, rather than relying on click-through.
-
-## Tips & Best Practices
-- **Start hidden, then show** — `visible: false` + window-state plugin = no startup flicker
-- **All capabilities denied by default** — if something doesn't work, check `capabilities/default.json` first
-- **Target X11 for MVP** — Wayland has too many overlay limitations. Add Wayland support later.
-- **Don't bundle Python for home use** — start the AI brain separately. Bundling (PyInstaller) is a whole project in itself.
-- **WebSocket is the right IPC for Glitch** — low latency, bidirectional, works perfectly for avatar state commands from Python brain
-- **Use `visible: false` at startup** — always. Avoids window flashing in wrong position before state restores.
-- **Rust commands are sync or async** — if your command does I/O, mark it `async` and return `Result<T, String>`
-- **Log to stdout from sidecar** — Rust reads it via `CommandEvent::Stdout`. Simple JSON messages work great as a protocol.
+## Tips
+- `visible: false` + window-state plugin = zero startup flicker
+- All capabilities denied by default -- check `capabilities/default.json`
+- No `Arc` for managed state -- Tauri wraps in Arc. Just `Mutex<T>`
+- Channel > Events for streaming. Events for broadcasts
+- `generate_handler!` called once. Last call wins
+- Async commands: `async fn` + `Result<T, String>`. Sync blocks main thread
+- Don't bundle Python for home use -- PyInstaller is a whole project

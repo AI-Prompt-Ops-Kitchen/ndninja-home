@@ -16,36 +16,66 @@ const LENGTH_PRESETS = [
 ] as const;
 
 // ── B-roll presets ────────────────────────────────────────────────────────────
-const BROLL_DURATION_PRESETS = [
-  { label: '4s', value: 4 },
-  { label: '6s', value: 6 },
-  { label: '8s', value: 8 },
-  { label: '10s', value: 10 },
-  { label: '15s', value: 15 },
+const BROLL_DURATION_GROUPS = [
+  { label: 'Quick cuts', presets: [
+    { label: '4s', value: 4 },
+    { label: '6s', value: 6 },
+  ]},
+  { label: 'Standard', presets: [
+    { label: '8s', value: 8 },
+    { label: '10s', value: 10 },
+  ]},
+  { label: 'Slow burn', presets: [
+    { label: '15s', value: 15 },
+    { label: '20s', value: 20 },
+  ]},
 ] as const;
 
 const BROLL_COUNT_OPTIONS = [1, 2, 3, 4, 5] as const;
 
 // ── Input form ───────────────────────────────────────────────────────────────
+// ── localStorage helpers ─────────────────────────────────────────────────────
+function lsGet<T>(key: string, fallback: T): T {
+  try {
+    const v = localStorage.getItem(`dojo:${key}`);
+    if (v === null) return fallback;
+    return JSON.parse(v) as T;
+  } catch { return fallback; }
+}
+function lsSet(key: string, value: unknown) {
+  try { localStorage.setItem(`dojo:${key}`, JSON.stringify(value)); } catch {}
+}
+
 function ArticleForm({ onJobCreated }: { onJobCreated: (id: string) => void }) {
   const [mode, setMode] = useState<'url' | 'text'>('url');
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
-  const [targetLength, setTargetLength] = useState(75);
-  const [customLength, setCustomLength] = useState(75);
-  const [useCustom, setUseCustom] = useState(false);
-  const [brollCount, setBrollCount] = useState(3);
-  const [brollDuration, setBrollDuration] = useState(4);
+  const [targetLength, setTargetLength] = useState(() => lsGet('targetLength', 75));
+  const [customLength, setCustomLength] = useState(() => lsGet('customLength', 75));
+  const [useCustom, setUseCustom] = useState(() => lsGet('useCustom', false));
+  const [brollCount, setBrollCount] = useState(() => lsGet('brollCount', 4));
+  const [brollDuration, setBrollDuration] = useState(() => lsGet('brollDuration', 10));
+  const [dualAnchor, setDualAnchor] = useState(() => lsGet('dualAnchor', false));
+  const [brollExpanded, setBrollExpanded] = useState(() => lsGet('brollExpanded', false));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Persist preferences on change
+  const updateTargetLength = (v: number) => { setTargetLength(v); lsSet('targetLength', v); };
+  const updateCustomLength = (v: number) => { setCustomLength(v); lsSet('customLength', v); };
+  const updateUseCustom = (v: boolean) => { setUseCustom(v); lsSet('useCustom', v); };
+  const updateBrollCount = (v: number) => { setBrollCount(v); lsSet('brollCount', v); };
+  const updateBrollDuration = (v: number) => { setBrollDuration(v); lsSet('brollDuration', v); };
+  const updateDualAnchor = (v: boolean) => { setDualAnchor(v); lsSet('dualAnchor', v); };
 
   const effectiveLength = useCustom ? customLength : targetLength;
 
   async function handleSubmit() {
     const payload: Parameters<typeof api.submitArticle>[0] = {
       target_length_sec: effectiveLength,
-      broll_count: brollCount,
-      broll_duration: brollDuration,
+      broll_count: dualAnchor ? 0 : brollCount,
+      broll_duration: dualAnchor ? 0 : brollDuration,
+      dual_anchor: dualAnchor,
     };
     if (mode === 'url') {
       if (!url.trim()) return;
@@ -89,10 +119,45 @@ function ArticleForm({ onJobCreated }: { onJobCreated: (id: string) => void }) {
         ))}
       </div>
 
+      {/* Format toggle */}
+      <div className="flex flex-col gap-2">
+        <span className="text-xs text-gray-500 uppercase tracking-wider">Format</span>
+        <div className="flex rounded-xl overflow-hidden border border-gray-700 self-start">
+          <button
+            onClick={() => updateDualAnchor(false)}
+            className={[
+              'px-4 py-1.5 text-sm font-medium transition-all',
+              !dualAnchor
+                ? 'bg-cyan-400 text-[#0a0a12]'
+                : 'text-gray-400 hover:text-gray-200',
+            ].join(' ')}
+          >
+            Solo Ninja
+          </button>
+          <button
+            onClick={() => { updateDualAnchor(true); if (!useCustom && targetLength < 75) updateTargetLength(90); }}
+            className={[
+              'px-4 py-1.5 text-sm font-medium transition-all',
+              dualAnchor
+                ? 'bg-cyan-400 text-[#0a0a12]'
+                : 'text-gray-400 hover:text-gray-200',
+            ].join(' ')}
+          >
+            Dual Anchor
+          </button>
+        </div>
+        <p className="text-xs text-gray-600">
+          {dualAnchor
+            ? 'Ninja + Glitch co-anchor news desk format'
+            : 'Single avatar narration'}
+        </p>
+      </div>
+
       {/* Input */}
       {mode === 'url' ? (
         <input
           type="url"
+          autoFocus
           placeholder="https://article.example.com/news-story"
           value={url}
           onChange={e => setUrl(e.target.value)}
@@ -118,7 +183,7 @@ function ArticleForm({ onJobCreated }: { onJobCreated: (id: string) => void }) {
           {LENGTH_PRESETS.map(p => (
             <button
               key={p.value}
-              onClick={() => { setTargetLength(p.value); setUseCustom(false); }}
+              onClick={() => { updateTargetLength(p.value); updateUseCustom(false); }}
               className={[
                 'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
                 !useCustom && targetLength === p.value
@@ -132,7 +197,7 @@ function ArticleForm({ onJobCreated }: { onJobCreated: (id: string) => void }) {
           ))}
           {/* Custom */}
           <button
-            onClick={() => setUseCustom(true)}
+            onClick={() => updateUseCustom(true)}
             className={[
               'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
               useCustom
@@ -152,7 +217,7 @@ function ArticleForm({ onJobCreated }: { onJobCreated: (id: string) => void }) {
               max={180}
               step={5}
               value={customLength}
-              onChange={e => setCustomLength(Number(e.target.value))}
+              onChange={e => updateCustomLength(Number(e.target.value))}
               className="flex-1 accent-cyan-400"
             />
             <span className="text-sm text-cyan-400 font-mono w-12 text-right">
@@ -166,56 +231,93 @@ function ArticleForm({ onJobCreated }: { onJobCreated: (id: string) => void }) {
         </p>
       </div>
 
-      {/* B-roll settings */}
-      <div className="flex flex-col gap-3 pt-1 border-t border-white/5">
-        <div className="flex gap-6">
-          {/* Clip duration */}
-          <div className="flex flex-col gap-2 flex-1">
-            <span className="text-xs text-gray-500 uppercase tracking-wider">B-roll Clip Length</span>
-            <div className="flex gap-2 flex-wrap">
-              {BROLL_DURATION_PRESETS.map(p => (
-                <button
-                  key={p.value}
-                  onClick={() => setBrollDuration(p.value)}
-                  className={[
-                    'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
-                    brollDuration === p.value
-                      ? 'bg-cyan-400/15 border-cyan-400/50 text-cyan-400'
-                      : 'border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600',
-                  ].join(' ')}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* B-roll settings — collapsible (hidden for dual anchor) */}
+      {!dualAnchor && (() => {
+        const brollTotal = brollCount * brollDuration;
+        const brollPct = effectiveLength > 0 ? Math.round((brollTotal / effectiveLength) * 100) : 0;
+        const overloaded = brollPct > 70;
+        return (
+          <div className="pt-1 border-t border-white/5">
+            <button
+              onClick={() => { const next = !brollExpanded; setBrollExpanded(next); lsSet('brollExpanded', next); }}
+              className="flex items-center justify-between w-full text-xs text-gray-500 py-1.5 hover:text-gray-400 transition-colors"
+            >
+              <span className="uppercase tracking-wider font-medium">B-roll</span>
+              <span className="text-gray-600">
+                {brollExpanded ? '▲ collapse' : `${brollCount} clips × ${brollDuration}s · ~${brollTotal}s ▾`}
+              </span>
+            </button>
+            {brollExpanded && (
+              <div className="flex flex-col gap-3 mt-2">
+                <div className="flex gap-6">
+                  {/* Clip duration — grouped */}
+                  <div className="flex flex-col gap-2 flex-1">
+                    <span className="text-xs text-gray-500 uppercase tracking-wider">Clip Length</span>
+                    <div className="flex gap-3 flex-wrap">
+                      {BROLL_DURATION_GROUPS.map(group => (
+                        <div key={group.label} className="flex flex-col gap-1">
+                          <span className="text-[10px] text-gray-600">{group.label}</span>
+                          <div className="flex gap-1.5">
+                            {group.presets.map(p => (
+                              <button
+                                key={p.value}
+                                onClick={() => updateBrollDuration(p.value)}
+                                className={[
+                                  'px-2.5 py-1.5 rounded-lg text-sm font-medium transition-all border',
+                                  brollDuration === p.value
+                                    ? 'bg-cyan-400/15 border-cyan-400/50 text-cyan-400'
+                                    : 'border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600',
+                                ].join(' ')}
+                              >
+                                {p.label}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-          {/* Clip count */}
-          <div className="flex flex-col gap-2">
-            <span className="text-xs text-gray-500 uppercase tracking-wider">B-roll Clips</span>
-            <div className="flex gap-2">
-              {BROLL_COUNT_OPTIONS.map(n => (
-                <button
-                  key={n}
-                  onClick={() => setBrollCount(n)}
-                  className={[
-                    'w-8 h-8 rounded-lg text-sm font-medium transition-all border',
-                    brollCount === n
-                      ? 'bg-cyan-400/15 border-cyan-400/50 text-cyan-400'
-                      : 'border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600',
-                  ].join(' ')}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+                  {/* Clip count */}
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs text-gray-500 uppercase tracking-wider">Clips</span>
+                    <div className="flex gap-2">
+                      {BROLL_COUNT_OPTIONS.map(n => (
+                        <button
+                          key={n}
+                          onClick={() => updateBrollCount(n)}
+                          className={[
+                            'w-8 h-8 rounded-lg text-sm font-medium transition-all border',
+                            brollCount === n
+                              ? 'bg-cyan-400/15 border-cyan-400/50 text-cyan-400'
+                              : 'border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600',
+                          ].join(' ')}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Proportion bar + warning */}
+                <div className="flex flex-col gap-1.5">
+                  <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${overloaded ? 'bg-amber-400' : 'bg-cyan-400/60'}`}
+                      style={{ width: `${Math.min(brollPct, 100)}%` }}
+                    />
+                  </div>
+                  <p className={`text-xs ${overloaded ? 'text-amber-400' : 'text-gray-600'}`}>
+                    {brollCount} clip{brollCount !== 1 ? 's' : ''} × {brollDuration}s · ~{brollTotal}s of B-roll in {effectiveLength}s video ({brollPct}%)
+                    {overloaded && ' — heavy on B-roll, narration will be short'}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-        <p className="text-xs text-gray-600">
-          {brollCount} clip{brollCount !== 1 ? 's' : ''} × {brollDuration}s ·
-          ~{Math.round(brollCount * brollDuration)}s of B-roll in {effectiveLength}s video
-        </p>
-      </div>
+        );
+      })()}
 
       {error && (
         <p className="text-xs text-red-400 bg-red-400/10 rounded-lg px-3 py-2">{error}</p>
@@ -388,10 +490,15 @@ export function ScriptWorkshop({ jobs, currentJobId, onCurrentJobChange }: Props
                 />
               ))}
             </div>
-            <p className="text-sm text-gray-400">Generating script with Claude…</p>
+            <p className="text-sm text-gray-400">
+              {currentJob?.dual_anchor
+                ? 'Generating dual-anchor script with Claude…'
+                : 'Generating script with Claude…'}
+            </p>
             <p className="text-xs text-gray-600">
-              Target: {currentJob?.target_length_sec}s ·{' '}
-              {currentJob?.broll_count ?? 3} B-roll × {currentJob?.broll_duration ?? 4}s
+              {currentJob?.dual_anchor
+                ? `Target: ${currentJob?.target_length_sec}s · Ninja + Glitch dialogue`
+                : `Target: ${currentJob?.target_length_sec}s · ${currentJob?.broll_count ?? 3} B-roll × ${currentJob?.broll_duration ?? 4}s`}
             </p>
           </motion.div>
         )}
@@ -400,7 +507,7 @@ export function ScriptWorkshop({ jobs, currentJobId, onCurrentJobChange }: Props
           <motion.div key="script" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="flex flex-col gap-4">
             <ScriptPreview job={currentJob} onGenerateVideo={handleGenerateVideo} />
-            <BrollWingman jobId={currentJob.id} />
+            {!currentJob.dual_anchor && <BrollWingman jobId={currentJob.id} />}
           </motion.div>
         )}
 
@@ -412,11 +519,20 @@ export function ScriptWorkshop({ jobs, currentJobId, onCurrentJobChange }: Props
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
             />
-            <p className="text-sm text-yellow-400">Generating video…</p>
-            <p className="text-xs text-gray-600">Kling Avatar is running (~5 min). Track in Jobs Panel.</p>
+            <p className="text-sm text-yellow-400">
+              {currentJob?.dual_anchor ? 'Rendering dual-anchor video…' : 'Generating video…'}
+            </p>
+            {/* Inline live status — no need to check Jobs Panel */}
+            <div className="text-xs text-gray-600 bg-[#18182e] rounded-lg px-4 py-2 font-mono flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+              {currentJob?.dual_anchor
+                ? 'Kling Avatar Pro rendering both anchors · ~15-20 min'
+                : 'Kling Avatar rendering · ~5 min'}
+            </div>
+            <p className="text-xs text-gray-700">You can start another script while this renders.</p>
             <button
               onClick={() => onCurrentJobChange(null)}
-              className="text-xs text-cyan-400 hover:underline mt-2"
+              className="text-xs text-cyan-400 hover:underline"
             >
               + Start another script
             </button>

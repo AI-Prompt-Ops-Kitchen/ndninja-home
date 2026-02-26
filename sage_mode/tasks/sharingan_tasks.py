@@ -13,6 +13,15 @@ from sage_mode.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
+
+def _rasengan_emit(event_type: str, payload: dict | None = None) -> None:
+    try:
+        import httpx
+        url = os.environ.get("RASENGAN_URL", "http://rasengan:8050")
+        httpx.post(f"{url}/events", json={"event_type": event_type, "source": "sharingan", "payload": payload or {}}, timeout=2.0)
+    except Exception:
+        pass
+
 SHARINGAN_DIR = os.environ.get("SHARINGAN_SCRIPT_DIR", "/app/sharingan")
 LOG_DIR = os.environ.get("SHARINGAN_LOG_DIR", "/data/logs")
 
@@ -57,18 +66,27 @@ def _run_script(script_name: str, args: list[str] | None = None) -> dict:
 def daily_review() -> dict:
     """Daily 3AM — extract observations from chat history (no API cost)."""
     logger.info("Running Sharingan daily review")
-    return _run_script("extract_daily_review.py")
+    result = _run_script("extract_daily_review.py")
+    if result.get("status") == "ok":
+        _rasengan_emit("sharingan.daily_review", {"result": "ok"})
+    return result
 
 
 @celery_app.task(name="sharingan.weekly_synthesis", queue="sharingan")
 def weekly_synthesis() -> dict:
     """Sunday 3AM — synthesize weekly chat history into workflow-insights scroll."""
     logger.info("Running Sharingan weekly synthesis")
-    return _run_script("extract_chat_history.py")
+    result = _run_script("extract_chat_history.py")
+    if result.get("status") == "ok":
+        _rasengan_emit("sharingan.weekly_synthesis", {"result": "ok"})
+    return result
 
 
 @celery_app.task(name="sharingan.autolearn", queue="sharingan")
 def autolearn() -> dict:
     """Sunday 4AM — autonomous scroll deepening."""
     logger.info("Running Sharingan autolearn")
-    return _run_script("autolearn.py")
+    result = _run_script("autolearn.py")
+    if result.get("status") == "ok":
+        _rasengan_emit("sharingan.autolearn", {"result": "ok"})
+    return result

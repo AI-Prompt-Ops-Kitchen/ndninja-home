@@ -148,17 +148,28 @@ function ReviewCard({ job }: { job: Job }) {
 
 function ApprovedCard({ job }: { job: Job }) {
   const [title, setTitle] = useState(() => {
-    // Pre-fill from script: first sentence after the intro
+    // Hook-first format: the first sentence IS the hook = best title
     if (job.script_text) {
-      const stripped = job.script_text.replace(/^What's up my fellow Ninjas[^.]*\.\s*/i, '');
-      const first = stripped.split(/[.!?]/)[0]?.trim().slice(0, 100);
+      const first = job.script_text.split(/[.!?]/)[0]?.trim().slice(0, 100);
       if (first) return first;
     }
     return '';
   });
-  const [description, setDescription] = useState('');
-  const [tags, setTags] = useState('gaming,news');
+  const [description, setDescription] = useState(() => {
+    // Pre-fill description from second sentence if available
+    if (job.script_text) {
+      const sentences = job.script_text.split(/[.!?]\s+/).filter(Boolean);
+      if (sentences.length > 1) return sentences[1].trim().slice(0, 200);
+    }
+    return '';
+  });
+  const [tags, setTags] = useState(() => {
+    const base = ['gaming', 'news'];
+    if (job.dual_anchor) base.push('dual anchor', 'ninja and glitch');
+    return base.join(',');
+  });
   const [privacy, setPrivacy] = useState<'private' | 'unlisted' | 'public'>('private');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -261,31 +272,45 @@ function ApprovedCard({ job }: { job: Job }) {
               onChange={e => setTitle(e.target.value)}
               className="w-full bg-[#0d0d1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-cyan-500/50 focus:outline-none"
             />
-            <textarea
-              placeholder="Description (optional)"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={2}
-              className="w-full bg-[#0d0d1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-cyan-500/50 focus:outline-none resize-none"
-            />
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Tags (comma-separated)"
-                value={tags}
-                onChange={e => setTags(e.target.value)}
-                className="flex-1 bg-[#0d0d1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-cyan-500/50 focus:outline-none"
-              />
-              <select
-                value={privacy}
-                onChange={e => setPrivacy(e.target.value as typeof privacy)}
-                className="bg-[#0d0d1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-cyan-500/50 focus:outline-none"
-              >
-                <option value="private">Private</option>
-                <option value="unlisted">Unlisted</option>
-                <option value="public">Public</option>
-              </select>
-            </div>
+
+            {/* Advanced options — collapsed by default */}
+            <button
+              onClick={() => setShowAdvanced(v => !v)}
+              className="text-xs text-gray-600 hover:text-gray-400 transition-colors self-start"
+            >
+              {showAdvanced ? '▲ Less options' : '+ Description, tags & privacy'}
+            </button>
+
+            {showAdvanced && (
+              <div className="flex flex-col gap-2">
+                <textarea
+                  placeholder="Description (optional)"
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  rows={2}
+                  className="w-full bg-[#0d0d1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-cyan-500/50 focus:outline-none resize-none"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Tags (comma-separated)"
+                    value={tags}
+                    onChange={e => setTags(e.target.value)}
+                    className="flex-1 bg-[#0d0d1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-cyan-500/50 focus:outline-none"
+                  />
+                  <select
+                    value={privacy}
+                    onChange={e => setPrivacy(e.target.value as typeof privacy)}
+                    className="bg-[#0d0d1a] border border-white/10 rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-cyan-500/50 focus:outline-none"
+                  >
+                    <option value="private">Private</option>
+                    <option value="unlisted">Unlisted</option>
+                    <option value="public">Public</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
             {error && <p className="text-xs text-red-400">{error}</p>}
             <Button
               variant="success"
@@ -325,15 +350,8 @@ export function ReviewQueue({ jobs }: Props) {
     || (j.status === 'error' && j.youtube_title)
   );
 
-  if (readyJobs.length === 0 && approvedJobs.length === 0) {
-    return (
-      <Card className="flex flex-col items-center justify-center gap-2 py-8">
-        <span className="text-2xl">🥷</span>
-        <p className="text-gray-600 text-sm">Nothing to review yet.</p>
-        <p className="text-gray-700 text-xs">Videos appear here when generation completes.</p>
-      </Card>
-    );
-  }
+  // Parent (App.tsx) handles visibility — don't render if nothing to show
+  if (readyJobs.length === 0 && approvedJobs.length === 0) return null;
 
   return (
     <div className="flex flex-col gap-4">

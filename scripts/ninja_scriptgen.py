@@ -48,9 +48,14 @@ TARGET_DURATION_SEC = 50  # Target spoken duration (40-60s with intro/outro)
 WORDS_PER_MINUTE = 155    # Average speaking rate for casual delivery
 MAX_WORDS = int(TARGET_DURATION_SEC / 60 * WORDS_PER_MINUTE)  # ~129 words
 
-# Standard intro/outro — baked into every video
+# Brand ID — short tag placed AFTER the hook, not before it
+SHORT_BRAND_ID = "Hi, I'm Neurodivergent Ninja."
+
+# Legacy intro kept for reference / dual-anchor use
 STANDARD_INTRO = "What's up my fellow Ninjas, this is Neurodivergent Ninja here back with another video."
-STANDARD_OUTRO = "Thanks for watching! Hit that like and subscribe button — it really helps the channel grow. Peace out ninjas, see you next time!"
+
+# Outro — ninja-flavored sign-off (CTA is in the script body now)
+STANDARD_OUTRO = "Stay sharp, stay dangerous. Catch you on the next one."
 
 # RSS Feeds by category
 RSS_FEEDS = {
@@ -76,35 +81,18 @@ RSS_FEEDS = {
 SCRIPT_TEMPLATES = {
     "tech_news": {
         "name": "Tech News Drop",
-        "structure": "hook → what happened → why it matters → hot take → CTA",
-        "tone": "Informative but casual. Like telling a friend about something cool you just read.",
-        "cta_options": [
-            "Follow for your daily ninja briefing!",
-            "Drop a comment — what do you think?",
-            "Smash follow if you want more tech drops like this!",
-            "Follow for more — your ninja has your back.",
-        ],
+        "structure": "hook → brand tag → what happened → why it matters → ninja's take → community question",
+        "tone": "Informative but energetic. Like a friend pulling you aside to tell you something wild.",
     },
     "gaming": {
         "name": "Gaming Hot Take",
-        "structure": "hook → the situation → your take → community question → CTA",
-        "tone": "Passionate gamer energy. You have opinions and you're not afraid to share them.",
-        "cta_options": [
-            "Follow for more gaming takes!",
-            "Let me know in the comments — am I wrong?",
-            "Follow the ninja for daily gaming intel!",
-            "Agree or disagree? Drop it in the comments!",
-        ],
+        "structure": "hook → brand tag → MAIN topic (fact/stakes/reaction) → transition → side items (quick hits) → micro-summary → ninja's take on MAIN → community question",
+        "tone": "Passionate gamer energy. Use gacha vocabulary naturally (kit, pity, apologems, copium). You have strong opinions.",
     },
     "ai": {
         "name": "AI Update",
-        "structure": "hook → what's new → real-world impact → prediction → CTA",
-        "tone": "Excited but grounded. Make AI accessible, not scary.",
-        "cta_options": [
-            "Follow for AI updates that actually make sense!",
-            "The future is wild — follow to keep up!",
-            "Follow your ninja for more AI intel!",
-        ],
+        "structure": "hook → brand tag → what's new → real-world impact → ninja's take → community question",
+        "tone": "Excited but grounded. Make AI accessible, not scary. You're the friend who makes tech make sense.",
     },
 }
 
@@ -279,12 +267,12 @@ def generate_script_with_llm(story: Story, template_key: str = None) -> Script:
 
     template = SCRIPT_TEMPLATES[template_key]
 
-    # Calculate body word budget (total minus intro/outro)
-    intro_words = len(STANDARD_INTRO.split())
+    # Calculate body word budget (total minus brand ID + outro)
+    brand_words = len(SHORT_BRAND_ID.split())
     outro_words = len(STANDARD_OUTRO.split())
-    body_max_words = MAX_WORDS - intro_words - outro_words
+    body_max_words = MAX_WORDS - brand_words - outro_words
 
-    prompt = f"""You are a script writer for "{BRAND_NAME}", a YouTube Shorts and Instagram Reels channel.
+    prompt = f"""You are a script writer for "{BRAND_NAME}", a YouTube Shorts channel covering gaming and tech news.
 Write a short-form video script based on this story.
 
 STORY:
@@ -292,21 +280,38 @@ Title: {story.title}
 Summary: {story.summary}
 Source: {story.source}
 
-SCRIPT REQUIREMENTS:
+SCRIPT STRUCTURE (follow this exact order):
+
+1. HOOK (1-2 sentences, ~12 words): The single most interesting or shocking fact from this story. NO greeting. NO name. Jump straight into the news. Stop the scroll.
+   Good examples: "Sony just ended cross-gen support and nobody's talking about it."
+   "This new banner costs 400 bucks to guarantee — and players are DEFENDING it."
+   Bad examples: "Hey guys, today we're talking about..." or "Big news dropped today..."
+
+2. BRAND TAG (fixed — do NOT change this): "{SHORT_BRAND_ID}"
+
+3. MAIN TOPIC (~40-50 words): The single biggest story. Give it the full Fact → Stakes/Implication → Reaction arc. Go DEEP on this one — explain WHY it matters, not just WHAT happened. Every sentence should make the viewer need the next one.
+
+4. TRANSITION + SIDE ITEMS (~15-20 words total): Use a verbal signpost to shift gears, then give 1-2 quick mentions of related news. One sentence each, max.
+   Transition phrases (pick one): "But here's the real headline —" / "Oh and real quick —" / "Now the part everyone's sleeping on —" / "Quick side note though —"
+
+5. MICRO-SUMMARY (1 short sentence): Re-anchor the viewer on the main story before your take. Example: "So yeah, this banner is basically a whale trap."
+
+6. NINJA'S TAKE (exactly 1 sentence starting with "Here's what I actually think —"): A specific, opinionated stance on the MAIN TOPIC. NOT vague ("this is big news"). BE SPECIFIC ("Sony knows 30 percent of players still buy physical and this kills the used games market"). Take a real position.
+
+7. COMMUNITY HOOK (1 sentence): A specific question that drives comments. Tie it to the main topic. "Are you pulling on this banner or saving?" NOT "What do you think? Let me know below."
+
+RULES:
 - Format: {template['name']}
-- Structure: scroll-stopping hook → what happened → why it matters → hot take
 - Tone: {template['tone']}
-- Target length: {body_max_words} words maximum (the body only — intro/outro are added automatically)
-- Write ONLY the body content — do NOT include any greeting or sign-off
-- The intro ("{STANDARD_INTRO}") and outro ("{STANDARD_OUTRO}") will be prepended/appended automatically
-- Start immediately with a scroll-stopping hook about the topic
+- Target length: {body_max_words} words TOTAL (hook through community hook — the outro is added automatically)
+- ONE main course, TWO side dishes — most of the word budget goes to the MAIN TOPIC
 - Use short, punchy sentences. No filler words.
 - Write as one continuous flowing paragraph — NO paragraph breaks (they cause TTS pauses)
-- Write ONLY the spoken script text — no stage directions, no [brackets], no formatting
-- The entire script should flow naturally as casual speech
+- Write ONLY spoken script text — no stage directions, no [brackets], no formatting
+- Do NOT include any greeting, sign-off, or the outro — those are added automatically
+- The entire script should flow naturally as energetic casual speech
 
-OUTPUT FORMAT:
-Return ONLY the body script text, nothing else. No titles, no labels, no explanations."""
+OUTPUT: Return ONLY the script text (hook through community hook). Nothing else."""
 
     # Try Anthropic first, then OpenAI
     api_key = get_api_key("anthropic")
@@ -374,14 +379,42 @@ def _generate_with_openai(prompt: str, story: Story, template_key: str,
 
 
 def _build_script(text: str, story: Story, template_key: str) -> Script:
-    """Build a Script object from generated text, wrapping with standard intro/outro."""
-    # Strip any greeting the LLM may have added anyway
-    for prefix in ["Hey Ninjas!", "Hey ninjas!", "What's up ninjas!", "What's up my fellow Ninjas,"]:
+    """Build a Script object from generated text.
+
+    Hook-first structure: the LLM output already contains the hook + brand ID +
+    body + opinion + community question. We only append the outro.
+    """
+    # Strip any greeting the LLM may have added despite instructions
+    for prefix in [
+        "Hey Ninjas!", "Hey ninjas!", "What's up ninjas!",
+        "What's up my fellow Ninjas,", "What's up my fellow Ninjas!",
+        "I'm Neurodivergent Ninja here back with another video.",
+        "This is Neurodivergent Ninja here back with another video.",
+    ]:
         if text.startswith(prefix):
             text = text[len(prefix):].strip()
 
-    # Wrap with standard intro and outro
-    full_text = f"{STANDARD_INTRO} {text} {STANDARD_OUTRO}"
+    # Ensure the brand tag is present (LLM sometimes drops it)
+    if SHORT_BRAND_ID not in text:
+        # Find the end of the first sentence (the hook) and insert brand tag
+        first_period = text.find(". ")
+        first_excl = text.find("! ")
+        first_q = text.find("? ")
+        # Find earliest sentence boundary
+        ends = [i for i in [first_period, first_excl, first_q] if i > 0]
+        if ends:
+            insert_at = min(ends) + 2
+            text = text[:insert_at] + SHORT_BRAND_ID + " " + text[insert_at:]
+        else:
+            # Fallback: prepend brand tag
+            text = SHORT_BRAND_ID + " " + text
+
+    # Extract hook (everything before brand tag) for the Script object
+    brand_idx = text.find(SHORT_BRAND_ID)
+    hook = text[:brand_idx].strip() if brand_idx > 0 else text.split(". ")[0]
+
+    # Append outro only (hook is already in the body)
+    full_text = f"{text} {STANDARD_OUTRO}"
 
     words = full_text.split()
     word_count = len(words)
@@ -389,7 +422,7 @@ def _build_script(text: str, story: Story, template_key: str) -> Script:
 
     return Script(
         title=story.title,
-        hook=STANDARD_INTRO,
+        hook=hook,
         body=text,
         full_text=full_text,
         word_count=word_count,

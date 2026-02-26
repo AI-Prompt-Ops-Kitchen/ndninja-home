@@ -21,11 +21,16 @@ interface Props {
 
 function jobTitle(job: Job): string {
   if (job.script_text) {
-    // First sentence of the script body (skip the intro)
-    const stripped = job.script_text.replace(/^What's up my fellow Ninjas[^.]*\.\s*/i, '');
-    return stripped.split(/[.!?]/)[0]?.trim().slice(0, 80) || 'Untitled';
+    // Hook-first format: first sentence IS the hook = best title
+    return job.script_text.split(/[.!?]/)[0]?.trim().slice(0, 80) || 'Untitled';
   }
-  if (job.article_url) return job.article_url.slice(0, 70);
+  if (job.article_url) {
+    // Show domain + path instead of raw URL
+    try {
+      const u = new URL(job.article_url);
+      return `${u.hostname}${u.pathname}`.slice(0, 70);
+    } catch { return job.article_url.slice(0, 70); }
+  }
   return 'New job';
 }
 

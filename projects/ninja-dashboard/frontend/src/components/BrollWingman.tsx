@@ -166,17 +166,46 @@ function SlotCard({
     ? slot.candidates.find(c => c.id === slot.approved_candidate_id)
     : null;
 
+  // Compact resolved view — single row instead of full card
+  if (isResolved && !editing) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#111120] border border-white/5"
+      >
+        <span className={cn(
+          'text-xs',
+          slot.status === 'approved' ? 'text-green-400' : 'text-gray-600'
+        )}>
+          {slot.status === 'approved' ? '✓' : '—'}
+        </span>
+        <span className="text-xs font-bold text-purple-400">Slot {slot.slot_index + 1}</span>
+        <span className="text-xs text-gray-400 truncate flex-1">{slot.keyword}</span>
+        {approvedCandidate?.preview_url && (
+          <img
+            src={approvedCandidate.preview_url}
+            alt={approvedCandidate.title || ''}
+            className="w-10 h-7 rounded object-cover border border-white/10 shrink-0"
+          />
+        )}
+        <button
+          onClick={() => setEditing(true)}
+          className="text-[10px] text-gray-600 hover:text-purple-400 transition-colors shrink-0"
+        >
+          Edit
+        </button>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className={cn(
-        'rounded-xl border p-3 transition-all',
-        isResolved && !editing
-          ? 'border-white/5 bg-[#111120]'
-          : 'border-purple-500/20 bg-[#14142a]',
-      )}
+      className="rounded-xl border border-purple-500/20 bg-[#14142a] p-3 transition-all"
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
@@ -189,28 +218,6 @@ function SlotCard({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {slot.status === 'approved' && !editing && (
-            <>
-              <span className="text-xs text-green-400 font-semibold">Approved</span>
-              <button
-                onClick={() => setEditing(true)}
-                className="text-[10px] text-gray-600 hover:text-purple-400 transition-colors"
-              >
-                Edit
-              </button>
-            </>
-          )}
-          {slot.status === 'skipped' && !editing && (
-            <>
-              <span className="text-xs text-gray-500 font-semibold">Skipped</span>
-              <button
-                onClick={() => setEditing(true)}
-                className="text-[10px] text-gray-600 hover:text-purple-400 transition-colors"
-              >
-                Edit
-              </button>
-            </>
-          )}
           {isSearching && (
             <span className="flex items-center gap-1.5 text-xs text-purple-400">
               <motion.span
@@ -221,34 +228,22 @@ function SlotCard({
               Searching...
             </span>
           )}
+          {editing && (
+            <button
+              onClick={() => setEditing(false)}
+              className="text-[10px] text-gray-600 hover:text-gray-400 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Context sentence */}
+      {/* Context sentence — prominent visual anchor for working memory */}
       {slot.sentence && (
-        <p className="text-xs text-gray-500 mb-2 leading-relaxed line-clamp-2">
-          "{slot.sentence}"
+        <p className="text-sm text-gray-300 mb-3 leading-relaxed italic border-l-2 border-purple-500/30 pl-3">
+          {slot.sentence}
         </p>
-      )}
-
-      {/* Approved selection summary (collapsed view) */}
-      {isResolved && !editing && approvedCandidate && (
-        <div className="flex items-center gap-2 mt-1">
-          {approvedCandidate.preview_url ? (
-            <img
-              src={approvedCandidate.preview_url}
-              alt={approvedCandidate.title || ''}
-              className="w-16 h-11 rounded object-cover border border-white/10"
-            />
-          ) : (
-            <div className="w-16 h-11 rounded bg-[#1a1a30] flex items-center justify-center border border-white/10">
-              <span className="text-[8px] text-gray-600">Local</span>
-            </div>
-          )}
-          <span className="text-xs text-gray-400 truncate">
-            {approvedCandidate.title || approvedCandidate.local_path?.split('/').pop() || 'Selected clip'}
-          </span>
-        </div>
       )}
 
       {/* Candidate strip — show when not resolved OR when editing */}
@@ -298,11 +293,6 @@ function SlotCard({
           <Button variant="ghost" size="sm" onClick={() => { onSkip(); setEditing(false); }}>
             Skip
           </Button>
-          {editing && (
-            <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
-              Cancel
-            </Button>
-          )}
         </div>
       )}
 

@@ -11,63 +11,21 @@ interface UploadedFile {
   time: number;
 }
 
-interface BrollClip {
-  filename: string;
-  size_mb: number;
-  modified: string;
-}
-
-// ── B-roll library panel ──────────────────────────────────────────────────────
-function BrollLibrary({ refreshTrigger }: { refreshTrigger: number }) {
-  const [clips, setClips] = useState<BrollClip[]>([]);
-  const [deleting, setDeleting] = useState<string | null>(null);
+// ── B-roll upload summary (library is now a separate panel) ──────────────────
+function BrollUploadSummary({ refreshTrigger }: { refreshTrigger: number }) {
+  const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    fetch('/api/broll')
+    fetch('/api/broll/library?per_page=1')
       .then(r => r.json())
-      .then(setClips)
+      .then(d => setCount(d.total))
       .catch(() => {});
   }, [refreshTrigger]);
 
-  async function handleDelete(filename: string) {
-    setDeleting(filename);
-    try {
-      await fetch(`/api/broll/${encodeURIComponent(filename)}`, { method: 'DELETE' });
-      setClips(prev => prev.filter(c => c.filename !== filename));
-    } finally {
-      setDeleting(null);
-    }
-  }
-
-  if (clips.length === 0) {
-    return (
-      <p className="text-xs text-gray-600 text-center py-3">
-        No B-roll clips yet — upload game footage below
-      </p>
-    );
-  }
-
   return (
-    <div className="flex flex-col gap-1.5 max-h-40 overflow-y-auto scrollbar-thin">
-      {clips.map(clip => (
-        <div
-          key={clip.filename}
-          className="flex items-center gap-2 text-xs bg-[#18182e] rounded-lg px-3 py-2"
-        >
-          <span className="text-purple-400">🎬</span>
-          <span className="truncate text-gray-300 flex-1 font-mono">{clip.filename}</span>
-          <span className="text-gray-600 whitespace-nowrap shrink-0">{clip.size_mb}MB</span>
-          <button
-            onClick={() => handleDelete(clip.filename)}
-            disabled={deleting === clip.filename}
-            className="text-gray-700 hover:text-red-400 transition-colors shrink-0 ml-1"
-            title="Remove from library"
-          >
-            {deleting === clip.filename ? '…' : '✕'}
-          </button>
-        </div>
-      ))}
-    </div>
+    <p className="text-xs text-gray-500 text-center py-2">
+      {count !== null ? `${count} clips in library` : '...'} — browse & manage in the B-Roll Library panel
+    </p>
   );
 }
 
@@ -229,8 +187,8 @@ export function UploadZone() {
         </div>
       </div>
 
-      {/* B-roll library list */}
-      {isBroll && <BrollLibrary refreshTrigger={brollRefresh} />}
+      {/* B-roll count summary */}
+      {isBroll && <BrollUploadSummary refreshTrigger={brollRefresh} />}
 
       {/* YouTube clip form */}
       {isBroll && <YoutubeClipForm onClipped={() => setBrollRefresh(n => n + 1)} />}

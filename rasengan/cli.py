@@ -21,6 +21,7 @@ DEPLOY_REGISTRY = {
     "sage_mode": "/home/ndninja/sage_mode/swarm-deploy.sh",
     "ndn_infra": "/home/ndninja/infra/deploy.sh",
     "landing": "/home/ndninja/server-landing/deploy.sh",
+    "dojo": "/home/ndninja/projects/ninja-dashboard/run.sh",
 }
 
 # ── ANSI colors ──────────────────────────────────────────────────────────────
@@ -121,6 +122,28 @@ def fmt_rule(rule: dict):
     )
 
 
+def fmt_schedule(sched: dict):
+    sid = sched.get("id", "?")
+    name = sched.get("name", "?")
+    cron = sched.get("cron_expr", "?")
+    etype = sched.get("event_type", "?")
+    enabled = sched.get("enabled", False)
+    tag = f"{C_GREEN}ON{C_RESET}" if enabled else f"{C_RED}OFF{C_RESET}"
+    last = _ts(sched.get("last_run_at", "")) if sched.get("last_run_at") else "never"
+    next_run = _ts(sched.get("next_run_at", "")) if sched.get("next_run_at") else "?"
+
+    print(
+        f"  {C_DIM}#{sid}{C_RESET}  "
+        f"[{tag}]  "
+        f"{C_BOLD}{name}{C_RESET}  "
+        f"{C_CYAN}{cron}{C_RESET}  "
+        f"→ {C_MAGENTA}{etype}{C_RESET}"
+    )
+    print(
+        f"       {C_DIM}last: {last}  next: {next_run}{C_RESET}"
+    )
+
+
 def fmt_execution(ex: dict):
     eid = ex.get("id", "?")
     rule_id = ex.get("rule_id", "?")
@@ -136,6 +159,30 @@ def fmt_execution(ex: dict):
         f"[{status}]  "
         f"{C_DIM}{ts}{C_RESET}"
     )
+
+def fmt_pipeline(run: dict):
+    job_id = run.get("job_id", "?")
+    stage = run.get("current_stage", "?")
+    status = run.get("status", "?")
+    started = _ts(run.get("started_at", ""))
+    updated = _ts(run.get("updated_at", ""))
+
+    status_colors = {
+        "active": C_CYAN, "completed": C_GREEN,
+        "failed": C_RED, "stalled": C_YELLOW,
+    }
+    color = status_colors.get(status, C_WHITE)
+
+    print(
+        f"  {C_BOLD}{job_id[:12]}{C_RESET}  "
+        f"[{color}{status.upper()}{C_RESET}]  "
+        f"stage={C_MAGENTA}{stage}{C_RESET}  "
+        f"{C_DIM}started={started}  updated={updated}{C_RESET}"
+    )
+    error = run.get("error")
+    if error:
+        print(f"       {C_RED}error: {error[:100]}{C_RESET}")
+
 
 # ── Command handlers ─────────────────────────────────────────────────────────
 
@@ -179,7 +226,23 @@ def cmd_events(args):
     print()
 
 
-def cmd_resume(_args):
+def cmd_resume(args):
+    if hasattr(args, 'push') and args.push:
+        result = _post("/push-targets/push", {}).json()
+        targets = result.get("targets", 0)
+        if targets == 0:
+            print(f"{C_DIM}no push targets configured{C_RESET}")
+            return
+        for r in result.get("results", []):
+            name = r.get("name", "?")
+            res = r.get("result", {})
+            if "error" in res:
+                print(f"  {C_RED}FAIL{C_RESET}  {name}: {res['error']}")
+            else:
+                print(f"  {C_GREEN}OK{C_RESET}  {name}: {json.dumps(res)}")
+        print(f"\n{C_GREEN}Pushed to {targets} target(s){C_RESET}")
+        return
+
     data = _get("/resume")
     print(f"\n{C_BOLD}Context Resume{C_RESET}  {C_DIM}{_ts(data.get('generated_at', ''))}{C_RESET}\n")
 
@@ -224,6 +287,34 @@ def cmd_resume(_args):
                 f"[{status_color}{status_icon}{C_RESET}]  "
                 f"{C_DIM}{_ts(info.get('last_at', ''))}{dur_str}{C_RESET}"
             )
+
+    pipes = data.get("pipelines", {})
+    if pipes:
+        active = pipes.get("active", [])
+        stalled = pipes.get("stalled", [])
+        last = pipes.get("last_completed")
+        if active or stalled or last:
+            print(f"\n  {C_BOLD}Pipelines:{C_RESET}")
+            for p in active:
+                print(
+                    f"    {C_CYAN}ACTIVE{C_RESET}  "
+                    f"{C_BOLD}{p['job_id'][:12]}{C_RESET}  "
+                    f"stage={C_MAGENTA}{p['stage']}{C_RESET}"
+                )
+            for p in stalled:
+                print(
+                    f"    {C_YELLOW}STALLED{C_RESET}  "
+                    f"{C_BOLD}{p['job_id'][:12]}{C_RESET}  "
+                    f"stage={C_MAGENTA}{p['stage']}{C_RESET}"
+                )
+            if last:
+                dur = last.get("duration_seconds")
+                dur_str = f" ({dur}s)" if dur is not None else ""
+                print(
+                    f"    {C_GREEN}LAST OK{C_RESET}  "
+                    f"{C_BOLD}{last['job_id'][:12]}{C_RESET}"
+                    f"{dur_str}"
+                )
 
     recent = data.get("recent_events", [])
     if recent:
@@ -296,6 +387,157 @@ def cmd_rules(args):
         print(f"\n{C_BOLD}Execution Log{C_RESET} ({len(execs)}):\n")
         for ex in execs:
             fmt_execution(ex)
+        print()
+
+
+def cmd_schedules(args):
+    sub = args.sched_cmd or "list"
+
+    if sub == "list":
+        scheds = _get("/schedules")
+        if not scheds:
+            print(f"{C_DIM}no schedules defined{C_RESET}")
+            return
+        print(f"\n{C_BOLD}Schedules{C_RESET} ({len(scheds)}):\n")
+        for s in scheds:
+            fmt_schedule(s)
+        print()
+
+    elif sub == "add":
+        if not args.sched_name or not args.sched_cron or not args.sched_event:
+            _die("usage: schedules add <name> <cron> <event_type> [--payload '{}']")
+        payload = {}
+        if args.sched_payload:
+            try:
+                payload = json.loads(args.sched_payload)
+            except json.JSONDecodeError as e:
+                _die(f"invalid JSON payload: {e}")
+        body = {
+            "name": args.sched_name,
+            "cron_expr": args.sched_cron,
+            "event_type": args.sched_event,
+            "payload": payload,
+        }
+        r = _post("/schedules", body)
+        sched = r.json()
+        print(
+            f"{C_GREEN}created{C_RESET} schedule #{sched.get('id', '?')}  "
+            f"{C_BOLD}{sched.get('name', '?')}{C_RESET}"
+        )
+
+    elif sub == "toggle":
+        if not args.sched_id:
+            _die("usage: schedules toggle <id>")
+        r = _patch(f"/schedules/{args.sched_id}/toggle")
+        sched = r.json()
+        state = f"{C_GREEN}enabled{C_RESET}" if sched.get("enabled") else f"{C_RED}disabled{C_RESET}"
+        print(f"schedule #{args.sched_id} {state}")
+
+    elif sub == "delete":
+        if not args.sched_id:
+            _die("usage: schedules delete <id>")
+        _delete(f"/schedules/{args.sched_id}")
+        print(f"{C_GREEN}deleted{C_RESET} schedule #{args.sched_id}")
+
+
+def cmd_push_targets(args):
+    sub = args.pt_cmd or "list"
+
+    if sub == "list":
+        targets = _get("/push-targets")
+        if not targets:
+            print(f"{C_DIM}no push targets configured{C_RESET}")
+            return
+        print(f"\n{C_BOLD}Push Targets{C_RESET} ({len(targets)}):\n")
+        for t in targets:
+            tid = t.get("id", "?")
+            name = t.get("name", "?")
+            ttype = t.get("type", "?")
+            enabled = t.get("enabled", False)
+            tag = f"{C_GREEN}ON{C_RESET}" if enabled else f"{C_RED}OFF{C_RESET}"
+            config = t.get("config", {})
+            dest = config.get("path") or config.get("url") or "?"
+            print(
+                f"  {C_DIM}#{tid}{C_RESET}  "
+                f"[{tag}]  "
+                f"{C_BOLD}{name}{C_RESET}  "
+                f"{C_CYAN}{ttype}{C_RESET}  "
+                f"→ {C_DIM}{dest}{C_RESET}"
+            )
+        print()
+
+    elif sub == "add":
+        if not args.pt_name or not args.pt_type or not args.pt_config:
+            _die("usage: push-targets add <name> <type> '<config_json>'")
+        try:
+            config = json.loads(args.pt_config)
+        except json.JSONDecodeError as e:
+            _die(f"invalid JSON config: {e}")
+        body = {"name": args.pt_name, "type": args.pt_type, "config": config}
+        r = _post("/push-targets", body)
+        target = r.json()
+        print(f"{C_GREEN}created{C_RESET} push target #{target.get('id', '?')}  {C_BOLD}{target.get('name', '?')}{C_RESET}")
+
+    elif sub == "toggle":
+        if not args.pt_id:
+            _die("usage: push-targets toggle <id>")
+        r = _patch(f"/push-targets/{args.pt_id}/toggle")
+        target = r.json()
+        state = f"{C_GREEN}enabled{C_RESET}" if target.get("enabled") else f"{C_RED}disabled{C_RESET}"
+        print(f"push target #{args.pt_id} {state}")
+
+    elif sub == "delete":
+        if not args.pt_id:
+            _die("usage: push-targets delete <id>")
+        _delete(f"/push-targets/{args.pt_id}")
+        print(f"{C_GREEN}deleted{C_RESET} push target #{args.pt_id}")
+
+
+def cmd_pipelines(args):
+    sub = args.pipe_cmd or "list"
+
+    if sub == "list":
+        params = {"limit": args.limit}
+        if args.pipe_status:
+            params["status"] = args.pipe_status
+        runs = _get("/pipelines", **params)
+        if not runs:
+            print(f"{C_DIM}no pipeline runs found{C_RESET}")
+            return
+        print(f"\n{C_BOLD}Pipeline Runs{C_RESET} ({len(runs)}):\n")
+        for r in runs:
+            fmt_pipeline(r)
+        print()
+
+    elif sub == "get":
+        if not args.pipe_job_id:
+            _die("usage: pipelines get <job_id>")
+        run = _get(f"/pipelines/{args.pipe_job_id}")
+        fmt_pipeline(run)
+        stages = run.get("stages", [])
+        if stages:
+            print(f"\n  {C_BOLD}Stage History:{C_RESET}")
+            for s in stages:
+                entered = _ts(s.get("entered_at", ""))
+                exited = _ts(s.get("exited_at", "")) if s.get("exited_at") else "..."
+                print(
+                    f"    {C_MAGENTA}{s['stage']:12s}{C_RESET}  "
+                    f"{C_DIM}{entered} → {exited}{C_RESET}"
+                )
+        print()
+
+    elif sub == "stats":
+        stats = _get("/pipelines/stats")
+        print(f"\n{C_BOLD}Pipeline Stats{C_RESET}:\n")
+        print(f"  Runs (24h):    {C_BOLD}{stats.get('total_runs_24h', 0)}{C_RESET}")
+        print(f"  Success rate:  {C_BOLD}{stats.get('success_rate_24h', 0):.0%}{C_RESET}")
+        print(f"  Active:        {C_CYAN}{stats.get('active_runs', 0)}{C_RESET}")
+        print(f"  Stalled:       {C_YELLOW}{stats.get('stalled_runs', 0)}{C_RESET}")
+        avg = stats.get("avg_duration_seconds", {})
+        if avg:
+            print(f"\n  {C_BOLD}Avg Duration (7d):{C_RESET}")
+            for stage, secs in avg.items():
+                print(f"    {C_MAGENTA}{stage:12s}{C_RESET}  {secs:.0f}s")
         print()
 
 
@@ -428,7 +670,8 @@ def build_parser():
     ev.add_argument("--limit", "-n", type=int, default=20, help="Max results (default 20)")
 
     # resume
-    sub.add_parser("resume", help="Context recovery snapshot")
+    rs = sub.add_parser("resume", help="Context recovery snapshot")
+    rs.add_argument("--push", action="store_true", help="Push resume to all configured targets")
 
     # emit
     em = sub.add_parser("emit", help="Fire an event")
@@ -444,6 +687,37 @@ def build_parser():
     ru.add_argument("json_str", nargs="?", default=None, help="JSON for add, or rule ID")
     ru.add_argument("rule_id", nargs="?", default=None, help="Rule ID for toggle/delete/log")
     ru.add_argument("--limit", "-n", type=int, default=20, help="Limit for log")
+
+    # schedules
+    sc = sub.add_parser("schedules", help="Manage scheduled triggers")
+    sc.add_argument("sched_cmd", nargs="?", default="list",
+                     choices=["list", "add", "toggle", "delete"],
+                     help="Subcommand (default: list)")
+    sc.add_argument("sched_name", nargs="?", default=None, help="Schedule name (for add)")
+    sc.add_argument("sched_cron", nargs="?", default=None, help="Cron expression (for add)")
+    sc.add_argument("sched_event", nargs="?", default=None, help="Event type (for add)")
+    sc.add_argument("--payload", dest="sched_payload", default=None, help="JSON payload (for add)")
+    sc.add_argument("sched_id", nargs="?", default=None, help="Schedule ID (for toggle/delete)")
+
+    # pipelines
+    pl = sub.add_parser("pipelines", help="View pipeline run state and stats")
+    pl.add_argument("pipe_cmd", nargs="?", default="list",
+                     choices=["list", "get", "stats"],
+                     help="Subcommand (default: list)")
+    pl.add_argument("pipe_job_id", nargs="?", default=None, help="Job ID (for get)")
+    pl.add_argument("--status", dest="pipe_status", default=None,
+                     help="Filter: active, completed, failed, stalled")
+    pl.add_argument("--limit", "-n", type=int, default=20, help="Max results (default 20)")
+
+    # push-targets
+    pt = sub.add_parser("push-targets", help="Manage resume push targets")
+    pt.add_argument("pt_cmd", nargs="?", default="list",
+                     choices=["list", "add", "toggle", "delete"],
+                     help="Subcommand (default: list)")
+    pt.add_argument("pt_name", nargs="?", default=None, help="Target name (for add)")
+    pt.add_argument("pt_type", nargs="?", default=None, help="Target type: file|webhook (for add)")
+    pt.add_argument("pt_config", nargs="?", default=None, help="JSON config (for add)")
+    pt.add_argument("pt_id", nargs="?", default=None, help="Target ID (for toggle/delete)")
 
     # deploy
     dp = sub.add_parser("deploy", help="Run deploy scripts with event tracking")
@@ -478,12 +752,27 @@ def main():
             args.rule_id = args.json_str
             args.json_str = None
 
+    # Handle schedules subcommand ID parsing — sched_name doubles as sched_id for toggle/delete
+    if args.command == "schedules" and args.sched_cmd in ("toggle", "delete"):
+        if args.sched_name and not args.sched_id:
+            args.sched_id = args.sched_name
+            args.sched_name = None
+
+    # Handle push-targets subcommand ID parsing
+    if args.command == "push-targets" and args.pt_cmd in ("toggle", "delete"):
+        if args.pt_name and not args.pt_id:
+            args.pt_id = args.pt_name
+            args.pt_name = None
+
     handlers = {
         "status": cmd_status,
         "events": cmd_events,
         "resume": cmd_resume,
         "emit": cmd_emit,
         "rules": cmd_rules,
+        "schedules": cmd_schedules,
+        "pipelines": cmd_pipelines,
+        "push-targets": cmd_push_targets,
         "deploy": cmd_deploy,
         "ci": cmd_ci,
     }

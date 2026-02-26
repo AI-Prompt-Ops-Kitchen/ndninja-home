@@ -19,6 +19,16 @@ from sage_mode.tasks.agent_tasks import execute_agent_task
 from celery import chain, group
 from datetime import datetime, timezone
 from typing import List, Dict, Any
+import os
+
+
+def _rasengan_emit(event_type: str, payload: dict | None = None) -> None:
+    try:
+        import httpx
+        url = os.environ.get("RASENGAN_URL", "http://rasengan:8050")
+        httpx.post(f"{url}/events", json={"event_type": event_type, "source": "sage_mode", "payload": payload or {}}, timeout=2.0)
+    except Exception:
+        pass
 
 
 @celery_app.task(bind=True, max_retries=TASK_MAX_RETRIES)
@@ -93,6 +103,8 @@ def start_session_execution(self, execution_session_id: int, task_specs: List[Di
         session.celery_chain_id = result.id
         db.commit()
 
+        _rasengan_emit("sage.session_started", {"session_id": execution_session_id, "task_count": len(task_ids)})
+
         return {
             "session_id": execution_session_id,
             "task_ids": task_ids,
@@ -130,6 +142,8 @@ def complete_session(self, task_results: List[Dict], execution_session_id: int) 
                     (session.ended_at - session.started_at).total_seconds()
                 )
             db.commit()
+
+        _rasengan_emit("sage.session_completed", {"session_id": execution_session_id, "task_count": len(task_results)})
 
         return {
             "session_id": execution_session_id,

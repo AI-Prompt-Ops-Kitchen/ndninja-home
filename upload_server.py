@@ -144,6 +144,13 @@ class Handler(BaseHTTPRequestHandler):
         if filename and file_data:
             filename = os.path.basename(filename)
             filepath = os.path.join(UPLOAD_DIR, filename)
+            if os.path.exists(filepath):
+                base, ext = os.path.splitext(filename)
+                n = 1
+                while os.path.exists(filepath):
+                    filename = f"{base}_{n}{ext}"
+                    filepath = os.path.join(UPLOAD_DIR, filename)
+                    n += 1
             with open(filepath, "wb") as f:
                 f.write(file_data)
             self.send_response(200)

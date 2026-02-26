@@ -8,6 +8,7 @@ from pathlib import Path
 
 from app.config import GIT_DIR, SHARINGAN_INDEX
 from app.database import query_events, recent_events
+from app.services.pipeline import get_pipeline_context
 
 logger = logging.getLogger("rasengan.context")
 
@@ -106,5 +107,6 @@ def build_resume() -> dict:
         "git": _git_context(),
         "sharingan": _sharingan_context(),
         "deploys": _deploy_context(),
+        "pipelines": get_pipeline_context(),
         "recent_events": events,
     }

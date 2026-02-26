@@ -1,8 +1,8 @@
 ---
 name: css-sprite-animation
 domain: Animation/Glitch
-level: 2-tomoe
-description: CSS animation system for 2.5D layered sprite overlays — breathing, state machines, sprite swaps, and Tauri overlay performance gotchas.
+level: 3-tomoe
+description: CSS animation system for 2.5D layered sprite overlays — breathing, state machines, sprite sheets, WAAPI, View Transitions, and performance benchmarks.
 sources:
   - type: docs
     title: "MDN: Using CSS Animations"
@@ -15,11 +15,6 @@ sources:
     date: "2026-02-19"
     confidence: high
   - type: web
-    title: "CSS Sprites & Sprite Sheet Animation"
-    url: "https://css-tricks.com/css-sprites/"
-    date: "2026-02-19"
-    confidence: high
-  - type: web
     title: "GPU Animation Best Practices"
     url: "https://smashingmagazine.com/2016/12/gpu-animation-doing-it-right/"
     date: "2026-02-19"
@@ -29,24 +24,42 @@ sources:
     url: "https://github.com/tauri-apps/wry/issues/617"
     date: "2026-02-19"
     confidence: medium
-last_updated: 2026-02-19
+  - type: web
+    title: "CSS Sprite Sheets with steps() — Lean Rada"
+    url: "https://leanrada.com/notes/css-sprite-sheets/"
+    date: "2026-02-23"
+    confidence: high
+  - type: web
+    title: "SVG vs Canvas vs WebGL Performance Benchmarks 2025"
+    url: "https://www.svggenie.com/blog/svg-vs-canvas-vs-webgl-performance-2025"
+    date: "2026-02-23"
+    confidence: high
+  - type: docs
+    title: "MDN: Animation.commitStyles()"
+    url: "https://developer.mozilla.org/en-US/docs/Web/API/Animation/commitStyles"
+    date: "2026-02-23"
+    confidence: high
+  - type: docs
+    title: "View Transitions API — Chrome for Developers"
+    url: "https://developer.chrome.com/docs/web-platform/view-transitions"
+    date: "2026-02-23"
+    confidence: high
+  - type: web
+    title: "content-visibility Baseline — web.dev"
+    url: "https://web.dev/blog/css-content-visibility-baseline"
+    date: "2026-02-23"
+    confidence: high
+sources_count: 9
+last_updated: 2026-02-23
 can_do_from_cli: true
 ---
 
 # CSS Sprite Animation for 2.5D Overlay
 
 ## Mental Model
-Stack separate PNG layers (body, eyes, mouth) absolutely inside a container. CSS keyframes animate transforms/opacity for idle states. JavaScript swaps a `data-state` attribute — CSS rules respond to that state. No sprite sheets, no PixiJS — pure CSS is the right tool for a single character overlay.
+Stack PNG layers (body, eyes, mouth) absolutely positioned. CSS keyframes for idle loops. `data-state` attribute drives state machine. `steps()` for sprite sheets. WAAPI (`element.animate()`) for programmatic one-shots. No PixiJS — CSS handles a single character overlay.
 
-## Prerequisites
-- PNG assets with transparent backgrounds (rembg or hand-drawn)
-- Basic HTML/CSS/JS knowledge
-- Tauri v2 project (for overlay context)
-
-## Core Workflows
-
-### Workflow 1: Layered Sprite Setup
-**When to use:** Building the base HTML/CSS structure for Glitch
+## Workflow 1: Layered Sprite Setup
 
 ```html
 <div class="avatar" data-state="idle">
@@ -55,7 +68,6 @@ Stack separate PNG layers (body, eyes, mouth) absolutely inside a container. CSS
   <img class="layer mouth" src="mouth_closed.png">
 </div>
 ```
-
 ```css
 .avatar {
   position: relative;
@@ -64,189 +76,181 @@ Stack separate PNG layers (body, eyes, mouth) absolutely inside a container. CSS
   will-change: transform;
   contain: strict;
 }
-
-.layer {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  object-fit: contain;
-}
-
+.layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
 .layer.eyes  { z-index: 3; top: 28%; left: 10%; width: 80%; height: 22%; }
 .layer.mouth { z-index: 4; top: 55%; left: 25%; width: 50%; height: 14%; }
 ```
 
-**Gotchas:**
-- Parent MUST be `position: relative` — children anchor to it
-- All PNGs need transparent backgrounds or layers bleed through
-- Fine-tune `top/left/width/height` of eyes/mouth by eyeballing at actual display size
-
----
-
-### Workflow 2: Idle Breathing Animation
-**When to use:** Default always-running idle state
+## Workflow 2: Idle Breathing + Blink
 
 ```css
 @keyframes breathing {
   0%, 100% { transform: scale(1) translateY(0); }
   50%       { transform: scale(1.03) translateY(-2px); }
 }
-
 @keyframes blink {
   0%, 85%, 100% { transform: scaleY(1); }
   92%           { transform: scaleY(0.08); }
 }
-
-.avatar[data-state="idle"] .layer.body {
-  animation: breathing 4s ease-in-out infinite;
-}
-
-.avatar[data-state="idle"] .layer.eyes {
-  animation: blink 3.5s step-start infinite;
-  transform-origin: center;
-}
+.avatar[data-state="idle"] .layer.body { animation: breathing 4s ease-in-out infinite; }
+.avatar[data-state="idle"] .layer.eyes { animation: blink 3.5s step-start infinite; transform-origin: center; }
 ```
+- 4s = human resting rate. `step-start` on blink = instant snap, no interpolation
+- NEVER animate `left/top/width/height` — reflow. `transform` and `opacity` only
 
-**Gotchas:**
-- Human breathing = ~4s per cycle. Slower feels calmer, faster = anxious
-- Blink: 90% open, close in 0.1s, reopen. `step-start` = no interpolation
-- NEVER animate `left/top/width/height` — causes reflow. Use `transform` only
-
----
-
-### Workflow 3: State Machine via Data Attributes
-**When to use:** Switching between idle, talking, alert, hidden modes
+## Workflow 3: State Machine (data-state)
 
 ```css
-/* Each state drives different animations */
 .avatar[data-state="idle"]    .layer.body { animation: breathing 4s ease-in-out infinite; }
 .avatar[data-state="talking"] .layer.body { animation: breathing 2s ease-in-out infinite; }
 .avatar[data-state="alert"]   .layer.body { animation: breathing 1.2s ease-in-out infinite; }
 .avatar[data-state="hidden"]             { opacity: 0; pointer-events: none; }
 ```
-
 ```javascript
-function setState(newState) {
-  document.querySelector('.avatar').dataset.state = newState;
-}
-
-// Usage
-setState('talking');  // Speed up breathing, enable mouth anim
-setState('idle');     // Back to slow breathing
-setState('hidden');   // Gone instantly (or fade — add transition)
+const setState = (s) => document.querySelector('.avatar').dataset.state = s;
 ```
+- `data-state` enforces mutual exclusivity — one value at a time, no conflicting classes
 
-**Gotchas:**
-- Data attributes enforce mutual exclusivity (only one value at a time)
-- Beats class-toggling — no risk of multiple conflicting states active
-- Add `transition: opacity 0.3s` to `.avatar` for smooth show/hide
+## Workflow 4: Sprite Sheet with steps()
 
----
-
-### Workflow 4: Sprite Swaps (Mouth Visemes, Eye States)
-**When to use:** Changing eye/mouth image during talking or expressions
-
-```javascript
-const MOUTH_MAP = {
-  closed: 'mouth_closed.png',
-  open:   'mouth_open.png',
-  wide:   'mouth_wide.png',
-  oo:     'mouth_oo.png',
-  ee:     'mouth_ee.png',
-};
-
-function setMouth(viseme) {
-  document.querySelector('.layer.mouth').src =
-    `sprite_layers/mouths/${MOUTH_MAP[viseme]}`;
+```css
+.sprite-anim {
+  width: 100px; height: 100px;
+  background: url('walk_cycle.png') 0 0 no-repeat;
+  background-size: 800px 100px;              /* 8 frames x 100px */
+  animation: walk 0.8s steps(8, jump-none) infinite;
 }
-
-function setEyes(state) {
-  document.querySelector('.layer.eyes').src =
-    `sprite_layers/eyes/eyes_crop_${state}.png`;
+@keyframes walk {
+  from { background-position: 0 0; }
+  to   { background-position: -800px 0; }
+}
+.sprite-anim.pixel-art {
+  image-rendering: pixelated;   /* Chrome/Edge */
+  image-rendering: crisp-edges; /* Firefox */
 }
 ```
+- `steps(N, jump-none)` = land exactly on each frame. Without it: broken smooth sliding
+- CSS sprite anims run off main thread — smooth even during heavy JS work
 
-**Smooth crossfade version (no jarring swaps):**
+## Workflow 5: Sprite Swaps (Visemes)
+
 ```javascript
-function swapSprite(el, newSrc, fadeDuration = 150) {
-  el.style.transition = `opacity ${fadeDuration}ms`;
+const MOUTH_MAP = { closed: 'mouth_closed.png', open: 'mouth_open.png',
+  wide: 'mouth_wide.png', oo: 'mouth_oo.png', ee: 'mouth_ee.png' };
+
+function swapSprite(el, newSrc, fade = 150) {
+  el.style.transition = `opacity ${fade}ms`;
   el.style.opacity = '0';
-  setTimeout(() => {
-    el.src = newSrc;
-    el.style.opacity = '1';
-  }, fadeDuration);
+  setTimeout(() => { el.src = newSrc; el.style.opacity = '1'; }, fade);
+}
+// Preload on init
+Object.values(MOUTH_MAP).forEach(s => { new Image().src = `sprite_layers/mouths/${s}`; });
+```
+- 150ms fade is invisible but kills the jarring pop. Preload prevents first-swap flicker
+
+## Workflow 6: Web Animations API (WAAPI)
+
+```javascript
+// Bounce — returns Promise for chaining
+function bounceAvatar() {
+  return document.querySelector('.avatar').animate([
+    { transform: 'translateY(0)' }, { transform: 'translateY(-15px)' }, { transform: 'translateY(0)' }
+  ], { duration: 300, easing: 'ease-out' }).finished;
+}
+
+// Chain: bounce -> alert -> pulse -> idle
+async function alertSequence() {
+  await bounceAvatar();
+  setState('alert');
+  await document.querySelector('.avatar').animate(
+    [{ transform: 'scale(1)' }, { transform: 'scale(1.05)' }, { transform: 'scale(1)' }],
+    { duration: 200, iterations: 2 }
+  ).finished;
+  setState('idle');
+}
+
+// commitStyles — persist end state, free resources (no fill:'forwards' memory leak)
+function fadeOut(el) {
+  const anim = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 });
+  anim.onfinish = () => { anim.commitStyles(); anim.cancel(); };
 }
 ```
+- `finished` is a Promise — `await` for sequencing. CSS keyframes can't do this
+- `commitStyles()` + `cancel()` = persist state without `fill:'forwards'` memory leak
+- Programmatic: pause/resume/reverse/playbackRate all available
 
-**Gotchas:**
-- Raw `img.src =` swap is instant and jarring — always fade
-- 150ms fade is invisible to user but eliminates the pop
-- Preload images on init to avoid flicker on first swap
+## Workflow 7: View Transitions for Mode Switches
 
----
+```javascript
+async function toggleCompact(isCompact) {
+  if (!document.startViewTransition) { applyCompact(isCompact); return; }
+  await document.startViewTransition(() => applyCompact(isCompact)).finished;
+}
+function applyCompact(c) { document.querySelector('.avatar').classList.toggle('compact', c); }
+```
+```css
+.avatar { view-transition-name: glitch-avatar; }
+::view-transition-old(glitch-avatar),
+::view-transition-new(glitch-avatar) { animation-duration: 0.25s; }
+```
+- Snapshots old/new state, crossfades automatically. Baseline all browsers late 2025
+- Firefox 144+ (Oct 2025). Use feature detect fallback for Tauri/WebKit
 
-### Workflow 5: Compact Mode Scaling
-**When to use:** Switching Glitch from full (250px) to compact (100px) corner sprite
+## Workflow 8: Compact Mode
 
 ```css
 :root { --avatar-size: 250px; --anim-speed: 1; }
-
 .avatar.compact { --avatar-size: 100px; --anim-speed: 0.85; }
-
-.avatar {
-  width: var(--avatar-size);
-  transition: width 0.3s ease-in-out, height 0.3s ease-in-out;
-}
-
+.avatar { width: var(--avatar-size); transition: width 0.3s, height 0.3s; }
 .avatar[data-state="idle"] .layer.body {
   animation: breathing calc(4s / var(--anim-speed)) ease-in-out infinite;
 }
 ```
+- CSS custom property for size, NOT `transform: scale()` (distorts click targets)
 
-```javascript
-function setCompact(isCompact) {
-  document.querySelector('.avatar').classList.toggle('compact', isCompact);
-}
-```
+## Performance Benchmarks (2025)
 
-**Gotchas:**
-- Scale from 250→100 via CSS custom property, not `transform: scale()` — scale distorts click targets
-- Slower breathing in compact mode (feels less frantic at small size)
-- Pre-create 100px asset versions if quality matters — scaling down 250px renders fine though
+| Tech | 100 sprites | 1K sprites | 10K sprites | Use case |
+|------|-------------|-----------|-------------|----------|
+| CSS/SVG | 60fps | 60fps | 12fps | 1-50 elements (overlays) |
+| Canvas 2D | 60fps | 60fps | 60fps | 100-50K (2D games) |
+| WebGL | 60fps | 60fps | 60fps | 10K+ (heavy rendering) |
 
----
+**Glitch = 3-5 layers. CSS is the right tool.** Canvas/WebGL add complexity for zero benefit at this scale. CSS anims also run off main thread.
 
-## Command Reference
+## Performance Checklist
 
-| Action | How | Notes |
-|--------|-----|-------|
-| Switch state | `avatar.dataset.state = 'talking'` | Data attribute enforces one state |
-| Swap mouth | `el.src = newSrc` + opacity fade | 150ms fade hides seam |
-| Pause animation | `animation-play-state: paused` | Via CSS or JS style |
-| Compact mode | `.classList.toggle('compact')` | CSS var drives size |
-| GPU promote | `will-change: transform` | On parent `.avatar` only |
-| Isolate repaints | `contain: strict` | Prevents page-wide repaints |
+| Technique | Effect | Rule |
+|-----------|--------|------|
+| `will-change: transform` | GPU promote | `.avatar` parent ONLY (0.5-10MB/layer) |
+| `contain: strict` | Isolate repaints | Use `layout paint` if sprite overflows |
+| `content-visibility: auto` | Skip offscreen render | Hidden panels only, NOT always-visible avatar |
+| `commitStyles()` + `cancel()` | Persist + free WAAPI | Instead of `fill:'forwards'` (leaks memory) |
+| `prefers-reduced-motion` | Accessibility | `animation: none !important` in media query |
+| Avoid `filter/box-shadow` | WebKit tax | Especially on Linux (worst CSS perf platform) |
 
-## Integration Points — Glitch Overlay
-- **AI brain → overlay:** WebSocket sends `{action: "setState", state: "talking"}` or `{action: "setMouth", viseme: "oo"}`
-- **TTS viseme engine:** Maps ElevenLabs audio to mouth sprite sequence at ~10fps
-- **Tauri commands:** Rust side calls `window.emit("avatar-state", payload)` → JS listener updates data-state
-- **Sprite assets:** `/home/ndninja/projects/glitch/assets/sprite_layers/`
+## Quick Reference
 
-## Limitations & Gaps
-- **Tauri/WebKit performance:** Known slower than Chromium — avoid `filter`, `box-shadow`, `backdrop-filter`
-- **Linux is worst platform** for CSS animation smoothness — test early on actual machine
-- **Audio sync precision:** CSS timers drift. For tight lip-sync, use Web Audio API timing, not setTimeout
-- **`will-change` memory cost:** ~0.5-10MB per promoted layer — apply to `.avatar` parent only, not every child
-- **`contain: strict`** hides overflow — if Glitch sprite overflows her container, switch to `contain: layout paint`
-- Visual-only: I haven't built this yet — proportions of eye/mouth positioning need live calibration
+| Action | Code | Notes |
+|--------|------|-------|
+| Switch state | `avatar.dataset.state = 'x'` | Mutual exclusivity |
+| Sprite swap | `swapSprite(el, src)` | 150ms fade |
+| Sprite sheet | `steps(N, jump-none)` | N = frame count |
+| WAAPI animate | `el.animate([...], opts).finished` | Promise-based |
+| View Transition | `document.startViewTransition(cb)` | Auto-crossfade |
+| Pause | `animation-play-state: paused` | CSS or JS |
 
-## Tips & Best Practices
-- **Only animate `transform` and `opacity`.** Everything else causes reflow.
-- **One `will-change: transform` on the parent** — children inherit compositing, no extra VRAM.
-- **`data-state` over class toggling** — impossible to accidentally have two conflicting states.
-- **4s breathing cycle** = human resting rate. Feels alive without being distracting.
-- **Always crossfade sprite swaps** — even 100ms opacity fade removes 100% of jarring pops.
-- **Respect `prefers-reduced-motion`:** `@media (prefers-reduced-motion: reduce) { .avatar { animation: none; } }`
-- **Preload all sprite images on init** — `new Image().src = url` in JS before first swap.
-- **Test compact mode at actual 100px size** — eye/mouth pixel offsets that look fine at 250px go wrong at 100px.
+## Integration — Glitch Overlay
+- **AI brain -> overlay:** WebSocket `{action: "setState", state: "talking"}`
+- **TTS viseme:** ElevenLabs audio -> mouth sprite sequence at ~10fps
+- **Tauri:** `window.emit("avatar-state", payload)` -> JS data-state update
+- **Assets:** `/home/ndninja/projects/glitch/assets/sprite_layers/`
+
+## Gotchas & Limits
+- **Tauri/WebKit** slower than Chromium — no `filter`, `box-shadow`, `backdrop-filter`
+- **Linux = worst CSS animation platform** — test early on actual machine
+- **Audio sync:** CSS timers drift. Use Web Audio API timing for tight lip-sync
+- **`contain: strict`** hides overflow — use `contain: layout paint` if sprite extends beyond box
+- **View Transitions:** Feature-detect with `if (!document.startViewTransition)` fallback
+- **Only animate `transform` and `opacity`** — everything else triggers layout/paint
+- **Preload all sprites on init** — `new Image().src = url` before first swap

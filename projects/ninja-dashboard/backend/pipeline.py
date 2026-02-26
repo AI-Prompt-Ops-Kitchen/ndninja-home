@@ -12,6 +12,7 @@ LOG_DIR = Path("/tmp")
 OUTPUT_DIR = Path(os.environ.get("OUTPUT_DIR", Path.home() / "output"))
 BROLL_DIR = Path(os.environ.get("BROLL_DIR", Path.home() / "output" / "broll"))
 CONTENT_SCRIPT = Path(os.environ.get("CONTENT_SCRIPT", Path.home() / "scripts" / "ninja_content.py"))
+DUAL_ANCHOR_SCRIPT = Path(os.environ.get("DUAL_ANCHOR_SCRIPT", Path.home() / "scripts" / "ninja_dual_anchor.py"))
 
 # Matches: DONE! Output: /path/to/file.mp4
 _DONE_RE = re.compile(r"DONE!\s+Output:\s+(.+\.mp4)", re.IGNORECASE)
@@ -34,8 +35,8 @@ def _get_celery():
 async def run_pipeline(
     script_text: str,
     job_id: str,
-    broll_count: int = 3,
-    broll_duration: float = 4.0,
+    broll_count: int = 4,
+    broll_duration: float = 10.0,
     broll_map: Optional[list[str]] = None,
 ) -> Tuple[Optional[str], Optional[str]]:
     """
@@ -103,6 +104,7 @@ async def _run_local(
         "--output", output_prefix,
         "--broll-count", str(broll_count),
         "--broll-duration", str(broll_duration),
+        "--kling-model", "pro",
     ]
 
     if broll_map:
@@ -155,6 +157,81 @@ async def _run_local(
             return output_path, None
 
         return None, "Pipeline completed but output file not found"
+
+    finally:
+        try:
+            os.unlink(script_file)
+        except OSError:
+            pass
+
+
+async def run_dual_anchor_pipeline(
+    script_text: str,
+    job_id: str,
+    kling_model: str = "pro",
+) -> Tuple[Optional[str], Optional[str]]:
+    """Run ninja_dual_anchor.py as local async subprocess."""
+    if not DUAL_ANCHOR_SCRIPT.exists():
+        return None, f"Dual-anchor script not found: {DUAL_ANCHOR_SCRIPT}"
+
+    tmp = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", prefix=f"ninja_dual_{job_id[:8]}_", delete=False,
+    )
+    tmp.write(script_text)
+    tmp.close()
+    script_file = tmp.name
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_prefix = f"ninja_dash_{job_id[:8]}_{timestamp}"
+
+    cmd = [
+        "python3", "-u",
+        str(DUAL_ANCHOR_SCRIPT),
+        "--script-file", script_file,
+        "--output", output_prefix,
+        "--kling-model", kling_model,
+    ]
+
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+
+        output_path: Optional[str] = None
+        stdout_lines: list[str] = []
+
+        log_path = LOG_DIR / f"ninja_dual_{job_id[:8]}.log"
+        log_fh = open(log_path, "w", buffering=1)
+        log_fh.write(f"=== Dual Anchor Pipeline Log — job {job_id} ===\n")
+        log_fh.write(f"=== CMD: {' '.join(cmd)} ===\n\n")
+
+        assert proc.stdout is not None
+        async for line_bytes in proc.stdout:
+            line = line_bytes.decode("utf-8", errors="replace").rstrip()
+            stdout_lines.append(line)
+            log_fh.write(line + "\n")
+            match = _DONE_RE.search(line)
+            if match:
+                output_path = match.group(1).strip()
+
+        log_fh.write(f"\n=== Process exited with code {proc.returncode} ===\n")
+        log_fh.close()
+
+        await proc.wait()
+
+        if proc.returncode != 0:
+            snippet = "\n".join(stdout_lines[-15:])
+            return None, f"Dual-anchor pipeline exited {proc.returncode}:\n{snippet[-800:]}"
+
+        if not output_path:
+            output_path = _find_newest_mp4(output_prefix)
+
+        if output_path and Path(output_path).exists():
+            return output_path, None
+
+        return None, "Dual-anchor pipeline completed but output file not found"
 
     finally:
         try:

@@ -16,7 +16,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 
-SCOPES = ['https://www.googleapis.com/auth/youtube', 'https://www.googleapis.com/auth/youtube.upload']
+SCOPES = ['https://www.googleapis.com/auth/youtube.upload']
 TOKEN_DIR = Path.home() / '.config' / 'youtube_uploader'
 TOKEN_FILE = TOKEN_DIR / 'token.json'
 CLIENT_SECRETS = Path(__file__).parent / 'client_secrets.json'

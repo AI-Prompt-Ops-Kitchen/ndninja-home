@@ -208,6 +208,29 @@ async def _fire_rule(rule: dict, event: dict) -> None:
                 resp.status_code,
             )
 
+        elif action_type == "pipeline_track":
+            from app.services.pipeline import on_pipeline_event
+
+            await on_pipeline_event(event)
+            result = {"tracked": event.get("event_type"), "job_id": event.get("payload", {}).get("job_id")}
+            logger.info(
+                "[rule:%s] Pipeline tracked: %s (job=%s)",
+                rule_name,
+                event.get("event_type"),
+                event.get("payload", {}).get("job_id", "?"),
+            )
+
+        elif action_type == "resume_push":
+            from app.services.push import execute_push
+
+            push_result = await asyncio.to_thread(execute_push)
+            result = push_result
+            logger.info(
+                "[rule:%s] Resume pushed to %d targets",
+                rule_name,
+                push_result.get("targets", 0),
+            )
+
         else:
             logger.warning("[rule:%s] Unknown action type: %s", rule_name, action_type)
             result = {"error": f"unknown action type: {action_type}"}

@@ -138,6 +138,19 @@ body {
 .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
 .scrollbar-thin::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
 
+/* ──────────────────────────────────────────────────────────────────────────
+   Kuchiyose summoning animation
+   ────────────────────────────────────────────────────────────────────────── */
+@keyframes summon-poof {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.6); transform: scale(0.8); opacity: 0; }
+  40%  { opacity: 1; }
+  50%  { box-shadow: 0 0 20px 10px rgba(34, 211, 238, 0.15); transform: scale(1.03); }
+  100% { box-shadow: 0 0 0 0 transparent; transform: scale(1); opacity: 1; }
+}
+.animate-summon-poof {
+  animation: summon-poof 0.6s var(--ease-out-expo) both;
+}
+
 /* Safe area for iPhone */
 @supports (padding: env(safe-area-inset-bottom)) {
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
