@@ -123,7 +123,7 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-red-400 bg-red-600/10 px-3 py-2 rounded-lg">
+                  <p className="text-sm text-amber-400 bg-amber-600/10 px-3 py-2 rounded-lg">
                     {error}
                   </p>
                 )}
@@ -168,7 +168,7 @@ export default function LoginPage() {
                 </div>
 
                 {error && (
-                  <p className="text-sm text-red-400 bg-red-600/10 px-3 py-2 rounded-lg">
+                  <p className="text-sm text-amber-400 bg-amber-600/10 px-3 py-2 rounded-lg">
                     {error}
                   </p>
                 )}
