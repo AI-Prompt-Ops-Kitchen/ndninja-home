@@ -5,12 +5,14 @@ Run with: uvicorn main:app --host 0.0.0.0 --port 8090 --workers 1
 import asyncio
 import json
 import os
+import time
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
 import aiofiles
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, FastAPI, File, HTTPException, Request, UploadFile, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -19,6 +21,24 @@ from jobs import create_job, delete_job, get_job, init_db, list_jobs, transition
 from media import OUTPUT_DIR, get_thumbnail_for_video, safe_resolve, serve_thumb, serve_video
 from pipeline import BROLL_DIR, run_pipeline
 from scriptgen import generate_script
+
+from broll_library import (
+    register_clip,
+    get_clip,
+    list_library_clips,
+    update_clip,
+    soft_delete_clip,
+    bump_last_used,
+    add_tags,
+    remove_tag,
+    list_all_tags,
+    list_all_games,
+    bulk_add_tags,
+    bulk_set_permanent,
+    bulk_soft_delete,
+)
+from broll_previews import extract_metadata, generate_clip_assets
+from auto_tagger import auto_tag_clip
 
 from broll_db import (
     create_candidate,
@@ -88,6 +108,31 @@ ws_manager = WSManager()
 
 
 # ---------------------------------------------------------------------------
+# Kuchiyose — Summon tracking (in-memory, --workers 1 safe)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class Summon:
+    summon_id: str
+    name: str
+    animal: str
+    color: str
+    specialty: str
+    status: str  # active | thinking | done | error
+    agent_type: str
+    session_id: str
+    summoned_at: float = field(default_factory=time.time)
+
+_summons: dict[str, Summon] = {}
+
+
+async def _prune_dismissed_summon(summon_id: str) -> None:
+    """Remove a dismissed summon after 30s (gives frontend time for exit animation)."""
+    await asyncio.sleep(30)
+    _summons.pop(summon_id, None)
+
+
+# ---------------------------------------------------------------------------
 # Startup
 # ---------------------------------------------------------------------------
 
@@ -147,9 +192,14 @@ def _find_output_for_job(job_id: str) -> Optional[str]:
 async def websocket_endpoint(ws: WebSocket) -> None:
     await ws_manager.connect(ws)
     try:
-        # Send full job list immediately on connect
+        # Send full job list + active summons immediately on connect
         jobs = await asyncio.to_thread(list_jobs)
         await ws.send_text(json.dumps({"type": "job_list", "data": jobs}))
+        if _summons:
+            await ws.send_text(json.dumps({
+                "type": "summon_list",
+                "data": [asdict(s) for s in _summons.values()],
+            }))
 
         # Stay alive; client sends "ping" every 25s to prevent idle timeout
         while True:
@@ -165,6 +215,47 @@ async def websocket_endpoint(ws: WebSocket) -> None:
 # API routes
 # ---------------------------------------------------------------------------
 
+@app.post("/api/summons/event")
+async def api_summon_event(payload: dict) -> dict:
+    """Receive summon events from the kuchiyose hook."""
+    event_type = payload.get("event_type", "")
+    data = payload.get("payload", {})
+    summon_id = data.get("summon_id", "")
+
+    if not summon_id:
+        raise HTTPException(400, "payload.summon_id required")
+
+    if event_type == "agent.summoned":
+        summon = Summon(
+            summon_id=summon_id,
+            name=data.get("name", "Kuchiyose"),
+            animal=data.get("animal", "scroll"),
+            color=data.get("color", "cyan-400"),
+            specialty=data.get("specialty", ""),
+            status=data.get("status", "active"),
+            agent_type=data.get("agent_type", ""),
+            session_id=data.get("session_id", ""),
+        )
+        _summons[summon_id] = summon
+        await ws_manager.broadcast("summon_appeared", asdict(summon))
+        return {"ok": True, "summon_id": summon_id}
+
+    elif event_type == "agent.dismissed":
+        summon = _summons.get(summon_id)
+        if summon:
+            summon.status = "done"
+            await ws_manager.broadcast("summon_dismissed", asdict(summon))
+            asyncio.create_task(_prune_dismissed_summon(summon_id))
+        return {"ok": True, "summon_id": summon_id}
+
+    return {"ok": False, "error": f"Unknown event_type: {event_type}"}
+
+
+@app.get("/api/summons")
+async def api_list_summons() -> list[dict]:
+    return [asdict(s) for s in _summons.values()]
+
+
 @app.get("/api/jobs")
 async def api_list_jobs() -> list[dict]:
     return await asyncio.to_thread(list_jobs)
@@ -175,18 +266,19 @@ async def api_submit_article(payload: dict) -> dict:
     url: Optional[str] = payload.get("url") or None
     text: Optional[str] = payload.get("text") or None
     target_length_sec: int = int(payload.get("target_length_sec", 60))
-    broll_count: int = int(payload.get("broll_count", 3))
-    broll_duration: float = float(payload.get("broll_duration", 4.0))
+    broll_count: int = int(payload.get("broll_count", 4))
+    broll_duration: float = float(payload.get("broll_duration", 10.0))
+    dual_anchor: bool = bool(payload.get("dual_anchor", False))
 
     if not url and not text:
         raise HTTPException(400, "Provide url or text")
 
-    job = await asyncio.to_thread(create_job, url, text, target_length_sec, broll_count, broll_duration)
+    job = await asyncio.to_thread(create_job, url, text, target_length_sec, broll_count, broll_duration, dual_anchor)
     await ws_manager.broadcast("job_created", job)
-    asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_created", {"job_id": job["id"]})
+    asyncio.get_event_loop().run_in_executor(None, _rasengan_emit, "dojo.job_created", {"job_id": job["id"], "dual_anchor": dual_anchor})
 
     # Scriptgen runs in the background — UI will receive WS update when done
-    asyncio.create_task(_run_scriptgen(job["id"], url, text, target_length_sec))
+    asyncio.create_task(_run_scriptgen(job["id"], url, text, target_length_sec, dual_anchor=dual_anchor))
 
     return job
 
@@ -299,9 +391,20 @@ async def api_upload_broll(file: UploadFile = File(...)) -> dict:
     if not safe_name.lower().endswith((".mp4", ".mov", ".webm")):
         raise HTTPException(400, "Only video files accepted for B-roll")
     dest = BROLL_DIR / safe_name
+    if dest.exists():
+        stem, suffix = dest.stem, dest.suffix
+        n = 1
+        while dest.exists():
+            dest = BROLL_DIR / f"{stem}_{n}{suffix}"
+            n += 1
+        safe_name = dest.name
     async with aiofiles.open(dest, "wb") as f:
         while chunk := await file.read(64 * 1024):
             await f.write(chunk)
+
+    # Register in B-roll library + kick off background enrichment
+    asyncio.create_task(_enrich_broll_clip(safe_name, str(dest), source="upload"))
+
     return {"filename": safe_name, "path": str(dest)}
 
 
@@ -317,6 +420,14 @@ async def api_clip_youtube(payload: dict) -> dict:
 
     try:
         result = await clip_youtube(url, start, end, filename)
+        # Register in library with source URL
+        if result.get("filename"):
+            asyncio.create_task(_enrich_broll_clip(
+                result["filename"],
+                str(BROLL_DIR / result["filename"]),
+                source="autoclip",
+                source_url=url,
+            ))
         return result
     except Exception as e:
         raise HTTPException(500, str(e)[:500])
@@ -343,10 +454,185 @@ async def api_delete_broll(filename: str) -> dict:
     return {"deleted": filename}
 
 
+# ---------------------------------------------------------------------------
+# B-roll Library endpoints (Phase 2)
+# ---------------------------------------------------------------------------
+
+broll_library_router = APIRouter(prefix="/api/broll/library", tags=["broll-library"])
+
+@broll_library_router.get("")
+async def api_list_library(
+    page: int = 1,
+    per_page: int = 24,
+    game: Optional[str] = None,
+    tag: Optional[str] = None,
+    source: Optional[str] = None,
+    permanent: Optional[bool] = None,
+    expiring_soon: bool = False,
+    search: Optional[str] = None,
+    sort: str = "created_at_desc",
+) -> dict:
+    items, total = await asyncio.to_thread(
+        list_library_clips,
+        page=page, per_page=per_page, game=game, tag=tag,
+        source=source, permanent=permanent, expiring_soon=expiring_soon,
+        search=search, sort=sort,
+    )
+    return {"items": items, "total": total, "page": page, "per_page": per_page}
+
+
+@broll_library_router.get("/tags")
+async def api_library_tags() -> list[dict]:
+    return await asyncio.to_thread(list_all_tags)
+
+
+@broll_library_router.get("/games")
+async def api_library_games() -> list[dict]:
+    return await asyncio.to_thread(list_all_games)
+
+
+@broll_library_router.get("/thumb/{clip_id}")
+async def api_library_thumb(clip_id: str):
+    from fastapi.responses import FileResponse
+    clip = await asyncio.to_thread(get_clip, clip_id)
+    if not clip or not clip.get("thumb_path"):
+        raise HTTPException(404, "No thumbnail for this clip")
+    thumb = Path(clip["thumb_path"])
+    if not thumb.exists():
+        raise HTTPException(404, "Thumbnail file missing")
+    return FileResponse(str(thumb), media_type="image/webp", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@broll_library_router.get("/preview/{clip_id}")
+async def api_library_preview(clip_id: str, request: Request):
+    clip = await asyncio.to_thread(get_clip, clip_id)
+    if not clip or not clip.get("preview_path"):
+        raise HTTPException(404, "No preview for this clip")
+    preview = Path(clip["preview_path"])
+    if not preview.exists():
+        raise HTTPException(404, "Preview file missing")
+    from fastapi.responses import FileResponse
+    return FileResponse(str(preview), media_type="video/webm", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@broll_library_router.get("/stream/{clip_id}")
+async def api_library_stream(clip_id: str, request: Request):
+    """Stream full clip for in-browser playback."""
+    clip = await asyncio.to_thread(get_clip, clip_id)
+    if not clip or not clip.get("filepath"):
+        raise HTTPException(404, "Clip not found")
+    fp = Path(clip["filepath"])
+    if not fp.exists():
+        raise HTTPException(404, "File not found on disk")
+    return await serve_video(f"broll/{fp.name}", request)
+
+
+# Bulk operations (put before {clip_id} to avoid path conflicts)
+@broll_library_router.post("/bulk/tags")
+async def api_bulk_tags(payload: dict) -> dict:
+    clip_ids = payload.get("clip_ids", [])
+    tags_list = payload.get("tags", [])
+    if not clip_ids or not tags_list:
+        raise HTTPException(400, "clip_ids and tags required")
+    count = await asyncio.to_thread(bulk_add_tags, clip_ids, tags_list)
+    return {"updated": count}
+
+
+@broll_library_router.post("/bulk/permanent")
+async def api_bulk_permanent(payload: dict) -> dict:
+    clip_ids = payload.get("clip_ids", [])
+    permanent = bool(payload.get("permanent", True))
+    if not clip_ids:
+        raise HTTPException(400, "clip_ids required")
+    count = await asyncio.to_thread(bulk_set_permanent, clip_ids, permanent)
+    return {"updated": count}
+
+
+@broll_library_router.post("/bulk/delete")
+async def api_bulk_delete(payload: dict) -> dict:
+    clip_ids = payload.get("clip_ids", [])
+    if not clip_ids:
+        raise HTTPException(400, "clip_ids required")
+    count = await asyncio.to_thread(bulk_soft_delete, clip_ids)
+    return {"deleted": count}
+
+
+@broll_library_router.get("/{clip_id}")
+async def api_get_library_clip(clip_id: str) -> dict:
+    clip = await asyncio.to_thread(get_clip, clip_id)
+    if not clip:
+        raise HTTPException(404, "Clip not found")
+    return clip
+
+
+@broll_library_router.patch("/{clip_id}")
+async def api_update_library_clip(clip_id: str, payload: dict) -> dict:
+    allowed = {"game", "tags", "permanent", "source", "source_url"}
+    fields = {k: v for k, v in payload.items() if k in allowed}
+    if not fields:
+        raise HTTPException(400, "No valid fields to update")
+    clip = await asyncio.to_thread(update_clip, clip_id, **fields)
+    if not clip:
+        raise HTTPException(404, "Clip not found")
+    return clip
+
+
+@broll_library_router.delete("/{clip_id}")
+async def api_delete_library_clip(clip_id: str) -> dict:
+    ok = await asyncio.to_thread(soft_delete_clip, clip_id)
+    if not ok:
+        raise HTTPException(404, "Clip not found")
+    return {"deleted": clip_id}
+
+
+@broll_library_router.post("/{clip_id}/tags")
+async def api_add_clip_tags(clip_id: str, payload: dict) -> dict:
+    tags_list = payload.get("tags", [])
+    if not tags_list:
+        raise HTTPException(400, "tags list required")
+    clip = await asyncio.to_thread(add_tags, clip_id, tags_list)
+    if not clip:
+        raise HTTPException(404, "Clip not found")
+    return clip
+
+
+@broll_library_router.delete("/{clip_id}/tags/{tag_name}")
+async def api_remove_clip_tag(clip_id: str, tag_name: str) -> dict:
+    clip = await asyncio.to_thread(remove_tag, clip_id, tag_name)
+    if not clip:
+        raise HTTPException(404, "Clip not found")
+    return clip
+
+
+@broll_library_router.post("/{clip_id}/permanent")
+async def api_toggle_permanent(clip_id: str, payload: dict) -> dict:
+    permanent = bool(payload.get("permanent", True))
+    clip = await asyncio.to_thread(update_clip, clip_id, permanent=permanent)
+    if not clip:
+        raise HTTPException(404, "Clip not found")
+    return clip
+
+
+@broll_library_router.post("/{clip_id}/bump")
+async def api_bump_clip(clip_id: str) -> dict:
+    await asyncio.to_thread(bump_last_used, clip_id)
+    return {"bumped": clip_id}
+
+
+app.include_router(broll_library_router)
+
+
 @app.post("/api/upload")
 async def api_upload_file(file: UploadFile = File(...)) -> dict:
     safe_name = Path(file.filename or "upload").name
     dest = UPLOADS_DIR / safe_name
+    if dest.exists():
+        stem, suffix = dest.stem, dest.suffix
+        n = 1
+        while dest.exists():
+            dest = UPLOADS_DIR / f"{stem}_{n}{suffix}"
+            n += 1
+        safe_name = dest.name
     async with aiofiles.open(dest, "wb") as f:
         while chunk := await file.read(64 * 1024):
             await f.write(chunk)
@@ -373,7 +659,7 @@ async def api_start_broll_discovery(job_id: str) -> dict:
     script_text = job.get("script_text") or ""
     if not script_text:
         raise HTTPException(400, "Job has no script text")
-    broll_count = int(job.get("broll_count", 3))
+    broll_count = int(job.get("broll_count", 4))
     asyncio.create_task(run_discovery(job_id, script_text, broll_count, ws_manager))
     return {"started": True, "job_id": job_id}
 
@@ -514,26 +800,77 @@ async def _check_session_complete(session_id: str) -> None:
 # Background task helpers
 # ---------------------------------------------------------------------------
 
+async def _enrich_broll_clip(
+    filename: str, filepath: str, source: str = "upload", source_url: str | None = None,
+) -> None:
+    """Register a B-roll clip in the library and run metadata/preview/auto-tag enrichment."""
+    try:
+        # Extract video metadata
+        meta = await extract_metadata(filepath)
+
+        # Register in library
+        clip = await asyncio.to_thread(
+            register_clip,
+            filename=filename,
+            filepath=filepath,
+            source=source,
+            source_url=source_url,
+            file_size_mb=meta.get("file_size_mb"),
+            duration_sec=meta.get("duration_sec"),
+            width=meta.get("width"),
+            height=meta.get("height"),
+            codec=meta.get("codec"),
+        )
+        clip_id = clip["id"]
+
+        # Generate thumbnail + preview
+        thumb_path, preview_path = await generate_clip_assets(filepath, clip_id)
+        update_fields: dict = {}
+        if thumb_path:
+            update_fields["thumb_path"] = thumb_path
+        if preview_path:
+            update_fields["preview_path"] = preview_path
+
+        # Auto-tag via Gemini Flash (or regex fallback)
+        game, tags = await auto_tag_clip(filename, source_url)
+        if game:
+            update_fields["game"] = game
+        if tags:
+            update_fields["tags"] = tags
+
+        if update_fields:
+            await asyncio.to_thread(update_clip, clip_id, **update_fields)
+
+    except Exception as e:
+        print(f"[broll-library] Enrichment failed for {filename}: {e}")
+
+
 async def _run_scriptgen(
     job_id: str,
     url: Optional[str],
     text: Optional[str],
     target_length_sec: int,
+    dual_anchor: bool = False,
 ) -> None:
     try:
-        script_text = await generate_script(
-            url=url,
-            text=text,
-            target_length_sec=target_length_sec,
-        )
+        if dual_anchor:
+            from scriptgen import generate_dual_anchor_script
+            script_text = await generate_dual_anchor_script(
+                url=url, text=text, target_length_sec=target_length_sec,
+            )
+        else:
+            script_text = await generate_script(
+                url=url, text=text, target_length_sec=target_length_sec,
+            )
         job = await asyncio.to_thread(
             transition, job_id, "script_ready", script_text=script_text,
         )
         await ws_manager.broadcast("job_updated", job)
 
-        # Auto-trigger B-roll Wingman discovery
-        broll_count = int((await asyncio.to_thread(get_job, job_id) or {}).get("broll_count", 3))
-        asyncio.create_task(run_discovery(job_id, script_text, broll_count, ws_manager))
+        # B-roll Wingman discovery — only for solo format (dual-anchor doesn't use B-roll)
+        if not dual_anchor:
+            broll_count = int((await asyncio.to_thread(get_job, job_id) or {}).get("broll_count", 4))
+            asyncio.create_task(run_discovery(job_id, script_text, broll_count, ws_manager))
     except Exception as exc:
         job = await asyncio.to_thread(
             update_job, job_id, status="error", error_msg=str(exc)[:800],
@@ -544,24 +881,32 @@ async def _run_scriptgen(
 async def _run_pipeline_task(job_id: str, script_text: str) -> None:
     try:
         job_data = await asyncio.to_thread(get_job, job_id)
-        broll_count = int((job_data or {}).get("broll_count") or 3)
-        broll_duration = float((job_data or {}).get("broll_duration") or 4.0)
+        is_dual = bool((job_data or {}).get("dual_anchor", False))
 
-        # Query Wingman for approved clips — pass as explicit broll_map
-        broll_map: list[str] = []
-        try:
-            session = await asyncio.to_thread(get_full_session, job_id)
-            if session and session.get("slots"):
-                for slot in session["slots"]:
-                    if slot.get("status") != "approved" or not slot.get("approved_candidate_id"):
-                        continue
-                    cand = next((c for c in slot.get("candidates", []) if c["id"] == slot["approved_candidate_id"]), None)
-                    if cand and cand.get("local_path") and Path(cand["local_path"]).exists():
-                        broll_map.append(f"{slot['keyword']}:{cand['local_path']}")
-        except Exception:
-            pass  # Wingman DB unavailable — fall back to directory scan
+        if is_dual:
+            # Dual-anchor pipeline — no B-roll, uses ninja_dual_anchor.py
+            from pipeline import run_dual_anchor_pipeline
+            output_path, error_msg = await run_dual_anchor_pipeline(script_text, job_id)
+        else:
+            # Standard solo pipeline
+            broll_count = int((job_data or {}).get("broll_count") or 4)
+            broll_duration = float((job_data or {}).get("broll_duration") or 10.0)
 
-        output_path, error_msg = await run_pipeline(script_text, job_id, broll_count, broll_duration, broll_map=broll_map or None)
+            # Query Wingman for approved clips — pass as explicit broll_map
+            broll_map: list[str] = []
+            try:
+                session = await asyncio.to_thread(get_full_session, job_id)
+                if session and session.get("slots"):
+                    for slot in session["slots"]:
+                        if slot.get("status") != "approved" or not slot.get("approved_candidate_id"):
+                            continue
+                        cand = next((c for c in slot.get("candidates", []) if c["id"] == slot["approved_candidate_id"]), None)
+                        if cand and cand.get("local_path") and Path(cand["local_path"]).exists():
+                            broll_map.append(f"{slot['keyword']}:{cand['local_path']}")
+            except Exception:
+                pass  # Wingman DB unavailable — fall back to directory scan
+
+            output_path, error_msg = await run_pipeline(script_text, job_id, broll_count, broll_duration, broll_map=broll_map or None)
         if output_path:
             video_path = Path(output_path)
             thumb = get_thumbnail_for_video(video_path)
@@ -746,6 +1091,8 @@ async def api_preflight() -> dict:
 # ---------------------------------------------------------------------------
 # Serve React SPA in production (must be last — catch-all)
 # ---------------------------------------------------------------------------
+
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 STATIC_DIR = Path(__file__).parent / "static"
 if STATIC_DIR.exists():

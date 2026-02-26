@@ -27,11 +27,13 @@ export interface Job {
   youtube_video_id: string | null;
   youtube_title: string | null;
   youtube_privacy: string | null;
+  dual_anchor: boolean;
 }
 
 export interface WSMessage {
-  type: 'job_list' | 'job_created' | 'job_updated' | 'job_deleted';
-  data: Job | Job[];
+  type: 'job_list' | 'job_created' | 'job_updated' | 'job_deleted'
+    | 'summon_list' | 'summon_appeared' | 'summon_updated' | 'summon_dismissed';
+  data: Job | Job[] | unknown;
 }
 
 // B-roll Wingman types
@@ -75,6 +77,46 @@ export interface BrollSession {
   slots: BrollSlot[];
   created_at: string;
   updated_at: string;
+}
+
+// B-roll Library types
+export interface LibraryClip {
+  id: string;
+  filename: string;
+  filepath: string;
+  file_size_mb: number | null;
+  duration_sec: number | null;
+  width: number | null;
+  height: number | null;
+  codec: string | null;
+  source: string;
+  source_url: string | null;
+  game: string | null;
+  tags: string[];
+  permanent: boolean;
+  thumb_path: string | null;
+  preview_path: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  last_used_at: string | null;
+  expires_at: string | null;
+}
+
+export interface LibraryListResponse {
+  items: LibraryClip[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+export interface GameCount {
+  game: string;
+  count: number;
 }
 
 // Thumbnail Studio types

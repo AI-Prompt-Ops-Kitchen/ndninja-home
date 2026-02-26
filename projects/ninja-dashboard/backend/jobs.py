@@ -28,7 +28,7 @@ VALID_TRANSITIONS: dict[str, set[str]] = {
     "approved":         {"uploading"},
     "uploading":        {"uploaded", "error"},
     "uploaded":         set(),
-    "error":            {"generating", "uploading"},
+    "error":            {"generating", "uploading", "discarded"},
     "discarded":        {"generating"},  # Allow retry from discarded
 }
 
@@ -37,6 +37,7 @@ JOB_COLS = [
     "article_url", "output_path", "thumb_path", "error_msg", "retry_count",
     "target_length_sec", "broll_count", "broll_duration",
     "youtube_video_id", "youtube_title", "youtube_privacy",
+    "dual_anchor",
 ]
 
 
@@ -87,6 +88,7 @@ def init_db() -> None:
                 ("youtube_video_id", "TEXT"),
                 ("youtube_title", "TEXT"),
                 ("youtube_privacy", "TEXT DEFAULT 'private'"),
+                ("dual_anchor", "BOOLEAN NOT NULL DEFAULT FALSE"),
             ]:
                 cur.execute(f"""
                     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS {col} {typedef}
@@ -97,20 +99,23 @@ def create_job(
     article_url: Optional[str] = None,
     article_text: Optional[str] = None,
     target_length_sec: int = 60,
-    broll_count: int = 3,
+    broll_count: int = 4,
     broll_duration: float = 10.0,
+    dual_anchor: bool = False,
 ) -> dict:
     job_id = str(uuid.uuid4())
     now = _now()
+    job_type = "dual_anchor" if dual_anchor else "article"
     with _conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 f"""INSERT INTO jobs
                    (id, type, status, created_at, updated_at, article_url, script_text,
-                    target_length_sec, broll_count, broll_duration)
-                   VALUES (%s, 'article', 'pending', %s, %s, %s, %s, %s, %s, %s)
+                    target_length_sec, broll_count, broll_duration, dual_anchor)
+                   VALUES (%s, %s, 'pending', %s, %s, %s, %s, %s, %s, %s, %s)
                    RETURNING {', '.join(JOB_COLS)}""",
-                (job_id, now, now, article_url, article_text, target_length_sec, broll_count, broll_duration),
+                (job_id, job_type, now, now, article_url, article_text,
+                 target_length_sec, broll_count, broll_duration, dual_anchor),
             )
             return _row_to_dict(cur.fetchone(), JOB_COLS)
 

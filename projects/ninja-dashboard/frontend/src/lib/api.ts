@@ -1,4 +1,5 @@
-import type { Job, BrollSession, ThumbnailItem } from '../types';
+import type { Job, BrollSession, ThumbnailItem, LibraryListResponse, LibraryClip, TagCount, GameCount } from '../types';
+import type { Summon } from '../types/summon';
 import { basename } from './utils';
 
 const BASE = '';
@@ -16,6 +17,7 @@ export const api = {
     target_length_sec?: number;
     broll_count?: number;
     broll_duration?: number;
+    dual_anchor?: boolean;
   }): Promise<Job> {
     const r = await fetch(`${BASE}/api/jobs/article`, {
       method: 'POST',
@@ -221,5 +223,134 @@ export const api = {
 
   thumbnailDownloadUrl(filename: string): string {
     return `${BASE}/api/thumbnail-studio/download/${encodeURIComponent(filename)}`;
+  },
+
+  // B-roll Library
+  async listLibrary(params: {
+    page?: number;
+    per_page?: number;
+    game?: string;
+    tag?: string;
+    source?: string;
+    permanent?: boolean;
+    expiring_soon?: boolean;
+    search?: string;
+    sort?: string;
+  } = {}): Promise<LibraryListResponse> {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== null && v !== '') qs.set(k, String(v));
+    }
+    const r = await fetch(`${BASE}/api/broll/library?${qs}`);
+    if (!r.ok) throw new Error(`listLibrary: ${r.status}`);
+    return r.json();
+  },
+
+  async getLibraryClip(id: string): Promise<LibraryClip> {
+    const r = await fetch(`${BASE}/api/broll/library/${id}`);
+    if (!r.ok) throw new Error(`getLibraryClip: ${r.status}`);
+    return r.json();
+  },
+
+  async updateLibraryClip(id: string, fields: Partial<Pick<LibraryClip, 'game' | 'tags' | 'permanent' | 'source' | 'source_url'>>): Promise<LibraryClip> {
+    const r = await fetch(`${BASE}/api/broll/library/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields),
+    });
+    if (!r.ok) throw new Error(`updateLibraryClip: ${r.status}`);
+    return r.json();
+  },
+
+  async deleteLibraryClip(id: string): Promise<void> {
+    const r = await fetch(`${BASE}/api/broll/library/${id}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(`deleteLibraryClip: ${r.status}`);
+  },
+
+  async addClipTags(id: string, tags: string[]): Promise<LibraryClip> {
+    const r = await fetch(`${BASE}/api/broll/library/${id}/tags`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags }),
+    });
+    if (!r.ok) throw new Error(`addClipTags: ${r.status}`);
+    return r.json();
+  },
+
+  async removeClipTag(id: string, tag: string): Promise<LibraryClip> {
+    const r = await fetch(`${BASE}/api/broll/library/${id}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(`removeClipTag: ${r.status}`);
+    return r.json();
+  },
+
+  async togglePermanent(id: string, permanent: boolean): Promise<LibraryClip> {
+    const r = await fetch(`${BASE}/api/broll/library/${id}/permanent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ permanent }),
+    });
+    if (!r.ok) throw new Error(`togglePermanent: ${r.status}`);
+    return r.json();
+  },
+
+  async getLibraryTags(): Promise<TagCount[]> {
+    const r = await fetch(`${BASE}/api/broll/library/tags`);
+    if (!r.ok) throw new Error(`getLibraryTags: ${r.status}`);
+    return r.json();
+  },
+
+  async getLibraryGames(): Promise<GameCount[]> {
+    const r = await fetch(`${BASE}/api/broll/library/games`);
+    if (!r.ok) throw new Error(`getLibraryGames: ${r.status}`);
+    return r.json();
+  },
+
+  async bulkAddTags(clipIds: string[], tags: string[]): Promise<{ updated: number }> {
+    const r = await fetch(`${BASE}/api/broll/library/bulk/tags`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clip_ids: clipIds, tags }),
+    });
+    if (!r.ok) throw new Error(`bulkAddTags: ${r.status}`);
+    return r.json();
+  },
+
+  async bulkSetPermanent(clipIds: string[], permanent: boolean): Promise<{ updated: number }> {
+    const r = await fetch(`${BASE}/api/broll/library/bulk/permanent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clip_ids: clipIds, permanent }),
+    });
+    if (!r.ok) throw new Error(`bulkSetPermanent: ${r.status}`);
+    return r.json();
+  },
+
+  async bulkDeleteClips(clipIds: string[]): Promise<{ deleted: number }> {
+    const r = await fetch(`${BASE}/api/broll/library/bulk/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clip_ids: clipIds }),
+    });
+    if (!r.ok) throw new Error(`bulkDeleteClips: ${r.status}`);
+    return r.json();
+  },
+
+  libraryThumbUrl(clipId: string): string {
+    return `${BASE}/api/broll/library/thumb/${clipId}`;
+  },
+
+  libraryPreviewUrl(clipId: string): string {
+    return `${BASE}/api/broll/library/preview/${clipId}`;
+  },
+
+  libraryStreamUrl(clipId: string): string {
+    return `${BASE}/api/broll/library/stream/${clipId}`;
+  },
+
+  // Summons (Kuchiyose)
+  async getSummons(): Promise<Summon[]> {
+    const r = await fetch(`${BASE}/api/summons`);
+    if (!r.ok) throw new Error(`getSummons: ${r.status}`);
+    return r.json();
   },
 };
