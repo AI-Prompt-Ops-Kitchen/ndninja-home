@@ -1060,6 +1060,50 @@
       ]
     },
     {
+      "name": "youtube-competitor-intelligence",
+      "domain": "Content/Strategy",
+      "level": "3-tomoe",
+      "description": "Continuous competitor research system for gaming/tech YouTube channels — extract content patterns, engagement formulas, title/tag optimization, and content archetype taxonomy to sharpen channel strategy.",
+      "last_updated": "2026-02-26",
+      "keywords": [
+        "youtube",
+        "competitor",
+        "intelligence",
+        "analytics",
+        "engagement",
+        "views",
+        "likes",
+        "comments",
+        "yt-dlp",
+        "metadata",
+        "title-patterns",
+        "tags",
+        "seo",
+        "archetype",
+        "waifu-reveal",
+        "meme-reaction",
+        "hot-take",
+        "news-roundup",
+        "gaming",
+        "shorts",
+        "raummkii",
+        "bloo",
+        "viral",
+        "formula",
+        "benchmarks",
+        "content-strategy",
+        "thumbnails",
+        "upload-cadence"
+      ],
+      "sources_count": 2,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "youtube-auto-clipping",
+        "youtube-transcript-extraction",
+        "rasengan-event-hub"
+      ]
+    },
+    {
       "name": "daily-observations",
       "domain": "Meta/Workflow",
       "level": "2-tomoe",
@@ -1080,11 +1124,11 @@
     }
   ],
   "stats": {
-    "total_scrolls": 33,
+    "total_scrolls": 34,
     "by_level": {
       "1-tomoe": 7,
       "2-tomoe": 3,
-      "3-tomoe": 21,
+      "3-tomoe": 22,
       "mangekyo": 2
     }
   }
