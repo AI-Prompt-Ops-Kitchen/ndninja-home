@@ -172,7 +172,8 @@ def generate_kling_clip(image_path: str, audio_path: str, output_path: str,
         print(f"   Generating clip (Standard, ~2-4 min)...")
         start = time.time()
 
-        result = fal_client.subscribe(
+        # Submit async then poll with timeout (avoid indefinite hang)
+        handle = fal_client.submit(
             "fal-ai/kling-video/ai-avatar/v2/standard",
             arguments={
                 "image_url": image_url,
@@ -180,8 +181,30 @@ def generate_kling_clip(image_path: str, audio_path: str, output_path: str,
                 "prompt": prompt,
                 "negative_prompt": negative_prompt,
             },
-            with_logs=True,
         )
+
+        # Poll status with 5 min timeout
+        deadline = time.time() + 300
+        result = None
+        while time.time() < deadline:
+            st = handle.status(with_logs=True)
+            st_name = type(st).__name__
+            if hasattr(st, "logs") and st.logs:
+                for log in st.logs:
+                    msg = log.get("message", str(log)) if isinstance(log, dict) else str(log)
+                    print(f"   [fal] {msg}")
+            if isinstance(st, fal_client.Completed):
+                result = handle.get()
+                break
+            time.sleep(10)
+
+        if result is None:
+            print(f"   TIMEOUT after 5 min — cancelling")
+            try:
+                handle.cancel()
+            except Exception:
+                pass
+            return False
 
         elapsed = time.time() - start
         video_url = result.get("video", {}).get("url")

@@ -1063,7 +1063,7 @@
       "name": "youtube-competitor-intelligence",
       "domain": "Content/Strategy",
       "level": "3-tomoe",
-      "description": "Continuous competitor research system for gaming/tech YouTube channels — extract content patterns, engagement formulas, title/tag optimization, and content archetype taxonomy to sharpen channel strategy.",
+      "description": "Continuous competitor research system for gaming/tech YouTube channels \u2014 extract content patterns, engagement formulas, title/tag optimization, and content archetype taxonomy to sharpen channel strategy.",
       "last_updated": "2026-02-26",
       "keywords": [
         "youtube",
@@ -1104,11 +1104,50 @@
       ]
     },
     {
+      "name": "figma-nb2-integration",
+      "domain": "Design/Content",
+      "level": "3-tomoe",
+      "description": "Analysis of Figma ecosystem + Nano Banana 2 integration opportunities \u2014 Figma Weave (acquired Weavy), Figma Buzz templates, NB2 cost/speed gains, and practical impact on the Ninja content pipeline.",
+      "last_updated": "2026-02-26",
+      "keywords": [
+        "figma",
+        "figma-weave",
+        "weavy",
+        "figma-buzz",
+        "nano-banana-2",
+        "nb2",
+        "gemini-3.1-flash-image",
+        "image-generation",
+        "thumbnail",
+        "templates",
+        "brand",
+        "csv-bulk",
+        "node-based",
+        "multi-model",
+        "inpainting",
+        "mockup",
+        "merch",
+        "social-media",
+        "figma-mcp",
+        "code-to-canvas",
+        "gpt-image-1",
+        "cost-optimization",
+        "content-pipeline"
+      ],
+      "sources_count": 10,
+      "can_do_from_cli": "partial",
+      "related_scrolls": [
+        "figma-design-tool",
+        "nano-banana-pro",
+        "fal-ai-image-gen"
+      ]
+    },
+    {
       "name": "daily-observations",
       "domain": "Meta/Workflow",
       "level": "2-tomoe",
       "description": "Daily running log of work observations from chat history and daily review.",
-      "last_updated": "2026-02-26",
+      "last_updated": "2026-02-27",
       "keywords": [
         "daily",
         "log",
@@ -1124,11 +1163,11 @@
     }
   ],
   "stats": {
-    "total_scrolls": 34,
+    "total_scrolls": 35,
     "by_level": {
       "1-tomoe": 7,
       "2-tomoe": 3,
-      "3-tomoe": 22,
+      "3-tomoe": 23,
       "mangekyo": 2
     }
   }
