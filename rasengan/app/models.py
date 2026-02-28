@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 
 class EventIn(BaseModel):
     event_type: str = Field(min_length=1)
-    source: str
+    source: str = Field(min_length=1)
     payload: dict[str, Any] = Field(default_factory=dict)
 
 
