@@ -1169,15 +1169,48 @@
       ],
       "can_do_from_cli": true,
       "auto_generated": true
+    },
+    {
+      "name": "multi-agent-tdd",
+      "domain": "Dev-Workflow/Testing",
+      "level": "3-tomoe",
+      "description": "Multi-agent Test-Driven Development for Claude Code \u2014 isolated subagents enforce Red-Green-Refactor discipline, preventing context pollution and implementation-first shortcuts.",
+      "last_updated": "2026-02-28",
+      "keywords": [
+        "tdd",
+        "test-driven",
+        "red-green-refactor",
+        "rgr",
+        "testing",
+        "subagent",
+        "multi-agent",
+        "claude-code",
+        "hooks",
+        "skill",
+        "pytest",
+        "vitest",
+        "jest",
+        "integration-test",
+        "refactor",
+        "vertical-slicing",
+        "context-isolation",
+        "matt-pocock"
+      ],
+      "sources_count": 5,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "fastapi-realtime-spa"
+      ]
     }
   ],
   "stats": {
-    "total_scrolls": 35,
+    "total_scrolls": 36,
     "by_level": {
       "1-tomoe": 7,
       "2-tomoe": 3,
       "3-tomoe": 23,
       "mangekyo": 2
-    }
+    },
+    "last_updated": "2026-02-28"
   }
 }

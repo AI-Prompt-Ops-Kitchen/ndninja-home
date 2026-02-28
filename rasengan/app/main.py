@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import LOG_LEVEL
 from app.database import close_pool, init_pool
-from app.routes import events, pipelines, push_targets, resume, rules, schedules, status, ws
+from app.routes import events, health, pipelines, push_targets, resume, rules, schedules, status, ws
 from app.services.pipeline import stall_detector_loop
 from app.services.rules import evaluate_rules, load_rules
 from app.services.scheduler import load_schedules, scheduler_loop
@@ -76,6 +76,7 @@ app.include_router(rules.router)
 app.include_router(schedules.router)
 app.include_router(pipelines.router)
 app.include_router(push_targets.router)
+app.include_router(health.router)
 
 
 @app.get("/health")
