@@ -26,5 +26,8 @@ __pycache__/
 .env
 .env.google_api
 
+# Claude Code config (contains MCP credentials)
+.claude.json
+
 # Docker
 .docker/
