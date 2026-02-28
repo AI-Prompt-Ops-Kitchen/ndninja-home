@@ -48,3 +48,14 @@ def test_should_default_payload_when_omitted(client):
     # Assert
     assert response.status_code == 201
     assert response.json()["payload"] == {}
+
+
+def test_should_reject_non_dict_payload_with_422(client):
+    """POST /events with payload that isn't a dict must return 422."""
+    base = {"event_type": "test.bad_payload", "source": "tdd"}
+
+    for bad_payload in ["not a dict", [1, 2, 3], 42]:
+        response = client.post("/events", json={**base, "payload": bad_payload})
+        assert response.status_code == 422, (
+            f"Expected 422 for payload={bad_payload!r}, got {response.status_code}"
+        )
