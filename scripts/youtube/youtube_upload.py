@@ -21,7 +21,7 @@ from googleapiclient.http import MediaFileUpload
 
 
 def upload_video(video_path, title, description="", tags=None, thumbnail_path=None, 
-                 privacy="private", category_id="28"):  # 28 = Science & Technology
+                 privacy="private", category_id="20"):  # 20 = Gaming
     """Upload a video to YouTube."""
     
     print(f"🎬 Uploading to YouTube: {title}")

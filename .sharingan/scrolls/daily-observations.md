@@ -3,7 +3,7 @@ name: daily-observations
 domain: Meta/Workflow
 level: 2-tomoe
 description: Daily running log of work observations from chat history and daily review. Auto-updated at 3AM.
-last_updated: 2026-02-26
+last_updated: 2026-02-28
 auto_generated: true
 ---
 
@@ -11,6 +11,44 @@ auto_generated: true
 
 *Auto-updated daily at 3AM by Sharingan. Each entry = one day.*
 *For deep weekly synthesis, see the `workflow-insights` scroll.*
+
+---
+
+## 2026-02-28
+*chat messages: 113*
+
+**Active projects:** Glitch (AuDHD assistant), Sharingan (self-learning), The Dojo (content pipeline), YouTube content
+
+**Topics:** youtube, glitch, sharingan, dojo, elevenlabs
+
+**Representative messages:**
+- yeah let's make a short about it!  This is why i was excited!  We can do a funny bit where Glitch pretends not to care orbe jealous but loses it right at the end in a funny but mad…
+- yeah that is pretty good for a behind the desk look, almost looks like a big screen behind him.  I think the only change is that the microphone should be on the desk but centered i…
+- yes render it now, that is worth a .55 cent investment.  Let's start to think about low cost long form videos can we have the youtube agent maybe analyze some gaming long form vide…
+- Oh I have an idea we could revist for this.  We could create pre-rendered common reactions.  Kind of like that failed effort we did a few days ago but using the new expressive tags…
+- yeah I didn't realize we did't use the expressive modes, I wish you would have consulted me first and only  done like 1 test to start.  In the future we should have a rule to ask m…
+- ok so i was thinking that maybe we should do the same process as we did with gacha game youtube channels where we check on the competition to see what they are doing to get more vi…
+- v4 and v5 are awesome.  I would save both of those and maybe mix it up in videos so it has variety.  V6 started out good but faded at the end.  I think you dialed in great on these…
+- work on the top 3 - Act Now items.  Also work on the Voice Changer v2 and Brand Guardian skill.  After everything is complete generate 2 test Thumbnails for Nano Banana 2 and compa…
+
+---
+
+## 2026-02-27
+*chat messages: 110*
+
+**Active projects:** Glitch (AuDHD assistant), Spike (mood tracker), Sharingan (self-learning), Shadow Council (brainstorm), YouTube content, Kling avatar pipeline
+
+**Topics:** youtube, glitch, kling, spike, sharingan, shadowcouncil
+
+**Representative messages:**
+- it just sounds like a higher pitch voice of Laura. There is no fucking accent and at this point I am tired of wasting money for no fucking reason. I can't fucking believe this shit…
+- he also had one video that when viral with like 229,000 views and it was definitely a Waifu video with a meme - https://www.youtube.com/shorts/EWyjaNPcYhE  this was very useful, in…
+- Todays video isn't doing the best.  It's a temporary set back I hope.  I was thinking about maybe doing some solo videos with Glitch as well.  Maybe mix up characters on alternatin…
+- I found this youtube channel that is getting a lot of views and only has a few more videos than me.  I noticed the person put in some funny gif memes on a few videos I watched that…
+- tecnically the last WuWa video did like 630+ I think that with the cost of the videos that are still going to get some mistakes (just being honest, not blaming you) maybe we should…
+- Ninja V2 is the best candidate.  There is one little second where it looks like he says the word "wow" but its natural looking.  Glitch V1 and V2 are perfect!  V1 has a cute little…
+- I put a picture in here about figma and nano banana 2 that is a screenshot from Instagram.  Can you look into this and see if something new with this combo could unlock any abiliti…
+- Could we use Sharingan to create a scroll for Live2D and start learning more about it and perhaps we could use an API if available to program what we need?  Another question I have…
 
 ---
 

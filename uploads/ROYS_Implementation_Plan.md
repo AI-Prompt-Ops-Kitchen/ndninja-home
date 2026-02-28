@@ -233,10 +233,12 @@ Tasks:
   - Table formatting for traceability matrix
   - Placeholder fields clearly marked: [YOUR COMPANY NAME], [EFFECTIVE DATE], etc.
   - Jinja2 tags for docxtpl rendering:
-    * {{ sop_number }}, {{ sop_title }}, {{ standards_list }}
+    * {{ sop_number }}, {{ sop_title }}, {{ standards_list }}, {{ standards_with_versions }}
     * {{ purpose_content }}, {{ scope_content }}, etc.
     * {% for mapping in traceability_mappings %} ... {% endfor %}
     * {% if content_tier == 'enhanced' %} ... {% endif %}
+□ Edition/version stamp on title page (e.g., "Applicable Standards: ISO 13485:2016, 21 CFR 820 (2026 QMSR)")
+□ Edition/version stamp on traceability appendix header (Enhanced tier)
 □ Evelyn reviews and approves template design before proceeding
 □ Register templates in template_structures database table
 ```
@@ -277,6 +279,8 @@ Tasks:
   - Content accuracy (correct regulatory references?)
   - Formatting quality (professional enough for an auditor?)
   - Traceability correctness (mappings accurate?)
+  - Standard edition/version visible on title page of every generated document
+  - Traceability appendix header shows edition (Enhanced tier docs)
   - Placeholder clarity (customization points obvious?)
   - Core vs Enhanced differences clear?
 □ Send 3-5 sample SOPs to beta testers for feedback:

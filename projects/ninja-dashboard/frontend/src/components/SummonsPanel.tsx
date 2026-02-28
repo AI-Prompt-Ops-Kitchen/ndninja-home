@@ -1,5 +1,6 @@
 import { useSummons } from '../hooks/useSummons';
 import type { Summon, SummonAnimal } from '../types/summon';
+import { api } from '../lib/api';
 
 const ANIMAL_EMOJI: Record<SummonAnimal, string> = {
   toad: '\u{1F438}',
@@ -47,7 +48,7 @@ function SummonCard({ summon }: { summon: Summon }) {
   return (
     <div
       className={`
-        flex items-center gap-3 px-3 py-2 rounded-lg border
+        flex items-center gap-3 px-3 py-2 rounded-lg border group
         transition-all duration-500
         ${isDone
           ? 'bg-surface/30 border-white/3 opacity-40 blur-[0.5px]'
@@ -71,11 +72,20 @@ function SummonCard({ summon }: { summon: Summon }) {
         </span>
       </div>
 
-      {/* Timer */}
+      {/* Timer + Dismiss */}
       {!isDone && (
-        <span className="text-[10px] text-gray-600 ml-auto tabular-nums">
-          {elapsed(summon.summoned_at)}
-        </span>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-[10px] text-gray-600 tabular-nums">
+            {elapsed(summon.summoned_at)}
+          </span>
+          <button
+            onClick={() => api.dismissSummon(summon.summon_id)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-600 hover:text-red-400 text-xs"
+            title="Dismiss summon"
+          >
+            ✕
+          </button>
+        </div>
       )}
     </div>
   );

@@ -462,6 +462,7 @@ Each template is a professionally designed Word document with Jinja2 tags:
 
 ```
 {{ sop_number }} — {{ sop_title }}
+Applicable Standards: {{ standards_with_versions }}
 
 Purpose
 {{ purpose_content }}
@@ -490,6 +491,7 @@ References
 
 {% if content_tier == 'enhanced' %}
 Appendix A: Traceability Matrix
+Standards referenced: {{ standards_with_versions }}
 {% for mapping in traceability_mappings %}
 {{ mapping.clause_number }} | {{ mapping.clause_title }} | {{ mapping.sop_section }}
 {% endfor %}
@@ -533,6 +535,11 @@ def _render_document(assembled: AssembledSOP, output_path: str) -> str:
         "sop_title": assembled.sop.title,
         "sop_category": assembled.sop.category,
         "standards_list": ", ".join(s.name for s in assembled.standards),
+        # Edition-stamped list for title page and traceability headers
+        "standards_with_versions": ", ".join(
+            f"{s.name} ({s.version})" if s.version else s.name
+            for s in assembled.standards
+        ),
         "content_tier": assembled.content_tier,
         "sections": [b.section_type for b in assembled.content_blocks.values()],
         "generation_date": datetime.now().strftime("%B %d, %Y"),
@@ -600,6 +607,7 @@ async def generate_sop_document(assembled: AssembledSOP) -> str:
 | Risk elements | Baseline (inherent to process) | Deeper risk tools (mini-FMEA, risk assessment) |
 | Traceability | Reference list of applicable clauses | Full matrix: clause → SOP section mapping |
 | Cross-references | Standalone document | Links to related SOPs |
+| Edition stamp | Title page (standards_with_versions) | Title page + traceability appendix header |
 | Placeholders | Standard customization markers | Standard customization markers |
 | Formatting | Professional | Professional |
 

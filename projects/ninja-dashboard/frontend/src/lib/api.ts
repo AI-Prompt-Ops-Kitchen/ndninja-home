@@ -353,4 +353,16 @@ export const api = {
     if (!r.ok) throw new Error(`getSummons: ${r.status}`);
     return r.json();
   },
+
+  async dismissSummon(summonId: string): Promise<void> {
+    const r = await fetch(`${BASE}/api/summons/event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event_type: 'agent.dismissed',
+        payload: { summon_id: summonId },
+      }),
+    });
+    if (!r.ok) throw new Error(`dismissSummon: ${r.status}`);
+  },
 };
