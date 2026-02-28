@@ -26,45 +26,53 @@ def _detect_topic_icons(topic: str) -> str:
     topic_lower = topic.lower()
     
     icon_rules = [
-        # Gaming
-        (["gaming", "game", "steam", "xbox", "playstation", "nintendo", "console", "esports"],
-         "Include prominent 3D game controller, gaming headset, or console icons as visual anchors"),
-        (["valve", "steam machine", "steam deck"],
-         "Include a stylized Steam logo icon and gaming PC/console hardware as visual elements"),
+        # Gaming — specific services/platforms (check BEFORE generic gaming)
+        (["ps plus", "playstation plus", "ps+"],
+         "Show a PlayStation 5 console and 3-4 floating game box art covers arranged like a fan. NO cars."),
+        (["state of play"],
+         "Show a large screen/monitor displaying game trailers with a 'STATE OF PLAY' banner"),
+        (["genshin impact", "genshin"],
+         "Show Genshin Impact game art — fantasy characters, elemental magic effects, Mondstadt/Liyue scenery"),
+        (["wuthering waves", "wuwa"],
+         "Show Wuthering Waves game art — sci-fi combat, resonators, glowing energy effects"),
+        (["arknights"],
+         "Show Arknights game art — tactical RPG units, Rhodes Island operators, dark sci-fi aesthetic"),
+        (["gacha", "banner", "pulls", "summon"],
+         "Show glowing gacha/summon portal with sparkle effects and character silhouettes emerging"),
+        (["fortnite"],
+         "Show Fortnite-style colorful battle royale scene with building and action"),
+        # Gaming — generic
+        (["gaming", "game", "xbox", "playstation", "nintendo", "console", "esports"],
+         "Include a 3D game controller and gaming setup as visual anchors. NO cars."),
+        (["steam", "valve", "steam deck"],
+         "Include a Steam logo icon and gaming PC/Steam Deck hardware"),
+        (["switch 2", "nintendo switch"],
+         "Show a Nintendo Switch 2 console mockup with Joy-Cons"),
         # AI / Tech companies
         (["github", "copilot", "coding", "developer", "code"],
-         "Include a glowing code editor screen, GitHub-style octocat silhouette, or floating code brackets as visual elements"),
-        (["anthropic", "claude", "chatgpt", "openai", "ai chatbot", "ad-free"],
-         "Include AI chat bubble icons, a robot assistant silhouette, and ad/no-ad symbols as visual elements"),
+         "Include a glowing code editor screen or floating code brackets"),
+        (["anthropic", "claude", "chatgpt", "openai", "ai chatbot"],
+         "Include AI chat bubble icons or a robot assistant silhouette"),
         (["apple", "iphone", "ipad", "mac"],
-         "Include a stylized apple silhouette, sleek device outlines as visual elements"),
+         "Include a stylized apple silhouette and sleek device outlines"),
         (["google", "alphabet"],
-         "Include colorful Google-style dots or a search bar icon as visual elements"),
+         "Include colorful Google-style dots or a search bar icon"),
         (["microsoft", "office", "windows"],
-         "Include a Microsoft Office grid icon or Windows-style window frames as visual elements"),
+         "Include a Microsoft Office grid icon or Windows-style frames"),
         (["tesla", "ev", "electric vehicle", "self-driving"],
-         "Include a sleek electric car silhouette with glowing headlights as a visual element"),
+         "Include a sleek electric car silhouette with glowing headlights"),
         # Security / Hacking
         (["hack", "security", "vulnerability", "exploit", "breach", "cyber", "malware", "patch"],
-         "Include a glowing skull icon, lock/shield with crack, or matrix-style falling code as visual threat indicators"),
-        (["russia", "russian", "fancy bear", "apt28"],
-         "Include a menacing bear silhouette with red glowing eyes and a hacker hood as visual threat elements"),
+         "Include a glowing skull icon or lock/shield with crack"),
         # Space
         (["nasa", "space", "rocket", "moon", "mars", "artemis", "spacex"],
-         "Include a rocket ship, planet, or astronaut helmet icon as visual elements"),
+         "Include a rocket ship, planet, or astronaut helmet icon"),
         # Money / Business
         (["price", "cost", "expensive", "revenue", "billion", "million", "money"],
-         "Include floating dollar signs, price tags, or rising/falling chart arrows as visual elements"),
-        (["ram", "memory", "chip", "semiconductor", "shortage"],
-         "Include glowing RAM sticks, circuit board patterns, or microchip icons as visual elements"),
+         "Include floating dollar signs or price tags"),
         # Social / Legal
         (["lawsuit", "court", "judge", "sec", "legal"],
-         "Include a gavel, scales of justice, or courtroom silhouette as visual elements"),
-        (["super bowl", "ad", "commercial", "advertising"],
-         "Include a TV screen icon, megaphone, or spotlight/stadium lights as visual elements"),
-        # MTG / Card Games
-        (["magic the gathering", "mtg", "secret lair", "trading card"],
-         "Include glowing magic cards, mana symbols, or card pack icons as visual elements"),
+         "Include a gavel or scales of justice"),
     ]
     
     matched_icons = []
@@ -82,52 +90,17 @@ def _extract_headline(topic: str) -> str:
     """Extract a short, punchy headline (3-5 words) from the topic for thumbnail text."""
     topic_lower = topic.lower()
     
-    # Common headline patterns based on keywords
-    headline_rules = [
-        # Version announcements
-        (["linux 7", "linux kernel 7"], "LINUX 7.0 IS HERE!"),
-        (["linux 6.19"], "LINUX 6.19 DROPS!"),
-        (["ios 18", "ios 19"], "NEW iOS UPDATE!"),
-        (["android 15", "android 16"], "ANDROID UPDATE!"),
-        (["windows 12"], "WINDOWS 12?!"),
-        # Gaming
-        (["playstation", "ps5", "ps6"], "PLAYSTATION NEWS!"),
-        (["xbox", "microsoft gaming"], "XBOX NEWS!"),
-        (["nintendo", "switch 2"], "NINTENDO NEWS!"),
-        (["state of play"], "STATE OF PLAY!"),
-        (["steam", "valve"], "STEAM NEWS!"),
-        # AI
-        (["chatgpt", "openai"], "CHATGPT UPDATE!"),
-        (["claude", "anthropic"], "CLAUDE NEWS!"),
-        (["gemini", "google ai"], "GOOGLE AI NEWS!"),
-        (["copilot"], "COPILOT UPDATE!"),
-        # Companies
-        (["apple", "iphone", "mac"], "APPLE NEWS!"),
-        (["tesla", "elon"], "TESLA NEWS!"),
-        (["google"], "GOOGLE NEWS!"),
-        (["microsoft"], "MICROSOFT NEWS!"),
-        (["meta", "facebook"], "META NEWS!"),
-        (["amazon", "aws"], "AMAZON NEWS!"),
-        # Security
-        (["hack", "breach", "vulnerability", "exploit"], "SECURITY ALERT!"),
-        (["malware", "virus", "ransomware"], "MALWARE WARNING!"),
-        # Business
-        (["billion", "acquisition", "bought", "sold"], "BIG MONEY MOVE!"),
-        (["layoff", "fired", "cut"], "LAYOFFS!"),
-        (["lawsuit", "sued", "court"], "LEGAL DRAMA!"),
-    ]
-    
-    for keywords, headline in headline_rules:
-        if any(kw in topic_lower for kw in keywords):
-            return headline
-    
-    # Fallback: Create headline from first few significant words
-    # Remove common filler words and take first 3-4 words
-    filler_words = {'the', 'a', 'an', 'is', 'are', 'was', 'were', 'this', 'that', 'with', 'for', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'of'}
-    words = [w for w in topic.split() if w.lower() not in filler_words][:4]
+    # Use the topic itself as the headline base — extract the punchiest 3-5 words.
+    # Only use generic fallbacks for truly unrecognizable topics.
+    filler_words = {
+        'the', 'a', 'an', 'is', 'are', 'was', 'were', 'this', 'that', 'with',
+        'for', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'of', 'has', 'have',
+        'been', 'just', 'about', 'from', 'its', 'their', 'our', 'my', 'your',
+    }
+    words = [w for w in topic.split() if w.lower() not in filler_words][:5]
     if words:
         return ' '.join(words).upper() + '!'
-    
+
     return "BREAKING NEWS!"
 
 
