@@ -1,0 +1,82 @@
+COPILOT FOR MICROSOFT 365 — NARRATION SCRIPT
+Beginner's Quick Reference Card (Instructional Video)
+=====================================================
+Total: ~670 words | ~4.5 minutes at natural pace
+Voice: Calm, professional, conversational (workplace training)
+=====================================================
+
+[TITLE CARD — 0:00 to 0:04]
+
+Copilot for Microsoft 365. Your beginner's quick reference guide.
+
+---
+
+[SECTION 1: WHAT IS A PROMPT? — 0:04 to 0:44]
+
+Let's start with the basics. A prompt is simply the instruction or question you type into Copilot. Think of Copilot as a highly capable, lightning-fast digital assistant sitting right inside your Microsoft 365 apps. The clearer and more specific your instructions are, the better the work it hands back to you.
+
+Here's a good way to think about it. Asking a colleague to "make a presentation" gives you something generic. But asking them to "create a ten-slide summary of Q4 sales results with charts comparing to Q3" — that gets you exactly what you need. Copilot works the same way.
+
+---
+
+[SECTION 2: TOP EVERYDAY USE CASES — 0:44 to 1:34]
+
+So where do you actually use this day to day? Let's walk through the four most common use cases.
+
+First — summarization. You can say "Summarize the key takeaways and action items from the Teams meeting I just attended." Copilot pulls from the meeting transcript and gives you a clean summary in seconds.
+
+Second — information retrieval. Try something like "What were the main project updates discussed in my emails with the management team over the past week?" Instead of digging through dozens of emails, Copilot surfaces what matters.
+
+Third — analysis. Ask it to "Explain the impact of this recent CVE report in simple terms." It translates complex material into language anyone on your team can understand.
+
+And fourth — brainstorming. When you're stuck, try "Give me five creative ideas for our upcoming department all-hands meeting." It's a great way to get past the blank page.
+
+---
+
+[SECTION 3: WRITING ASSISTANCE — 1:34 to 2:19]
+
+Copilot is especially powerful when it comes to writing. It can draft, edit, and adjust the tone of your work across Word, Outlook, and Teams.
+
+For drafting, you might say "Draft an email to the team summarizing the new Intune device policies, keeping the tone professional but encouraging." You get a solid first draft in seconds.
+
+For refining existing content, try "Rewrite this technical documentation step by step so it's easy for a non-technical user to understand." Copilot adapts the language and structure for your audience.
+
+And for summarizing — "Draft a half-page executive summary of this fifteen-page project proposal." It pulls out the most important points so your leadership gets the highlights without the deep dive.
+
+---
+
+[SECTION 4: ROLE-BASED PROMPTING — 2:19 to 3:04]
+
+Here's a technique that dramatically improves your results — role-based prompting. The idea is simple: give Copilot a job title so it understands the perspective and expertise level you need.
+
+For example — "Act as a senior IT systems administrator. Write a step-by-step troubleshooting guide for a user who cannot connect to the VPN." The response will include technical specifics and structured steps.
+
+Or try — "Act as a customer success manager and draft a polite response to a client who is frustrated about a delayed project timeline." Now the response prioritizes empathy, clarity, and professionalism.
+
+Why does this work so well? When you assign a role, Copilot adjusts its vocabulary, assumptions, and level of detail to match that persona. It's one of the most effective prompting techniques you can learn.
+
+---
+
+[SECTION 5: GROUNDING YOUR DATA — 3:04 to 3:44]
+
+This is where Copilot becomes a true enterprise superpower. It's securely connected to your Microsoft 365 data — your files, emails, meetings, and chats. You can type the forward-slash symbol or use the paperclip icon to reference specific files directly in your prompt.
+
+For example — "Draft a project update email based on the timeline in Project Roadmap dot docx." Copilot reads the file and generates a relevant update based on your actual data.
+
+And an important note on security — Copilot respects your existing Microsoft 365 permissions. It can only access files and data that you already have access to. Your data stays within your organization's security boundary.
+
+---
+
+[SECTION 6: PRO TIPS — 3:44 to 4:34]
+
+Let's close with two pro tips that will take your Copilot skills to the next level.
+
+First — the meta-prompt. If you're not getting the answer you want, or you don't know where to start, let Copilot help you write the prompt. Tell it your goal, and ask it to interview you. For example — "I need to write a PowerShell script to automate a task, but I'm not sure how to prompt you for it. Before you write anything, please ask me any clarifying questions you need to do this job perfectly."
+
+Second — embrace iteration. Your first prompt rarely produces a perfect result. Treat Copilot like a conversation. If the email it drafts is too long, just reply — "Make it shorter and more casual." Or "Add bullet points for the key action items." Or "Change the tone to be more formal." Each revision builds on the previous one. Keep tweaking until it's right.
+
+---
+
+[OUTRO — 4:34 to 4:40]
+
+Copilot for Microsoft 365. Start simple, iterate often, and let AI handle the heavy lifting.

@@ -6,6 +6,7 @@
 3. **Shadow Council** — Multi-LLM brainstorming system (parallel expert agents for complex decisions). Built into ninja-assist skill.
 4. **Kage Bunshin** — Ansible cluster for distributed work. Location: `/home/ndninja/kage-bunshin-ansible/`
 5. **Hokage** — Judgment layer / auto-enforcing rules engine. 58 edicts in YAML, Claude Code hooks (SessionStart/PreToolUse/UserPromptSubmit). Location: `/home/ndninja/.claude/hokage/`
+6. **TDD Skill** — Multi-agent test-driven development. Isolated RED/GREEN/REFACTOR subagents prevent context pollution. Skill: `.claude/skills/tdd/`, Agents: `.claude/agents/tdd-*.md`
 
 ## Content Creation
 5. **The Dojo** — Content pipeline dashboard (React + FastAPI, script workshop, review queue, upload zone). Location: `/home/ndninja/projects/ninja-dashboard/`
