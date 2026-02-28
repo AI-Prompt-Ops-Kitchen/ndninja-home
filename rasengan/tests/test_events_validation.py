@@ -35,3 +35,16 @@ def test_should_reject_empty_event_type_with_422(client):
     assert response.status_code == 422, (
         f"Expected 422 for empty event_type, got {response.status_code}"
     )
+
+
+def test_should_default_payload_when_omitted(client):
+    """POST /events without payload key should default to empty dict, not error."""
+    # Act
+    response = client.post("/events", json={
+        "event_type": "test.no_payload",
+        "source": "tdd",
+    })
+
+    # Assert
+    assert response.status_code == 201
+    assert response.json()["payload"] == {}
