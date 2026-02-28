@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """
-ninja_thumbnail.py — Generate eye-catching thumbnails using Nano Banana Pro
+ninja_thumbnail.py — Generate eye-catching thumbnails using Nano Banana 2
+Uses JSON structured prompting for consistent output.
 
 Usage:
     python ninja_thumbnail.py --topic "Apple's Creator Studio subscriptions"
     python ninja_thumbnail.py --topic "Tesla discontinuing Model S" --style shocked
+    python ninja_thumbnail.py --topic "PS Plus March 2026" --style excited --save-prompt
 """
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -128,153 +131,216 @@ def _extract_headline(topic: str) -> str:
     return "BREAKING NEWS!"
 
 
-def generate_thumbnail(topic: str, style: str = "engaging", output_path: str = None, reference_image: str = None):
-    """Generate a thumbnail using Nano Banana Pro (Gemini image generation)."""
-    
+def _build_json_prompt(topic: str, style: str, headline: str, topic_icons: str) -> dict:
+    """Build a JSON structured prompt for NB2. Returns the prompt dict."""
+
+    # Style → expression + pose mapping
+    style_map = {
+        "engaging": {
+            "expression": "curious/interested digital LED goggle eyes, one hand gesturing toward the topic",
+            "pose": "looking directly at viewer, slight lean forward",
+        },
+        "shocked": {
+            "expression": "wide shocked digital LED goggle eyes, mouth agape behind mask",
+            "pose": "hands up in amazement, dramatic lean back",
+        },
+        "thinking": {
+            "expression": "contemplative squinting digital LED goggle eyes",
+            "pose": "hand on chin, looking slightly upward",
+        },
+        "pointing": {
+            "expression": "determined digital LED goggle eyes",
+            "pose": "confidently pointing at the main subject with one arm extended",
+        },
+        "excited": {
+            "expression": "excited upward-curved digital LED goggle eyes, happy glow",
+            "pose": "energetic pose, both hands animated, slight jump",
+        },
+    }
+
+    s = style_map.get(style, style_map["engaging"])
+
+    return {
+        "prompt": (
+            f"3D Pixar-style animated ninja desk presenter character with DIGITAL GOGGLES/VISOR "
+            f"(glowing cyan LED eyes visible through goggles — no human eyes), black hood, "
+            f"visible friendly smile below goggles (no face mask), black tactical armor "
+            f"with cyan/blue LED accent lines, sitting at a professional streaming desk. "
+            f"A premium Rode podcaster microphone on a Rode PSA1 boom arm mount, "
+            f"positioned near the character's mouth from the side, like a real YouTube creator setup. "
+            f"{s['expression']}. {s['pose']}. "
+            f"Character on the right third of frame. Left two-thirds shows a visual "
+            f"representation of: {topic}. {topic_icons}. "
+            f'Bold headline text: "{headline}" positioned prominently in top or left area, '
+            f"white or bright yellow with black outline for readability. "
+            f"Small ninja star branding in corner."
+        ),
+        "negative_prompt": (
+            "realistic human eyes, face mask covering mouth, full face covering, "
+            "cyberpunk neon city, matrix code, green digital rain, "
+            "blurry text, watermark, misspelled text, extra fingers, deformed hands, "
+            "low resolution, jpeg artifacts, cluttered background"
+        ),
+        "style": "3D Pixar/Disney animation (like The Incredibles or Big Hero 6)",
+        "composition": {
+            "layout": "Character right third, topic visual left two-thirds, headline top area",
+            "camera_angle": "Slightly low angle for heroic framing",
+            "framing": "Medium shot, waist up for character",
+            "lens": "35mm slight wide-angle for energy and depth",
+        },
+        "lighting": {
+            "type": "Dramatic studio with blue accent rim lights",
+            "direction": "Three-point: key left, fill right, rim back",
+            "consistency": "High contrast for mobile thumbnail visibility",
+        },
+        "text_elements": {
+            "headline": headline,
+            "font_style": "Bold sans-serif (Impact/Bebas Neue aesthetic)",
+            "color": "White or bright yellow with black outline/shadow",
+            "branding": "NEURODIVERGENT NINJA ninja star logo, corner, subtle",
+        },
+        "resolution": "2K",
+        "aspect_ratio": "9:16",
+    }
+
+
+def generate_thumbnail(
+    topic: str,
+    style: str = "engaging",
+    output_path: str = None,
+    reference_image: str = None,
+    save_prompt: bool = False,
+):
+    """Generate a thumbnail using Nano Banana 2 with JSON structured prompting."""
+
     from google import genai
     from google.genai import types
-    from PIL import Image
-    import io
-    
-    # Try AI Studio first (image gen has separate quota from video)
-    api_key = os.environ.get('GOOGLE_API_KEY')
+
+    api_key = os.environ.get("GOOGLE_API_KEY")
     client = genai.Client(api_key=api_key)
-    
-    # Default reference image - the futuristic newsroom ninja
+
+    # Default reference image
     if not reference_image:
-        reference_image = str(PROJECT_DIR / "assets" / "reference" / "ninja_helmet_v3_futuristic.jpg")
-    
+        reference_image = str(
+            PROJECT_DIR / "assets" / "reference" / "ninja_desk_presenter.jpeg"
+        )
+
     # Load reference image if it exists
     ref_image_data = None
     if reference_image and Path(reference_image).exists():
         with open(reference_image, "rb") as f:
             ref_image_data = f.read()
-        print(f"   📸 Using reference: {reference_image}")
-    
-    # Style variations for the ninja character
-    # NOTE: Digital goggles with LED eyes are REQUIRED — expressions come from the goggle eyes
-    style_prompts = {
-        "engaging": "looking directly at viewer, digital goggle eyes showing curious/interested expression, one hand gesturing toward the topic",
-        "shocked": "digital goggle eyes wide with shock/surprise expression, hands up in amazement, dramatic reaction",
-        "thinking": "hand on chin, digital goggle eyes showing contemplative/squinting expression, looking slightly upward",
-        "pointing": "confidently pointing at the main subject, digital goggle eyes showing determined expression",
-        "excited": "energetic pose, both hands animated, digital goggle eyes showing excited/happy expression with upward curved LED eyes",
-    }
-    
-    ninja_pose = style_prompts.get(style, style_prompts["engaging"])
-    
-    # Auto-detect topic icons/visual elements from keywords
+        print(f"   Using reference: {reference_image}")
+
     topic_icons = _detect_topic_icons(topic)
-    
-    # Extract a short punchy headline (3-5 words max) from the topic
-    # This will be displayed prominently on the thumbnail
     headline = _extract_headline(topic)
-    
-    # Build the thumbnail prompt
-    prompt = f"""Create a YouTube thumbnail image with these exact specifications:
 
-SUBJECT: A 3D Pixar-style animated ninja character - cute but cool, wearing DIGITAL GOGGLES/VISOR over eyes with glowing LED digital eyes visible through the goggles (the goggles ARE the character's eyes - no human eyes visible), black hood and mask covering lower face, black tactical outfit with gray armor plating and blue LED accents, katana on back. Pixar/Disney animation style with soft rounded features. {ninja_pose}
+    # Build JSON structured prompt
+    json_prompt = _build_json_prompt(topic, style, headline, topic_icons)
 
-CRITICAL: The ninja MUST wear digital goggles/visor - this is the character's signature look. The goggle lenses show expressive digital/LED eyes that convey emotion. No human eyes - only digital goggle eyes.
+    # The actual prompt sent to NB2: JSON structure as a string
+    prompt_text = (
+        "Generate an image following this exact JSON specification:\n\n"
+        + json.dumps(json_prompt, indent=2)
+    )
 
-COMPOSITION:
-- Character on the right side (1/3 of frame)
-- Left 2/3 shows a visual representation of: {topic}
-- {topic_icons}
-- Bold, eye-catching colors
-- High contrast for mobile visibility
+    print(f"Generating thumbnail for: {topic}")
+    print(f"   Style: {style} | Headline: {headline}")
 
-STYLE:
-- 3D Pixar/Disney animation style (like The Incredibles or Big Hero 6)
-- Soft, appealing character design with expressive digital goggle eyes
-- 9:16 vertical aspect ratio (YouTube Shorts thumbnail)
-- Clean, uncluttered composition
-- Tech/gaming YouTube aesthetic
-- Dramatic lighting with blue accent rim lights
-- Slightly exaggerated expressions for thumbnail appeal
-
-TEXT ELEMENTS (IMPORTANT - include these in the image):
-- Large, bold headline text: "{headline}" - positioned prominently (top or left area), white or bright yellow text with black outline/shadow for readability
-- Small "NEURODIVERGENT NINJA" or ninja star logo/branding in corner (subtle but visible)
-- Text should be short, punchy, and scroll-stopping
-- Use bold sans-serif font style (like Impact or Bebas Neue aesthetic)
-
-Make it scroll-stopping and clickable!"""
-
-    print(f"🎨 Generating thumbnail for: {topic}")
-    print(f"   Style: {style}")
-    
     try:
-        # Build content with reference image if available
         contents = []
         if ref_image_data:
-            contents.append(types.Part.from_bytes(data=ref_image_data, mime_type="image/jpeg"))
-            contents.append(f"Using this exact ninja character design (same face, outfit, colors), create a thumbnail: {prompt}")
+            contents.append(
+                types.Part.from_bytes(data=ref_image_data, mime_type="image/jpeg")
+            )
+            contents.append(
+                "Using this exact ninja character design (same face, outfit, colors), "
+                + prompt_text
+            )
         else:
-            contents.append(prompt)
-        
+            contents.append(prompt_text)
+
         response = client.models.generate_content(
-            model="gemini-3.1-flash-image-preview",  # Nano Banana Pro 2 — Pro quality at Flash speed
+            model="gemini-3.1-flash-image-preview",
             contents=contents,
             config=types.GenerateContentConfig(
                 response_modalities=["image", "text"],
-                image_config=types.ImageConfig(
-                    aspectRatio="9:16",
-                ),
-            )
+                image_config=types.ImageConfig(aspectRatio="9:16"),
+            ),
         )
-        
+
         # Extract image from response
         for part in response.candidates[0].content.parts:
-            if hasattr(part, 'inline_data') and part.inline_data:
-                # Save the image
+            if hasattr(part, "inline_data") and part.inline_data:
                 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-                
+
                 if not output_path:
-                    # Generate filename from topic + style
-                    safe_topic = "".join(c if c.isalnum() else "_" for c in topic[:30])
-                    output_path = str(OUTPUT_DIR / f"thumb_{safe_topic}_{style}.png")
-                
+                    safe_topic = "".join(
+                        c if c.isalnum() else "_" for c in topic[:30]
+                    )
+                    output_path = str(
+                        OUTPUT_DIR / f"thumb_{safe_topic}_{style}.png"
+                    )
+
                 with open(output_path, "wb") as f:
                     f.write(part.inline_data.data)
-                
+
                 size = os.path.getsize(output_path)
-                print(f"   ✅ Thumbnail saved: {output_path} ({size/1024:.0f}KB)")
+                print(f"   Thumbnail saved: {output_path} ({size / 1024:.0f}KB)")
+
+                # Optionally save the JSON prompt alongside for reproducibility
+                if save_prompt:
+                    prompt_path = output_path.replace(".png", "_prompt.json")
+                    with open(prompt_path, "w") as f:
+                        json.dump(json_prompt, f, indent=2)
+                    print(f"   Prompt saved: {prompt_path}")
+
                 return output_path
-        
-        print("   ❌ No image in response")
+
+        print("   No image in response")
         return None
-        
+
     except Exception as e:
-        print(f"   ❌ Error: {e}")
+        print(f"   Error: {e}")
         return None
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate ninja thumbnails")
+    parser = argparse.ArgumentParser(description="Generate ninja thumbnails (JSON prompting)")
     parser.add_argument("--topic", required=True, help="Topic/headline for thumbnail")
-    parser.add_argument("--style", default="engaging", 
+    parser.add_argument("--style", default="engaging",
                         choices=["engaging", "shocked", "thinking", "pointing", "excited"],
                         help="Ninja pose/expression style")
     parser.add_argument("--output", help="Output path for thumbnail")
     parser.add_argument("--reference", help="Custom reference image for the ninja character")
-    parser.add_argument("--both", action="store_true", 
+    parser.add_argument("--save-prompt", action="store_true",
+                        help="Save JSON prompt alongside thumbnail for reproducibility")
+    parser.add_argument("--show-prompt", action="store_true",
+                        help="Print the JSON prompt to stdout without generating")
+    parser.add_argument("--both", action="store_true",
                         help="Generate both Pixar avatar AND news anchor thumbnails")
-    
+
     args = parser.parse_args()
-    
+
+    if args.show_prompt:
+        topic_icons = _detect_topic_icons(args.topic)
+        headline = _extract_headline(args.topic)
+        prompt = _build_json_prompt(args.topic, args.style, headline, topic_icons)
+        print(json.dumps(prompt, indent=2))
+        return
+
     if args.both:
-        # Generate with default Pixar avatar
         base_output = args.output or f"output/thumbnails/thumb_{args.topic[:20]}_{args.style}"
         pixar_out = base_output.replace('.png', '_pixar.png') if '.png' in str(base_output) else f"{base_output}_pixar.png"
         anchor_out = base_output.replace('.png', '_anchor.png') if '.png' in str(base_output) else f"{base_output}_anchor.png"
-        
-        print("🎨 Generating BOTH thumbnail variants...")
-        generate_thumbnail(args.topic, args.style, pixar_out, None)  # Default Pixar
-        generate_thumbnail(args.topic, args.style, anchor_out, 
-                          str(Path(__file__).parent.parent / "assets/reference/ninja_news_anchor.jpg"))
+
+        print("Generating BOTH thumbnail variants...")
+        generate_thumbnail(args.topic, args.style, pixar_out, None, args.save_prompt)
+        generate_thumbnail(args.topic, args.style, anchor_out,
+                          str(Path(__file__).parent.parent / "assets/reference/ninja_news_anchor.jpg"),
+                          args.save_prompt)
     else:
-        generate_thumbnail(args.topic, args.style, args.output, args.reference)
+        generate_thumbnail(args.topic, args.style, args.output, args.reference, args.save_prompt)
 
 
 if __name__ == "__main__":
