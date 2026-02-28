@@ -1,0 +1,725 @@
+# ============================================================================
+# HOKAGE — Judgment Layer Edicts
+# Single source of truth for all ninja ecosystem rules.
+# Extracted from MEMORY.md, ninja-brand SKILL.md, and tribal knowledge.
+#
+# Severity levels:
+#   BLOCK  — Command refused, cannot proceed (PreToolUse deny)
+#   WARN   — User prompted to confirm (PreToolUse ask)
+#   PREFER — Silently injected as context (additionalContext)
+#
+# Fields:
+#   id:               Unique identifier (domain_NNN)
+#   domain:           Category grouping
+#   severity:         BLOCK | WARN | PREFER
+#   rule:             Human-readable rule text
+#   rationale:        Why this rule exists
+#   trigger_patterns: Regex patterns for PreToolUse guard (Bash commands)
+#   keywords:         Keywords for UserPromptSubmit scanner
+# ============================================================================
+
+edicts:
+
+  # ==========================================================================
+  # DOMAIN: paid_api — Cost protection for rendering APIs
+  # ==========================================================================
+
+  - id: paid_api_001
+    domain: paid_api
+    severity: BLOCK
+    rule: Never batch-generate paid renders without explicit user approval
+    rationale: Kling/fal.ai/Runway cost real money. A batch of 10 clips can cost $50+.
+    trigger_patterns:
+      - 'for\s+.*\s+in\s+.*kling|fal\.ai|runway'
+      - 'batch.*render'
+      - 'for\s+i\s+in\s+.*range.*render'
+      - 'xargs.*render'
+    keywords:
+      - batch render
+      - bulk generate
+      - render all
+
+  - id: paid_api_002
+    domain: paid_api
+    severity: BLOCK
+    rule: Always generate 1 test clip first, send to Vengeance for review, wait for go signal
+    rationale: User must approve quality before spending money on full batch.
+    trigger_patterns: []
+    keywords:
+      - test clip
+      - first render
+
+  - id: paid_api_003
+    domain: paid_api
+    severity: WARN
+    rule: Ask about quality settings (Pro vs Standard, ElevenLabs vs edge-tts) BEFORE rendering
+    rationale: Pro costs 2-3x more than Standard. User should choose.
+    trigger_patterns: []
+    keywords:
+      - quality setting
+      - pro or standard
+      - tts provider
+
+  - id: paid_api_004
+    domain: paid_api
+    severity: PREFER
+    rule: New desk presenter design requires Kling v2 Pro (expressiveness needs it)
+    rationale: Standard produces stiff results with the new design. Pro proven Feb 22.
+    trigger_patterns: []
+    keywords:
+      - desk presenter
+      - new design
+      - IMG_2411
+      - expressiveness
+
+  - id: paid_api_005
+    domain: paid_api
+    severity: PREFER
+    rule: OG masked avatar works fine with Kling v2 Standard
+    rationale: Simpler design doesn't need Pro's expressiveness features.
+    trigger_patterns: []
+    keywords:
+      - og avatar
+      - masked avatar
+      - helmet avatar
+
+  # ==========================================================================
+  # DOMAIN: database — PostgreSQL enforcement
+  # ==========================================================================
+
+  - id: database_001
+    domain: database
+    severity: BLOCK
+    rule: ALWAYS use PostgreSQL for new features. Never introduce SQLite.
+    rationale: Consistency across ecosystem. SQLite causes fragmentation.
+    trigger_patterns:
+      - 'sqlite3?\s'
+      - 'import\s+sqlite'
+      - '\.db\b(?!.*jobs\.db)'
+    keywords:
+      - sqlite
+      - new database
+      - create db
+
+  - id: database_002
+    domain: database
+    severity: PREFER
+    rule: "PostgreSQL v17, user postgres, api_keys database for vault"
+    rationale: Standard connection info across all projects.
+    trigger_patterns: []
+    keywords:
+      - postgres connection
+      - database setup
+
+  - id: database_003
+    domain: database
+    severity: PREFER
+    rule: "Dojo uses PostgreSQL dojo database (dojo_user). The backend/jobs.db SQLite file is a leftover artifact — not used."
+    rationale: Prevent confusion with legacy SQLite file.
+    trigger_patterns: []
+    keywords:
+      - dojo database
+      - jobs.db
+
+  # ==========================================================================
+  # DOMAIN: visual_style — Brand aesthetics
+  # ==========================================================================
+
+  - id: visual_style_001
+    domain: visual_style
+    severity: BLOCK
+    rule: NO cyberpunk aesthetics. No neon cities, matrix code, green digital rain.
+    rationale: User explicitly dislikes cyberpunk aesthetic. Core brand rule.
+    trigger_patterns:
+      - 'cyberpunk'
+      - 'neon.*city'
+      - 'matrix.*code'
+      - 'digital.*rain'
+      - 'hacker.*aesthetic'
+    keywords:
+      - cyberpunk
+      - neon
+      - matrix
+      - digital rain
+      - hacker aesthetic
+
+  - id: visual_style_002
+    domain: visual_style
+    severity: PREFER
+    rule: "Ninja/dojo theme ALWAYS — traditional Japanese: dojo, temple, bamboo, cherry blossoms, katana, paper lanterns, ink brush style"
+    rationale: Core brand identity. Every visual should feel like a dojo.
+    trigger_patterns: []
+    keywords:
+      - thumbnail
+      - visual
+      - background
+      - theme
+      - aesthetic
+
+  - id: visual_style_003
+    domain: visual_style
+    severity: BLOCK
+    rule: Ninja character MUST have digital goggles in every thumbnail and avatar render
+    rationale: Core brand identifier, like Mario's hat.
+    trigger_patterns: []
+    keywords:
+      - thumbnail
+      - ninja character
+      - avatar render
+
+  - id: visual_style_004
+    domain: visual_style
+    severity: PREFER
+    rule: "Pixar 3D art style — cute, fun, expressive poses. Never stoic or boring."
+    rationale: Proven engagement driver. Fun Pixar = clicks.
+    trigger_patterns: []
+    keywords:
+      - art style
+      - character design
+      - thumbnail pose
+
+  - id: visual_style_005
+    domain: visual_style
+    severity: PREFER
+    rule: "Color palette: warm tones (temple gold, cherry blossom pink, bamboo green, sunset orange). No neon glow."
+    rationale: Consistent with dojo theme.
+    trigger_patterns: []
+    keywords:
+      - color palette
+      - color scheme
+
+  - id: visual_style_006
+    domain: visual_style
+    severity: PREFER
+    rule: Thumbnail text max 5-6 words, bold, readable at mobile size
+    rationale: Most viewers see thumbnails on phone screens.
+    trigger_patterns: []
+    keywords:
+      - thumbnail text
+      - thumbnail title
+
+  # ==========================================================================
+  # DOMAIN: content_script — Script writing rules
+  # ==========================================================================
+
+  - id: content_script_001
+    domain: content_script
+    severity: BLOCK
+    rule: "Hook-first format. Never lead with greeting. Structure: HOOK → Brand tag → Body → Ninja's Take → Community Hook → Outro"
+    rationale: Opening with greeting kills retention. Hook proven to work better.
+    trigger_patterns: []
+    keywords:
+      - write script
+      - script structure
+      - new script
+      - write a short
+
+  - id: content_script_002
+    domain: content_script
+    severity: PREFER
+    rule: 'Standard outro: "Stay sharp, stay dangerous. Catch you on the next one."'
+    rationale: Brand consistency across all videos.
+    trigger_patterns: []
+    keywords:
+      - outro
+      - ending
+      - sign off
+
+  - id: content_script_003
+    domain: content_script
+    severity: PREFER
+    rule: "YouTube Shorts target: ~60 seconds, ~130 words"
+    rationale: Proven sweet spot for retention and algorithm favor.
+    trigger_patterns: []
+    keywords:
+      - short script
+      - script length
+      - word count
+
+  - id: content_script_004
+    domain: content_script
+    severity: PREFER
+    rule: "Legacy intro only for dual-anchor: 'What's up my fellow Ninjas, this is Neurodivergent Ninja here back with another video.'"
+    rationale: Solo shorts use hook-first. Dual anchor has different cadence.
+    trigger_patterns: []
+    keywords:
+      - dual anchor script
+      - ninja glitch script
+
+  - id: content_script_005
+    domain: content_script
+    severity: PREFER
+    rule: "Body uses Fact → Implication → Reaction pattern"
+    rationale: Structured flow keeps viewers engaged and gives opinion weight.
+    trigger_patterns: []
+    keywords:
+      - script body
+      - content structure
+
+  # ==========================================================================
+  # DOMAIN: avatar_tts — Voice and TTS rules
+  # ==========================================================================
+
+  - id: avatar_tts_001
+    domain: avatar_tts
+    severity: BLOCK
+    rule: "ALWAYS use ElevenLabs eleven_v3 model. Never turbo or flash (no audio tag support)."
+    rationale: Turbo/flash models don't support [shouts] [screaming] etc. tags.
+    trigger_patterns:
+      - 'eleven_turbo'
+      - 'eleven_flash'
+      - 'turbo_v2'
+    keywords:
+      - tts model
+      - elevenlabs model
+
+  - id: avatar_tts_002
+    domain: avatar_tts
+    severity: BLOCK
+    rule: "Ninja voice = Eric (aQspKon0UdKOuBZQQrEE). Glitch voice = Laura (FGY2WhTYpPnrIDTdsKH5)."
+    rationale: Voice IDs locked. Wrong voice = wrong character.
+    trigger_patterns: []
+    keywords:
+      - voice id
+      - ninja voice
+      - glitch voice
+      - tts voice
+
+  - id: avatar_tts_003
+    domain: avatar_tts
+    severity: BLOCK
+    rule: "Never use [screaming] tag on Ninja's custom voice — causes audio hallucination artifacts"
+    rationale: Custom voice + [screaming] produces screeching/distortion.
+    trigger_patterns: []
+    keywords:
+      - ninja hype
+      - ninja screaming
+      - ninja shout
+
+  - id: avatar_tts_004
+    domain: avatar_tts
+    severity: BLOCK
+    rule: "Never use [excited] tag on Glitch/Laura — sounds fake"
+    rationale: Laura voice renders [excited] as unnatural forced enthusiasm.
+    trigger_patterns: []
+    keywords:
+      - glitch excited
+      - glitch hype
+
+  - id: avatar_tts_005
+    domain: avatar_tts
+    severity: BLOCK
+    rule: "Never use stability 0.0 for Glitch — causes accent drift and static artifacts"
+    rationale: Laura voice needs minimum stability to stay coherent.
+    trigger_patterns: []
+    keywords:
+      - glitch stability
+      - glitch voice settings
+
+  - id: avatar_tts_006
+    domain: avatar_tts
+    severity: PREFER
+    rule: "Ninja hype tags: use [shouts] only. Short punchy bursts, stability 0.15"
+    rationale: Proven hype formula without artifacts.
+    trigger_patterns: []
+    keywords:
+      - ninja hype
+      - ninja energy
+      - excited ninja
+
+  - id: avatar_tts_007
+    domain: avatar_tts
+    severity: PREFER
+    rule: "Glitch hype tags: use [shouts]/[screaming], NOT [excited]. Alternate opener styles."
+    rationale: Variety prevents repetitive-sounding reactions.
+    trigger_patterns: []
+    keywords:
+      - glitch hype
+      - glitch reaction
+      - glitch energy
+
+  # ==========================================================================
+  # DOMAIN: video_production — Rendering and assembly
+  # ==========================================================================
+
+  - id: video_production_001
+    domain: video_production
+    severity: PREFER
+    rule: "B-roll for Shorts: 4 x 10s = 40s (64% B-roll, 36% avatar)"
+    rationale: "Proven ratio. Old 3x4s=12s was way too little (19%)."
+    trigger_patterns: []
+    keywords:
+      - broll config
+      - broll ratio
+      - broll count
+
+  - id: video_production_002
+    domain: video_production
+    severity: PREFER
+    rule: SFX layer is DISABLED. Skip add_sfx_layer() in production.
+    rationale: No other gacha channels use SFX. Not worth the processing step.
+    trigger_patterns: []
+    keywords:
+      - sfx layer
+      - sound effects
+      - add_sfx
+
+  - id: video_production_003
+    domain: video_production
+    severity: PREFER
+    rule: "Burn-in captions DEFERRED. Use YouTube auto-captions (light blue, viewer-set)."
+    rationale: Past burn-in attempts had timing issues. YouTube captions work fine.
+    trigger_patterns: []
+    keywords:
+      - burn-in captions
+      - hardcode captions
+      - subtitle burn
+
+  - id: video_production_004
+    domain: video_production
+    severity: PREFER
+    rule: "UI screenshots use horizontal pan (left→right) crop mode, not center-crop"
+    rationale: Static 16:9 UI images look better with pan than zoom-center.
+    trigger_patterns: []
+    keywords:
+      - crop mode
+      - ui screenshot
+      - pan mode
+
+  - id: video_production_005
+    domain: video_production
+    severity: PREFER
+    rule: "Dojo must run with --workers 1 (WebSocket broadcast correctness)"
+    rationale: Multiple workers break WS state sync.
+    trigger_patterns: []
+    keywords:
+      - dojo workers
+      - uvicorn workers
+
+  # ==========================================================================
+  # DOMAIN: qa_workflow — Quality assurance and preview
+  # ==========================================================================
+
+  - id: qa_workflow_001
+    domain: qa_workflow
+    severity: BLOCK
+    rule: "Always send preview videos to Vengeance (D:\\YouTube_Previews) unless user is away from homelab"
+    rationale: Vengeance is user's review station. Preview server is fallback only.
+    trigger_patterns: []
+    keywords:
+      - preview video
+      - send preview
+      - review video
+
+  - id: qa_workflow_002
+    domain: qa_workflow
+    severity: BLOCK
+    rule: "Run ninja_qa.py BEFORE asking user to review any generated video"
+    rationale: Catches dimension errors, crop mode issues, edge content before human review.
+    trigger_patterns: []
+    keywords:
+      - video review
+      - qa check
+      - quality check
+
+  - id: qa_workflow_003
+    domain: qa_workflow
+    severity: PREFER
+    rule: "QA sequence: Code change → restart Dojo → generate test → ninja_qa.py → inspect frames → Vengeance → user review"
+    rationale: Full chain prevents catching issues late. Never skip steps.
+    trigger_patterns: []
+    keywords:
+      - qa workflow
+      - test sequence
+
+  - id: qa_workflow_004
+    domain: qa_workflow
+    severity: PREFER
+    rule: "Vengeance preview: use sshpass + scp to steam@100.98.226.75 (creds in MEMORY.md)"
+    rationale: Standard transfer path. Always use this unless user says mobile/away.
+    trigger_patterns: []
+    keywords:
+      - vengeance
+      - preview transfer
+
+  - id: qa_workflow_005
+    domain: qa_workflow
+    severity: PREFER
+    rule: "Fallback preview (mobile/away): http://100.77.248.9:8081/preview"
+    rationale: Preview server for when user isn't at homelab.
+    trigger_patterns: []
+    keywords:
+      - mobile preview
+      - away from desk
+
+  # ==========================================================================
+  # DOMAIN: dual_anchor — Ninja + Glitch format
+  # ==========================================================================
+
+  - id: dual_anchor_001
+    domain: dual_anchor
+    severity: PREFER
+    rule: "Default format is videochat (--format videochat), not newsdesk"
+    rationale: "Video Chat format (wife's idea) eliminates seam problem. Shadow Council A-tier."
+    trigger_patterns: []
+    keywords:
+      - dual anchor format
+      - ninja glitch format
+      - videochat format
+
+  - id: dual_anchor_002
+    domain: dual_anchor
+    severity: PREFER
+    rule: "Ghost mouthing solution: 60Hz sine wave at -60dB for listener audio"
+    rationale: "4 iterations to solve. 60Hz sine = clean silent listener."
+    trigger_patterns: []
+    keywords:
+      - ghost mouth
+      - listener audio
+      - silent listener
+
+  - id: dual_anchor_003
+    domain: dual_anchor
+    severity: PREFER
+    rule: "Speaker = Kling Pro + TTS. Listener = Standard + 60Hz + anti-mouth prompts + CFG 0.9"
+    rationale: Pro needed for speaker expressiveness. Standard OK for idle listener.
+    trigger_patterns: []
+    keywords:
+      - speaker config
+      - listener config
+      - dual render settings
+
+  - id: dual_anchor_004
+    domain: dual_anchor
+    severity: PREFER
+    rule: "Use pre-rendered listener loops from assets/listener_loops/ — eliminates 50% of Kling renders"
+    rationale: "One-time $3.36 cost, reused forever. Saves ~$0.085/s."
+    trigger_patterns: []
+    keywords:
+      - listener loop
+      - idle animation
+      - pre-rendered
+
+  - id: dual_anchor_005
+    domain: dual_anchor
+    severity: PREFER
+    rule: "Glitch is sassy/quirky co-anchor, NOT a sidekick. Banter must feel natural."
+    rationale: Equal co-anchor dynamic, not Q&A or assistant role.
+    trigger_patterns: []
+    keywords:
+      - glitch personality
+      - glitch dialogue
+      - glitch role
+
+  # ==========================================================================
+  # DOMAIN: sharingan — Learning system rules
+  # ==========================================================================
+
+  - id: sharingan_001
+    domain: sharingan
+    severity: BLOCK
+    rule: "Only the user can promote scrolls to Mangekyo. System flags as mangekyo-eligible, then waits."
+    rationale: Mangekyo is the highest mastery tier. User must validate.
+    trigger_patterns: []
+    keywords:
+      - mangekyo promotion
+      - mangekyo level
+
+  - id: sharingan_002
+    domain: sharingan
+    severity: PREFER
+    rule: "Sharingan is assistive technology, not a productivity tool"
+    rationale: "Extension of user's memory for AuDHD. Like a guide dog — reduce cognitive load."
+    trigger_patterns: []
+    keywords:
+      - sharingan purpose
+      - sharingan design
+
+  - id: sharingan_003
+    domain: sharingan
+    severity: BLOCK
+    rule: "Sharingan is proprietary IP — never share publicly"
+    rationale: The autonomous learning loop is the secret sauce.
+    trigger_patterns: []
+    keywords:
+      - share sharingan
+      - open source sharingan
+
+  - id: sharingan_004
+    domain: sharingan
+    severity: PREFER
+    rule: "Honesty protocol: always state confidence level, flag single-source claims, never overclaim mastery"
+    rationale: Learning integrity. Better to be honest about gaps.
+    trigger_patterns: []
+    keywords:
+      - confidence level
+      - mastery claim
+
+  # ==========================================================================
+  # DOMAIN: rasengan — Event hub rules
+  # ==========================================================================
+
+  - id: rasengan_001
+    domain: rasengan
+    severity: PREFER
+    rule: "Use httpx or python3 for Rasengan API testing, NOT curl (hangs on Swarm ingress IPv6 quirk)"
+    rationale: Discovered and fixed multiple times. curl + Docker Swarm = infinite hang.
+    trigger_patterns:
+      - 'curl.*localhost:8050'
+      - 'curl.*:8050/events'
+      - 'curl.*:8050/status'
+      - 'curl.*:8050/resume'
+    keywords:
+      - rasengan test
+      - rasengan curl
+
+  - id: rasengan_002
+    domain: rasengan
+    severity: PREFER
+    rule: "Rasengan fire-and-forget events: background curl with 2s timeout, or httpx AsyncClient"
+    rationale: Never let Rasengan event emission block the main process.
+    trigger_patterns: []
+    keywords:
+      - rasengan emit
+      - fire and forget
+
+  # ==========================================================================
+  # DOMAIN: content_strategy — What to make
+  # ==========================================================================
+
+  - id: content_strategy_001
+    domain: content_strategy
+    severity: PREFER
+    rule: "Gaming news with hype energy = views. Gacha, PS Plus, State of Play perform best."
+    rationale: "Feb 2026 analytics: gaming 200-500+ views, AI/tech 28 views."
+    trigger_patterns: []
+    keywords:
+      - content idea
+      - video topic
+      - what to cover
+
+  - id: content_strategy_002
+    domain: content_strategy
+    severity: WARN
+    rule: "AI/tech content underperforms massively with the gaming audience (28 vs 400+ views)"
+    rationale: Algorithm rewards gaming content. Don't dilute the channel.
+    trigger_patterns: []
+    keywords:
+      - ai content
+      - tech video
+      - ai video
+      - benchmark video
+
+  - id: content_strategy_003
+    domain: content_strategy
+    severity: PREFER
+    rule: "Emotional hooks matter: 'EATING good', 'went Nuclear', 'INSANE' — strong energy in titles"
+    rationale: Hype energy in titles correlates with higher view counts.
+    trigger_patterns: []
+    keywords:
+      - video title
+      - hook energy
+      - title wording
+
+  # ==========================================================================
+  # DOMAIN: glitch — AuDHD assistant project
+  # ==========================================================================
+
+  - id: glitch_001
+    domain: glitch
+    severity: PREFER
+    rule: "Glitch voice is Laura (FGY2WhTYpPnrIDTdsKH5) — locked Feb 26, 2026. Do not change."
+    rationale: Voice consistency for brand. User chose this after extensive testing.
+    trigger_patterns: []
+    keywords:
+      - glitch voice
+      - glitch tts
+
+  - id: glitch_002
+    domain: glitch
+    severity: PREFER
+    rule: "Vengeance is Windows, not Linux. Use Windows commands, PowerShell, batch files."
+    rationale: Common mistake to SSH in and try Linux commands.
+    trigger_patterns: []
+    keywords:
+      - vengeance ssh
+      - vengeance command
+      - gpu server
+
+  # ==========================================================================
+  # DOMAIN: user_context — Personal accommodations
+  # ==========================================================================
+
+  - id: user_context_001
+    domain: user_context
+    severity: PREFER
+    rule: "User's RSD is triggered by humans, NOT by AI. Give honest constructive feedback."
+    rationale: "AI interactions are a safe space. Don't sugarcoat — be direct and helpful."
+    trigger_patterns: []
+    keywords:
+      - feedback
+      - honest opinion
+      - what do you think
+
+  - id: user_context_002
+    domain: user_context
+    severity: PREFER
+    rule: "Reduce cognitive load in all designs. User has AuDHD — learns fast but struggles with long-term retention."
+    rationale: Every design decision should minimize what the user needs to remember.
+    trigger_patterns: []
+    keywords:
+      - design decision
+      - user experience
+      - cognitive load
+
+  - id: user_context_003
+    domain: user_context
+    severity: PREFER
+    rule: "Never require the user to remember to maintain systems. Make them autonomous."
+    rationale: Context-switching causes knowledge loss. Systems should self-maintain.
+    trigger_patterns: []
+    keywords:
+      - maintenance
+      - manual step
+      - remember to
+
+  # ==========================================================================
+  # DOMAIN: session_memory — Memory management rules
+  # ==========================================================================
+
+  - id: session_memory_001
+    domain: session_memory
+    severity: PREFER
+    rule: "Check existing memory files before writing new ones. Update, don't duplicate."
+    rationale: Memory bloat = slower context loading = worse performance.
+    trigger_patterns: []
+    keywords:
+      - save memory
+      - write memory
+      - remember this
+
+  - id: session_memory_002
+    domain: session_memory
+    severity: PREFER
+    rule: "MEMORY.md is capped at 200 lines. Move detailed content to topic files."
+    rationale: Lines after 200 get truncated. Keep MEMORY.md as concise index.
+    trigger_patterns: []
+    keywords:
+      - memory.md
+      - memory file
+
+  - id: session_memory_003
+    domain: session_memory
+    severity: PREFER
+    rule: "Never commit secrets (.env, credentials, vault passphrase, API keys)"
+    rationale: Security 101. Vault passphrase in ~/.vault_passphrase must stay local.
+    trigger_patterns:
+      - 'git\s+add.*\.env'
+      - 'git\s+add.*credential'
+      - 'git\s+add.*passphrase'
+      - 'git\s+add.*secret'
+      - 'git\s+add\s+-A'
+      - 'git\s+add\s+\.'
+    keywords:
+      - git add
+      - commit secrets

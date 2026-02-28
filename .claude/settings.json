@@ -1,0 +1,73 @@
+{
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline-command.sh"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ndninja/.claude/hooks/hokage-session.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /home/ndninja/.claude/hooks/on-session-start-tool-discovery.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ndninja/.claude/hooks/hokage-guard.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ndninja/.claude/hooks/hokage-prompt.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash /home/ndninja/.claude/hooks/on-user-prompt-tool-discovery.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ndninja/.claude/hooks/kuchiyose.sh start"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /home/ndninja/.claude/hooks/kuchiyose.sh stop"
+          }
+        ]
+      }
+    ]
+  },
+  "skipDangerousModePermissionPrompt": true,
+  "effortLevel": "medium"
+}
