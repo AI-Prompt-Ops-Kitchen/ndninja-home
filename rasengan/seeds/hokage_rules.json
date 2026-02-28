@@ -2,33 +2,23 @@
   "rules": [
     {
       "name": "hokage_block_tracker",
-      "description": "Tracks all Hokage BLOCK events for weekly review. Logs which edicts fire most frequently to identify patterns and potential false positives.",
-      "event_pattern": "hokage.blocked",
-      "conditions": [],
-      "actions": [
-        {
-          "type": "log",
-          "config": {
-            "message": "Hokage blocked command: {payload.reason}"
-          }
-        }
-      ],
+      "event_type": "hokage.blocked",
+      "condition": {},
+      "action": {
+        "type": "log",
+        "message": "[Hokage BLOCK] {payload.reason} | cmd={payload.command_preview}"
+      },
       "cooldown_seconds": 0,
       "enabled": true
     },
     {
       "name": "hokage_warn_tracker",
-      "description": "Tracks Hokage WARN events for pattern analysis.",
-      "event_pattern": "hokage.warned",
-      "conditions": [],
-      "actions": [
-        {
-          "type": "log",
-          "config": {
-            "message": "Hokage warned on command: {payload.reason}"
-          }
-        }
-      ],
+      "event_type": "hokage.warned",
+      "condition": {},
+      "action": {
+        "type": "log",
+        "message": "[Hokage WARN] {payload.reason} | cmd={payload.command_preview}"
+      },
       "cooldown_seconds": 0,
       "enabled": true
     }
@@ -36,9 +26,9 @@
   "schedules": [
     {
       "name": "hokage_weekly_review",
-      "description": "Weekly Hokage enforcement review — emits event to trigger edict audit",
-      "cron": "0 20 * * 0",
+      "cron_expr": "0 20 * * 0",
       "event_type": "hokage.weekly_review",
+      "source": "scheduler",
       "payload": {
         "task": "Review enforcement log, identify most-triggered edicts, check for false positives, suggest new edicts from recent mistakes"
       },
