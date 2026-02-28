@@ -30,6 +30,12 @@ sources:
     date: "2026-02-27"
     confidence: medium
     notes: "Nate Herk — JSON prompting technique, Kie.ai pricing, skill-based workflow"
+  - type: youtube
+    title: "Nano Banana 2 + Kling 3.0 = Consistent Characters SOLVED"
+    url: "https://youtu.be/2psBexPkw3I"
+    date: "2026-02-27"
+    confidence: high
+    notes: "@taoprompts — 8-shot character reference sheet technique, multi-character scenes, realism keywords, Kling Omni Reference workflow"
   - type: codebase
     title: "ninja_thumbnail.py — thumbnail generation"
     url: "file:///home/ndninja/scripts/ninja_thumbnail.py"
@@ -50,8 +56,8 @@ sources:
     url: "https://pricepertoken.com/pricing-page/model/google-gemini-3-pro-image-preview"
     date: "2026-02-24"
     confidence: medium
-last_updated: 2026-02-27
-sources_count: 9
+last_updated: 2026-02-28
+sources_count: 10
 can_do_from_cli: true
 ---
 
@@ -278,6 +284,108 @@ The ninja has digital goggles instead of visible eyes. Map expressions in the JS
 - **Full description every call** — models have zero memory between requests
 - **JSON prompting helps massively** — lock style/lighting/composition in a template, only vary subject per video
 - **No LoRA** — for pixel-perfect consistency at scale, FLUX Dev + LoRA is still better. NB2 trades that for reasoning + text rendering.
+
+---
+
+## Character Reference Sheet Technique (NEW — Feb 28, 2026)
+
+**Source:** [@taoprompts — "Nano Banana 2 + Kling 3.0 = Consistent Characters SOLVED"](https://youtu.be/2psBexPkw3I)
+
+This technique solves multi-angle character consistency by generating a structured 8-shot reference sheet, then using it as input for all subsequent generations. The reference sheet becomes the single source of truth for a character's appearance from every angle.
+
+### The 8-Shot Layout
+
+The character reference sheet is a single image divided into **4 vertical columns**, each representing a different angle. Each column has:
+- **Top row:** Full body shot
+- **Bottom row:** Close-up face shot matching the same angle
+
+| Column 1 | Column 2 | Column 3 | Column 4 |
+|-----------|----------|----------|----------|
+| Full body — front | Full body — 3/4 left | Full body — side left | Full body — side right |
+| Face close-up — front | Face close-up — 3/4 left | Face close-up — side left | Face close-up — side right |
+
+**Why 8 shots:** Having the character from 4 angles (full body + face for each) gives NB2 enough reference data to maintain consistency regardless of camera position in subsequent generations — front, side, 3/4, close-up, or far away.
+
+### Reference Sheet Prompt Structure
+
+```
+A character reference sheet of [CHARACTER DESCRIPTION]. The sheet is divided
+into four vertical columns showing the character from different angles:
+
+Column 1: Front-facing full body shot (top) and front-facing close-up of the
+face (bottom).
+Column 2: Three-quarter view from the left, full body shot (top) and
+three-quarter view close-up of the face (bottom).
+Column 3: Side profile facing left, full body shot (top) and side profile
+close-up of the face (bottom).
+Column 4: Side profile facing right, full body shot (top) and side profile
+close-up of the face (bottom).
+
+Photorealistic, DSLR camera, muted color tones.
+```
+
+**Key elements:**
+- Keep the character description simple but specific (e.g., "female Viking character with red hair")
+- Explicitly describe each column and angle
+- **Realism keywords at the bottom are critical:** `photorealistic, DSLR, camera, muted color tones` — the "DSLR" keyword tells NB2 to produce realistic output
+- How realistic the reference sheet is determines how realistic ALL subsequent generations will be
+
+### Platforms for Generation
+
+- **Higgs Field AI** (`higgsfield.ai`) — has NB2 model in image generator, supports reference image upload
+- **Google Gemini** — direct API or web interface
+- **Google AI Studio** — our standard pipeline via `google-genai` SDK
+
+### Common Problem: Mirrored Side Profiles (and the Fix)
+
+NB2 frequently generates both side profiles facing the **same direction** instead of opposite directions. This is the most common failure mode.
+
+**Fix workflow:**
+1. Generate the reference sheet (even if side profiles are wrong)
+2. Download the incorrect sheet
+3. Upload it back into NB2 as a reference image
+4. Prompt: `"Change the character reference sheet so that the full body shot of [character] in the third column faces the opposite direction."`
+5. NB2 will regenerate with the corrected orientation
+
+This iterative correction is built into NB2's image-editing capability — it understands spatial instructions about its own output.
+
+### Multi-Character Scenes (Up to 14 References)
+
+Once you have reference sheets for multiple characters, upload them all as reference images and describe a scene:
+
+1. Upload each character's reference sheet (up to **14 reference images** in NB2)
+2. Describe the scene with both/all characters together
+3. Add realism keywords: `"Photorealistic, shot on a DSLR camera with muted colors, shot on 35mm film"`
+
+**Quality note:** Consistency degrades as you add more character references. 2-3 characters works well; 5+ gets progressively less reliable.
+
+**Prompt example for multi-character:**
+```
+[Character A] and [Character B] standing together in a Viking village
+marketplace. Three-quarter full body view. Photorealistic, shot on a DSLR
+camera with muted colors, shot on 35mm film.
+```
+
+### Realism Keywords Cheat Sheet
+
+Always append these to prompts when generating reference sheets or scenes:
+- `photorealistic` — baseline realism
+- `DSLR camera` / `DSLR` — triggers photo-quality rendering
+- `muted color tones` — prevents oversaturated AI look
+- `shot on 35mm film` — adds subtle film grain and natural color grading
+- `natural lighting` — prevents flat AI lighting
+
+### Application to Our Pipeline
+
+**For Ninja + Glitch dual-anchor:**
+- Generate 8-shot reference sheets for both characters
+- Use these as inputs for Kling 3.0 Omni Reference (see kling-avatar-api scroll)
+- Generate a "together" shot from NB2 as the starting frame for video generation
+- This solves character drift during video — the reference sheet anchors consistency across cuts and camera angles
+
+**For thumbnails:**
+- Reference sheets can replace single reference images for more consistent character rendering across thumbnail variations
+- Particularly useful when the character needs to appear at different angles per thumbnail
 
 ---
 

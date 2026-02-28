@@ -453,8 +453,8 @@
       "name": "kling-avatar-api",
       "domain": "Video/Avatar",
       "level": "3-tomoe",
-      "description": "Kling Avatar v2 API via fal.ai \u2014 talking-head video generation from image + audio. Complete API reference, prompt engineering, pricing, dual-anchor pipeline, Kling 3.0 O3 multi-character, platform comparison. Includes A/B test results vs OmniHuman v1.5, Creatify Aurora, VEED Fabric 1.0.",
-      "last_updated": "2026-02-24",
+      "description": "Kling Avatar v2 API via fal.ai \u2014 talking-head video generation from image + audio. Complete API reference, prompt engineering, pricing, dual-anchor pipeline, Kling 3.0 O3 multi-character, Omni Reference for character consistency, platform comparison. Includes A/B test results vs OmniHuman v1.5, Creatify Aurora, VEED Fabric 1.0.",
+      "last_updated": "2026-02-28",
       "keywords": [
         "kling",
         "avatar",
@@ -487,14 +487,23 @@
         "veed",
         "fabric",
         "comparison",
-        "ab-test"
+        "ab-test",
+        "omni-reference",
+        "character-reference-sheet",
+        "labeled-image",
+        "camera-cut",
+        "character-drift",
+        "anti-reference-cut",
+        "scene-direction",
+        "taoprompts"
       ],
-      "sources_count": 9,
+      "sources_count": 10,
       "can_do_from_cli": true,
       "related_scrolls": [
         "dual-avatar-production",
         "kokoro-tts",
-        "remotion-video-code"
+        "remotion-video-code",
+        "nano-banana-pro"
       ]
     },
     {
@@ -949,8 +958,8 @@
       "name": "nano-banana-pro",
       "domain": "Image/Character Art",
       "level": "3-tomoe",
-      "description": "Google's Nano Banana model family (Pro + NB2) \u2014 reasoning-driven image generation via generate_content API. JSON structured prompting for consistency. Powers the Ninja thumbnail pipeline, B-roll Ken Burns images, and Dojo Thumbnail Studio.",
-      "last_updated": "2026-02-27",
+      "description": "Google's Nano Banana model family (Pro + NB2) \u2014 reasoning-driven image generation via generate_content API. JSON structured prompting for consistency. 8-shot character reference sheet technique for multi-angle consistency. Powers the Ninja thumbnail pipeline, B-roll Ken Burns images, and Dojo Thumbnail Studio.",
+      "last_updated": "2026-02-28",
       "keywords": [
         "nano-banana",
         "nano-banana-pro",
@@ -981,14 +990,24 @@
         "negative-prompt",
         "thinking-level",
         "search-grounding",
-        "consistency"
+        "consistency",
+        "character-reference-sheet",
+        "8-shot",
+        "multi-angle",
+        "multi-character",
+        "higgs-field",
+        "dslr",
+        "realism-keywords",
+        "side-profile-fix",
+        "taoprompts"
       ],
-      "sources_count": 9,
+      "sources_count": 10,
       "can_do_from_cli": true,
       "related_scrolls": [
         "fal-ai-image-gen",
         "remotion-video-code",
-        "dual-avatar-production"
+        "dual-avatar-production",
+        "kling-avatar-api"
       ]
     },
     {
@@ -1201,13 +1220,46 @@
       "related_scrolls": [
         "fastapi-realtime-spa"
       ]
+    },
+    {
+      "name": "ai-document-production",
+      "domain": "Workflow/Documents",
+      "level": "2-tomoe",
+      "description": "End-to-end workflow for producing illustrated professional documents \u2014 AI-generated corporate illustrations via Nano Banana 2 + HTML/CSS layout + WeasyPrint PDF rendering.",
+      "last_updated": "2026-02-28",
+      "keywords": [
+        "document",
+        "pdf",
+        "reference-card",
+        "training-material",
+        "weasyprint",
+        "html-to-pdf",
+        "illustration",
+        "nano-banana-2",
+        "nb2",
+        "corporate",
+        "flat-design",
+        "infographic",
+        "handout",
+        "technical-writing",
+        "json-prompting",
+        "style-template",
+        "page-fitting",
+        "print",
+        "responsive"
+      ],
+      "sources_count": 3,
+      "can_do_from_cli": true,
+      "related_scrolls": [
+        "nano-banana-pro"
+      ]
     }
   ],
   "stats": {
-    "total_scrolls": 36,
+    "total_scrolls": 37,
     "by_level": {
       "1-tomoe": 7,
-      "2-tomoe": 3,
+      "2-tomoe": 4,
       "3-tomoe": 23,
       "mangekyo": 2
     },
